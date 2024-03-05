@@ -54,13 +54,15 @@ class Bridge:
         self.Col = QColor(128, 128, 129)  # 颜色
         self.armor = None
         self.nodes: List[SectionNodeXZ] = []
+        self.rail: Union[Railing, Handrail, None] = None
 
     def to_dict(self):
         return {
             "pos": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
             "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
             "armor": self.armor,
-            "nodes": [[node.x, node.z] for node in self.nodes]
+            "nodes": [[node.x, node.z] for node in self.nodes],
+            "rail": self.rail.to_dict() if self.rail else None
         }
 
 
@@ -117,6 +119,8 @@ class HullSectionGroup:
         self.botCur = 1.0  # 下层曲率
         # 截面组
         self.sections: List[HullSection] = []
+        # 栏杆
+        self.rail: Union[Railing, Handrail, None] = None
 
     def to_dict(self):
         return {
@@ -124,7 +128,8 @@ class HullSectionGroup:
             "rot": self.Rot,
             "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
             "armor": 0,
-            "sections": [section.to_dict() for section in self.sections]
+            "sections": [section.to_dict() for section in self.sections],
+            "rail": self.rail.to_dict() if self.rail else None
         }
 
 
@@ -457,12 +462,14 @@ class NaPrjReader:
     def load_rail(self, data, parent):
         if data['type'] == "railing":
             railing = Railing(parent)
+            parent.rail = railing
             railing.height = data['height']
             railing.interval = data['interval']
             railing.thickness = data['thickness']
             railing.Col = QColor(data['col'])
         elif data['type'] == "handrail":
             handrail = Handrail(parent)
+            parent.rail = handrail
             handrail.height = data['height']
             handrail.thickness = data['thickness']
             handrail.Col = QColor(data['col'])
@@ -505,8 +512,6 @@ class NaPrjReader:
             armor_section_group.Col = QColor(section_group['col'])
             armor_section_group.sections = self.load_armor_section(section_group['sections'], armor_section_group)
             self.hullProject.add_armorSectionGroup(armor_section_group)
-            if "rail" in section_group:
-                self.load_rail(section_group['rail'], armor_section_group)
 
     def load_armor_section(self, data, parent):
         sections = []
