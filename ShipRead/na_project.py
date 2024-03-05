@@ -18,6 +18,7 @@ class SectionNodeXY:
 
     def __init__(self, parent):
         self.parent = parent
+        self.Col = QColor(128, 128, 129)  # 颜色
         self.x = None
         self.y = None
 
@@ -33,6 +34,7 @@ class SectionNodeXZ:
 
     def __init__(self, parent):
         self.parent = parent
+        self.Col = QColor(128, 128, 129)  # 颜色
         self.x = None
         self.z = None
 
@@ -46,18 +48,19 @@ class Bridge:
     舰桥
     """
 
-    def __init__(self):
+    def __init__(self, rail_only):
+        self.rail_only = rail_only  # 是否只有栏杆
         self.Pos: QVector3D = QVector3D(0, 0, 0)
-        self.Col = None
+        self.Col = QColor(128, 128, 129)  # 颜色
         self.armor = None
         self.nodes: List[SectionNodeXZ] = []
 
     def to_dict(self):
         return {
             "pos": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
-            "col": self.Col,
+            "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
             "armor": self.armor,
-            "node": [[node.x, node.z] for node in self.nodes]
+            "nodes": [[node.x, node.z] for node in self.nodes]
         }
 
 
@@ -70,14 +73,13 @@ class HullSection:
         self.parent = parent
         self.z = None
         self.nodes: List[SectionNodeXY] = []
-        self.Col = None
         self.armor = None
 
     def to_dict(self):
         return {
             "z": self.z,
-            "node": [[node.x, node.y] for node in self.nodes],
-            "col": self.Col,
+            "nodes": [[node.x, node.y] for node in self.nodes],
+            "col": [f"#{node.Col.red():02x}{node.Col.green():02x}{node.Col.blue():02x}" for node in self.nodes],
             "armor": self.armor
         }
 
@@ -91,14 +93,12 @@ class ArmorSection:
         self.parent = parent
         self.z = None
         self.nodes: List[SectionNodeXY] = []
-        self.Col = None
         self.armor = None
 
     def to_dict(self):
         return {
             "z": self.z,
-            "node": [[node.x, node.y] for node in self.nodes],
-            "col": self.Col,
+            "nodes": [[node.x, node.y] for node in self.nodes],
             "armor": self.armor
         }
 
@@ -108,10 +108,13 @@ class HullSectionGroup:
     船体截面组
     """
 
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.Pos: QVector3D = QVector3D(0, 0, 0)
         self.Rot: List[float] = [0, 0, 0]
         self.Col: QColor = QColor(128, 128, 128)   # 颜色
+        self.topCur = 0.0  # 上层曲率
+        self.botCur = 1.0  # 下层曲率
         # 截面组
         self.sections: List[HullSection] = []
 
@@ -121,7 +124,7 @@ class HullSectionGroup:
             "rot": self.Rot,
             "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
             "armor": 0,
-            "section": [section.to_dict() for section in self.sections]
+            "sections": [section.to_dict() for section in self.sections]
         }
 
 
@@ -130,9 +133,13 @@ class ArmorSectionGroup:
     装甲截面组
     """
 
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.Pos: QVector3D = QVector3D(0, 0, 0)
         self.Rot: List[float] = [0, 0, 0]
+        self.Col: QColor = QColor(128, 128, 128)  # 颜色
+        self.topCur = 0.0  # 上层曲率
+        self.botCur = 1.0  # 下层曲率
         # 装甲分区
         self.sections: List[HullSection] = []
 
@@ -140,8 +147,9 @@ class ArmorSectionGroup:
         return {
             "center": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
             "rot": self.Rot,
+            "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
             "armor": 0,
-            "section": [section.to_dict() for section in self.sections]
+            "sections": [section.to_dict() for section in self.sections]
         }
 
 
@@ -150,11 +158,17 @@ class Railing:
     栏杆
     """
     def __init__(self, parent: Union[Bridge, HullSectionGroup]):
+        self.height = 1.2  # 栏杆高度
+        self.interval = 1.0  # 栏杆间隔
+        self.thickness = 0.1  # 栏杆厚度
         self.parent = parent
         self.Col: QColor = QColor(128, 128, 128)  # 颜色
 
     def to_dict(self):
         return {
+            "height": self.height,
+            "interval": self.interval,
+            "thickness": self.thickness,
             "type": "railing",
             "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}"
         }
@@ -165,11 +179,15 @@ class Handrail:
     栏板
     """
     def __init__(self, parent: Union[Bridge, HullSectionGroup]):
+        self.height = 1.2  # 栏板高度
+        self.thickness = 0.1  # 栏板厚度
         self.parent = parent
         self.Col: QColor = QColor(128, 128, 128)
 
     def to_dict(self):
         return {
+            "height": self.height,
+            "thickness": self.thickness,
             "type": "handrail",
             "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}"
         }
@@ -179,10 +197,11 @@ class Ladder:
     """
     直梯
     """
-    def __init__(self, shape: Literal["cylinder", "box"]):
+    def __init__(self, name, shape: Literal["cylinder", "box"]):
+        self.name = name
         self.Pos: QVector3D = QVector3D(0, 0, 0)
         self.Rot: List[float] = [0, 0, 0]
-        self.Col: QColor = QColor(128, 128, 128)  # 颜色
+        self.Col: QColor = QColor(128, 128, 129)  # 颜色
         self.length = 3  # 梯子整体长度
         self.width = 0.5  # 梯子整体宽度
         self.interval = 0.5  # 梯子间隔
@@ -192,6 +211,7 @@ class Ladder:
 
     def to_dict(self):
         return {
+            "name": f"{self.name}",
             "pos": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
             "rot": self.Rot,
             "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
@@ -212,78 +232,94 @@ class ShipProject:
         组织格式（json）：
         {
             "check_code": "xxxx",
-            "project_name": "xxxx",
-            "author": "xxxx",
-            "edit_time": "xxxx",
+            "project_name": "示例工程文件",
+            "author": "JasonLee",
+            "edit_time": "2024-01-01 00:00:00",
             "hull_section_group": [
                 {
-                    "name": "xxxx",
-                    "center": [x, y, z],
-                    "rot": [x, y, z],
-                    "col": "#xxxxxx",
-                    "armor": x,
-                    "section": [
+                    "name": "船体截面组（1）",
+                    "center": [0, 0, 0],
+                    "rot": [0, 0, 0],
+                    "col": "#888888",
+                    "armor": 5,
+                    "top_cur": 0.0,
+                    "bot_cur": 1.0,
+                    "sections": [
                         {
-                            "z": x,
-                            "node": [[y, z], ... ],
-                            "col": "#xxxxxx",
-                            "armor": x
+                            "z": 3,
+                            "nodes": [[4, -3], [4, 3]],
+                            "col": "#888889",
+                            "armor": 5
+                        }, {
+                            "z": -3,
+                            "nodes": [[4, -3], [4, 3]],
+                            "col": "#888889",
+                            "armor": 5
                         }
                     ],
-                    "rail": {  # 一个截面组只有一个栏杆或栏板
-                        "type": "railing(栏杆)/handrail(栏板)",
-                        "col": "#xxxxxx",
-                        "armor": x
-                        ...
-                    },
+                    "rail": {
+                        "type": "railing",
+                        "height": 1.2,
+                        "interval": 1.0,
+                        "thickness": 0.1,
+                        "col": "#888889",
+                        "armor": 5
+                    }
                 }
-                ...
             ],
             "armor_section_group": [
                 {
-                    "name": "xxxx",
-                    "center": [x, y, z],
-                    "rot": [x, y, z],
-                    "col": "#xxxxxx",
-                    "armor": x,
-                    "section": [
+                    "name": "装甲截面组（1）",
+                    "center": [0, 0, 0],
+                    "rot": [0, 0, 0],
+                    "col": "#888889",
+                    "armor": 356,
+                    "sections": [
                         {
-                            "z": x,
-                            "node": [[y, z], ... ],
-                            "col": "#xxxxxx",
-                            "armor": x
+                            "z": 0,
+                            "nodes": [[3, 3], [3, 6]],
+                            "armor": 5
                         }
                     ]
                 }
-                ...
             ],
             "bridge": [
                 {
-                    "rail_only": "true/false",  # 是否只有栏杆
-                    "pos": [x, y, z],
-                    "col": "#xxxxxx",
-                    "armor": x,
-                    "node": [[x, z], ... ]
-                    "rail": {  # 一个舰桥只有一个栏杆或栏板
-                        "type": "railing(栏杆)/handrail(栏板)",
-                        "col": "#xxxxxx",
-                        "armor": x
-                        ...
-                    },
-                },
-                ...
+                    "name": "舰桥（1）",
+                    "rail_only": "false",
+                    "pos": [0, 0, 0],
+                    "col": "#888889",
+                    "armor": 5,
+                    "nodes": [[3, 3], [3, -3], [-3, -3], [-3, 3]],
+                    "rail": {
+                        "type": "handrail",
+                        "height": 1.2,
+                        "thickness": 0.1,
+                        "col": "#888889",
+                        "armor": 5
+                    }
+                }
             ],
             "ladder": [
                 {
-                    "pos": [x, y, z],
-                    "rot": [x, y, z],
-                    "length": x,
-                    "width": x,
-                    "interval": x,
-                    "shape": "cylinder/box",
-                    "material_width": x
-                },
-                ...
+                    "name": "梯子（1）",
+                    "pos": [0, 0, 0],
+                    "rot": [0, 0, 0],
+                    "length": 6,
+                    "width": 0.6,
+                    "interval": 0.5,
+                    "shape": "cylinder",
+                    "material_width": 0.05
+                }, {
+                    "name": "梯子（2）",
+                    "pos": [0, 0, 0],
+                    "rot": [0, 0, 0],
+                    "length": 6,
+                    "width": 0.6,
+                    "interval": 0.5,
+                    "shape": "box",
+                    "material_width": 0.05
+                }
             ]
         }
         """
@@ -298,8 +334,6 @@ class ShipProject:
         self.__armor_section_group: List[ArmorSectionGroup] = []
         self.__bridge: List[Bridge] = []
         self.__ladder: List[Ladder] = []
-        self.__railing: List[Railing] = []
-        self.__handrail: List[Handrail] = []
 
     def new_hullSectionGroup(self):
         """
@@ -353,18 +387,6 @@ class ShipProject:
         elif isinstance(prjsection, list):
             self.__ladder.extend(prjsection)
 
-    def add_railing(self, prjsection: Union[Railing, List[Railing]]):
-        if isinstance(prjsection, Railing):
-            self.__railing.append(prjsection)
-        elif isinstance(prjsection, list):
-            self.__railing.extend(prjsection)
-
-    def add_handrail(self, prjsection: Union[Handrail, List[Handrail]]):
-        if isinstance(prjsection, Handrail):
-            self.__handrail.append(prjsection)
-        elif isinstance(prjsection, list):
-            self.__handrail.extend(prjsection)
-
     def del_section(self, prjsection: Union[HullSectionGroup, ArmorSectionGroup, Bridge, Ladder, Railing, Handrail]):
         if isinstance(prjsection, HullSectionGroup):
             self.__hull_section_group.remove(prjsection)
@@ -374,10 +396,6 @@ class ShipProject:
             self.__bridge.remove(prjsection)
         elif isinstance(prjsection, Ladder):
             self.__ladder.remove(prjsection)
-        elif isinstance(prjsection, Railing):
-            self.__railing.remove(prjsection)
-        elif isinstance(prjsection, Handrail):
-            self.__handrail.remove(prjsection)
 
     def export2NA(self, path):
         """
@@ -437,17 +455,25 @@ class NaPrjReader:
             self.load_ladder(data['ladder'])
 
     def load_rail(self, data, parent):
-        rail = Railing(parent) if data['type'] == "railing" else Handrail(parent)
-        rail.Col = data['col']
-        rail.armor = data['armor']
-        self.hullProject.add_railing(rail) if data['type'] == "railing" else self.hullProject.add_handrail(rail)
+        if data['type'] == "railing":
+            railing = Railing(parent)
+            railing.height = data['height']
+            railing.interval = data['interval']
+            railing.thickness = data['thickness']
+            railing.Col = QColor(data['col'])
+        elif data['type'] == "handrail":
+            handrail = Handrail(parent)
+            handrail.height = data['height']
+            handrail.thickness = data['thickness']
+            handrail.Col = QColor(data['col'])
 
     def load_hull_section_group(self, data):
         for section_group in data:
-            hull_section_group = HullSectionGroup()
+            hull_section_group = HullSectionGroup(section_group['name'])
             hull_section_group.Pos = QVector3D(*section_group['center'])
             hull_section_group.Rot = section_group['rot']
-            hull_section_group.sections = self.load_hull_section(section_group['section'], hull_section_group)
+            hull_section_group.Col = QColor(section_group['col'])
+            hull_section_group.sections = self.load_hull_section(section_group['sections'], hull_section_group)
             self.hullProject.add_hullSectionGroup(hull_section_group)
             if "rail" in section_group:
                 self.load_rail(section_group['rail'], hull_section_group)
@@ -457,24 +483,27 @@ class NaPrjReader:
         for section in data:
             hull_section = HullSection(parent)
             hull_section.z = section['z']
-            hull_section.nodes = self.load_section_node(section['node'], hull_section)
+            hull_section.nodes = self.load_section_node(section['nodes'], hull_section, section['col'])
             sections.append(hull_section)
         return sections
 
-    def load_section_node(self, data, parent):
+    def load_section_node(self, data, parent, col_list):
         nodes = []
         for node in data:
             section_node = SectionNodeXY(parent)
             section_node.x, section_node.y = node
+            if col_list:
+                section_node.Col = QColor(col_list[data.index(node)])
             nodes.append(section_node)
         return nodes
 
     def load_armor_section_group(self, data):
         for section_group in data:
-            armor_section_group = ArmorSectionGroup()
+            armor_section_group = ArmorSectionGroup(section_group['name'])
             armor_section_group.Pos = QVector3D(*section_group['center'])
             armor_section_group.Rot = section_group['rot']
-            armor_section_group.sections = self.load_armor_section(section_group['section'], armor_section_group)
+            armor_section_group.Col = QColor(section_group['col'])
+            armor_section_group.sections = self.load_armor_section(section_group['sections'], armor_section_group)
             self.hullProject.add_armorSectionGroup(armor_section_group)
             if "rail" in section_group:
                 self.load_rail(section_group['rail'], armor_section_group)
@@ -484,17 +513,17 @@ class NaPrjReader:
         for section in data:
             armor_section = ArmorSection(parent)
             armor_section.z = section['z']
-            armor_section.nodes = self.load_section_node(section['node'], armor_section)
+            armor_section.nodes = self.load_section_node(section['nodes'], armor_section, None)
             sections.append(armor_section)
         return sections
 
     def load_bridge(self, data):
         for bridge in data:
-            bridge_ = Bridge()
+            bridge_ = Bridge(bridge['rail_only'])
             bridge_.Pos = QVector3D(*bridge['pos'])
-            bridge_.Col = bridge['col']
+            bridge_.Col = QColor(bridge['col'])
             bridge_.armor = bridge['armor']
-            bridge_.nodes = self.load_bridge_node(bridge['node'], bridge_)
+            bridge_.nodes = self.load_bridge_node(bridge['nodes'], bridge_)
             self.hullProject.add_bridge(bridge_)
             if "rail" in bridge:
                 self.load_rail(bridge['rail'], bridge_)
@@ -509,9 +538,10 @@ class NaPrjReader:
 
     def load_ladder(self, data):
         for ladder in data:
-            ladder_ = Ladder(ladder['shape'])
+            ladder_ = Ladder(ladder['name'], ladder['shape'])
             ladder_.Pos = QVector3D(*ladder['pos'])
             ladder_.Rot = ladder['rot']
+            ladder_.Col = QColor(ladder['col'])
             ladder_.length = ladder['length']
             ladder_.width = ladder['width']
             ladder_.interval = ladder['interval']
