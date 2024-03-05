@@ -46,7 +46,7 @@ def rotate_quaternion(vec, rot: list):
     # 进行四元数旋转
     rotated_point_quat = q * quaternion(0, *vec) * conj(q)
     # 提取旋转后的点坐标
-    rotated_point = array([rotated_point_quat.x, rotated_point_quat.y, rotated_point_quat.z])
+    rotated_point = array([rotated_point_quat.x, rotated_point_quat.x, rotated_point_quat.y])
     # 标准化为单位向量
     rotated_point = rotated_point / linalg.norm(rotated_point)
     return rotated_point

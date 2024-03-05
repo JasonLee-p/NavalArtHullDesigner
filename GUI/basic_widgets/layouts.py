@@ -6,6 +6,7 @@ from abc import abstractmethod
 from typing import Literal, List, Dict
 
 from .buttons import *
+from PyQt5.QtCore import Qt
 
 from funcs_utils import CONST, color_print, bool_protection
 
@@ -185,7 +186,7 @@ class ButtonGroup:
                 self.current = None
 
 
-class _MutiDirectionTab(QFrame):
+class _MutiDirectionTab(QWidget):
     __draggable_tab = None
     __dragging_tab: Union['_MutiDirectionTab', None] = None
     __dragging_button: Union['TabButton', None] = None
@@ -200,7 +201,7 @@ class _MutiDirectionTab(QFrame):
         # 处理参数
         if isinstance(bd_radius, int):
             bd_radius = [bd_radius] * 4
-        super().__init__()
+        super().__init__(None)
         self.setMouseTracking(True)
         self.name = name
         self.direction = init_direction  # 当前位置
@@ -219,16 +220,18 @@ class _MutiDirectionTab(QFrame):
                 border-bottom-left-radius: {bd_radius[3]}px;
             }}
         """)
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
         self.hide()
         self._layout = QVBoxLayout()
         self.setLayout(self._layout)
         self._top_widget = QWidget()
         self.title_label = TextLabel(self, name, YAHEI[11], fg)
         self._drag_area = QWidget(self)
-        self._main_widget = QFrame()
-        self.main_layout: Union[None, QVBoxLayout, QHBoxLayout, QGridLayout, QStackedLayout, QFormLayout, QLayout] = None
+        self._main_widget = QFrame(None)
+        self.main_layout: Union[
+            None, QVBoxLayout, QHBoxLayout, QGridLayout, QStackedLayout, QFormLayout, QLayout] = None
         self._scroll_area = ScrollArea(self, self._main_widget, None)
-        self._top_layout = QHBoxLayout(self._top_widget)
+        self.top_layout = QHBoxLayout(self._top_widget)
         self.__init_layout()
 
     def __str__(self):
@@ -284,18 +287,27 @@ class _MutiDirectionTab(QFrame):
         self.__init_scroll_area()
 
     def __init_top_widget(self):
-        self._layout.setContentsMargins(8, 4, 8, 8)
+        self._layout.setContentsMargins(10, 5, 10, 10)
         self._layout.setSpacing(0)
         self._layout.addWidget(self._top_widget)
-        self._top_layout.setContentsMargins(0, 0, 0, 0)
-        self._top_layout.setSpacing(0)
-        self._top_layout.addWidget(self.title_label, Qt.AlignLeft | Qt.AlignVCenter)
-        self._top_layout.addWidget(self._drag_area, Qt.AlignRight | Qt.AlignVCenter)
+        self.top_layout.setContentsMargins(0, 0, 0, 0)
+        self.top_layout.setSpacing(0)
+        self.top_layout.addWidget(self.title_label, Qt.AlignLeft | Qt.AlignVCenter)
+        self.top_layout.addWidget(self._drag_area, Qt.AlignRight | Qt.AlignVCenter)
         self.__init_drag_area()
+        self.init_top_widget()
+
+    @abstractmethod
+    def init_top_widget(self):
+        """
+        客制化添加顶栏控件
+        :return:
+        """
+        ...
 
     def __init_drag_area(self):
         # 添加拖动条，控制窗口大小
-        self._drag_area.setFixedWidth(10000)
+        self._drag_area.setFixedWidth(16777215)
         self._drag_area.setStyleSheet("background-color: rgba(0,0,0,0)")
         self._drag_area.mouseMoveEvent = self._button.mouseMoveEvent
         self._drag_area.mousePressEvent = self._button.mousePressEvent
@@ -315,7 +327,7 @@ class _MutiDirectionTab(QFrame):
         if not bt or not bt.click_pos:
             color_print(f"[WARNING] No dragging button or no click pos while drawing", "red")
         # 直接令鼠标位置为按钮中心，不考虑起始位置
-        new_pos = QCursor.pos()-QPoint(15, 15)
+        new_pos = QCursor.pos() - QPoint(15, 15)
         bt.move_temp_bt(new_pos)
 
 
@@ -337,6 +349,10 @@ class MutiDirectionTab(_MutiDirectionTab):
         根据方向改变布局
         """
         ...
+
+    @abstractmethod
+    def init_top_widget(self):
+        pass
 
 
 class FreeTabFrame(QFrame):
@@ -361,15 +377,18 @@ class FreeTabFrame(QFrame):
     all_tabFrames: List['FreeTabFrame'] = []
     dragged_in_frame: Union['FreeTabFrame', None] = None
 
-    def __init__(self, direction, bt_widget, bt_direction: Literal['left', 'right', 'up', 'down'], multi_direction_tab=None):
+    def __init__(self, direction, bt_widget, bt_direction: Literal['left', 'right', 'up', 'down'],
+                 multi_direction_tab=None):
         """
         一个内容标签可自由拖动的标签页
+        （请不要将QFrame改为QWidget，否则样式会受到影响！）
         :param bt_widget: 装按钮的容器，无需初始化布局
         :param bt_direction: 按钮容器的布局方向，为 CONST.LEFT/RIGHT/UP/DOWN
+        :param multi_direction_tab: 所属的 MultiDirTabMainFrame
         """
         self.multi_direction_main_frame: Union[MultiDirTabMainFrame, None] = multi_direction_tab
         self.Direction = direction
-        super().__init__()
+        super().__init__(None)
         # 状态变量
         self.dragged_in = False  # 是否被拖入
         self.current_tab = None
@@ -391,6 +410,7 @@ class FreeTabFrame(QFrame):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
         self.setStyleSheet(FreeTabFrame._StyleSheet)
+        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         FreeTabFrame.all_tabFrames.append(self)
 
     def __str__(self):
@@ -486,13 +506,12 @@ class FreeTabFrame(QFrame):
 
 
 class MultiDirTabMainFrame(QFrame):
-
     def __init__(self, center_frame: QWidget):
         """
         一个带有多个可各个方向拖动的标签的窗口；
         下方的标签占据整个窗口宽度
         """
-        super().__init__()
+        super().__init__(None)
         self.setMouseTracking(True)
         self.center_widget = center_frame
         # 总布局
@@ -554,14 +573,13 @@ class MultiDirTabMainFrame(QFrame):
         self.right_bt_frame.setContentsMargins(0, 0, 0, 0)
         self.setContentsMargins(0, 0, 0, 0)
 
-    def add_tab(self, tab: _MutiDirectionTab, direction: Literal['left', 'right', 'down']):
+    def add_tab(self, tab: _MutiDirectionTab):
         """
         添加标签页
         :param tab:
-        :param direction:
         :return:
         """
-        self.TabWidgetMap[direction].add_tab(tab)
+        self.TabWidgetMap[tab.direction].add_tab(tab)
 
     def __move_tab(self, tab: _MutiDirectionTab, orgin_dir: Literal['left', 'right', 'down'],
                    target_dir: Literal['left', 'right', 'down']):
@@ -590,7 +608,8 @@ class MultiDirTabMainFrame(QFrame):
         """
         tabFrame_default_area = {
             self.left_tab_frame: QRect(0, 0, int(self.width() * 0.25), int(self.height() * 0.75)),
-            self.right_tab_frame: QRect(int(self.width() * 0.75), 0, int(self.width() * 0.25), int(self.height() * 0.75)),
+            self.right_tab_frame: QRect(int(self.width() * 0.75), 0, int(self.width() * 0.25),
+                                        int(self.height() * 0.75)),
             self.down_tab_frame: QRect(0, int(self.height() * 0.75), self.width(), int(self.height() * 0.25))
         }
         pos = QCursor.pos()
@@ -644,13 +663,125 @@ class MultiDirTabMainFrame(QFrame):
         QApplication.processEvents()
 
 
+class TabWidget(QTabWidget):
+    def __init__(self, parent, position=QTabWidget.North):
+        """
+        一个可各个方向拖动的标签页
+        """
+        super().__init__(parent=None)
+        # 设置标签页
+        # self.setDocumentMode(True)
+        self.setTabPosition(position)
+        self.setMovable(True)
+        # 设置标签栏向下对齐
+        self.bdr = 15
+        self.tab_bdr = 8
+        padding = 3
+        margin = 3
+        min_width_or_height = 22
+        radius_pos1 = 'top-left'
+        radius_pos2 = 'top-right'
+        width_or_height = 'width'
+        tab_bottom_side = 'bottom'
+        radius_pos3 = 'top-right'
+        margin_side = 'right'
+        if position == QTabWidget.South:
+            radius_pos1 = 'bottom-left'
+            radius_pos2 = 'bottom-right'
+            tab_bottom_side = 'top'
+            radius_pos3 = 'bottom-right'
+        elif position == QTabWidget.West:
+            radius_pos1 = 'top-left'
+            radius_pos2 = 'bottom-left'
+            width_or_height = 'height'
+            tab_bottom_side = 'right'
+            radius_pos3 = 'bottom-left'
+            margin_side = 'bottom'
+        elif position == QTabWidget.East:
+            radius_pos1 = 'top-right'
+            radius_pos2 = 'bottom-right'
+            width_or_height = 'height'
+            tab_bottom_side = 'left'
+            radius_pos3 = 'bottom-right'
+            margin_side = 'bottom'
+        self.setStyleSheet(f"""
+            QTabWidget::pane{{
+                border: 1px solid transparent;
+                border-{radius_pos1}-radius: {self.bdr}px;
+                border-{radius_pos2}-radius: {self.bdr}px;
+                border-{radius_pos3}-radius: {self.bdr}px;
+                background-color: {BG_COLOR1};
+            }}
+            QTabBar::tab{{
+                background-color:{BG_COLOR0};
+                color:{FG_COLOR0};
+                border-{radius_pos1}-radius: {self.tab_bdr}px;
+                border-{radius_pos2}-radius: {self.tab_bdr}px;
+                padding: {padding}px;
+                margin-{margin_side}: {margin}px;
+                min-{width_or_height}: {min_width_or_height}ex;
+                border-{tab_bottom_side}:1px solid {BG_COLOR1};
+            }}
+            QTabBar::tab:selected{{
+                background-color:{BG_COLOR3};
+                color:{FG_COLOR0};
+                border-{radius_pos1}-radius: {self.tab_bdr}px;
+                border-{radius_pos2}-radius: {self.tab_bdr}px;
+                padding: {padding}px;
+                margin-{margin_side}: {margin}px;
+                min-{width_or_height}: {min_width_or_height}ex;
+                border-{tab_bottom_side}:0px solid {DARKER_RED};
+            }}
+            QTabBar::tab:hover{{
+                background-color:{BG_COLOR2};
+                color:{FG_COLOR0};
+                border-{radius_pos1}-radius: {self.tab_bdr}px;
+                border-{radius_pos2}-radius: {self.tab_bdr}px;
+                padding: {padding}px;
+                margin-{margin_side}: {margin}px;
+                min-{width_or_height}: {min_width_or_height}ex;
+                border-{tab_bottom_side}:1px solid {GRAY};
+            }}
+        """)
+        self.setFont(YAHEI[9])
+
+    def addTab(self, widget: QWidget, a1):
+        super().addTab(widget, a1)
+        radius_pos1 = 'bottom-left'
+        radius_pos2 = 'bottom-right'
+        radius_pos3 = 'top-right'
+        if self.tabPosition() == QTabWidget.South:
+            radius_pos1 = 'top-left'
+            radius_pos2 = 'top-right'
+            radius_pos3 = 'bottom-right'
+        elif self.tabPosition() == QTabWidget.West:
+            radius_pos1 = 'top-right'
+            radius_pos2 = 'bottom-right'
+            radius_pos3 = 'bottom-left'
+        elif self.tabPosition() == QTabWidget.East:
+            radius_pos1 = 'top-left'
+            radius_pos2 = 'bottom-left'
+            radius_pos3 = 'bottom-right'
+        widget.setStyleSheet(f"""
+            QWidget{{
+                background-color: {BG_COLOR0};
+                color: {FG_COLOR0};
+                border-{radius_pos1}-radius: {self.bdr}px;
+                border-{radius_pos2}-radius: {self.bdr}px;
+                border-{radius_pos3}-radius: {self.bdr}px;
+            }}
+        """)
+
+
 class Window(QWidget):
+    closed = pyqtSignal()
+
     def __init__(
             self, parent, title: str, ico_bites: bytes, ico_size: int = 22, topH: int = 36, bottomH: int = 36,
             size: Tuple[int, int] = (1000, 618), show_maximize: bool = True, resizable: bool = True,
             font=YAHEI[10], bg: Union[str, ThemeColor] = BG_COLOR1, fg: Union[str, ThemeColor] = FG_COLOR0,
             bd_radius: Union[int, Tuple[int, int, int, int]] = 5,
-            ask_if_close=True
+            ask_if_close=True, transparent=False
     ):
         """
         提供带图标，顶栏，顶栏关闭按钮，底栏的窗口及其布局，
@@ -676,7 +807,8 @@ class Window(QWidget):
         if isinstance(bd_radius, int):
             bd_radius = [bd_radius] * 4
         self.setWindowFlags(Qt.FramelessWindowHint)  # 设置无边框
-        self.setAttribute(Qt.WA_TranslucentBackground)  # 设置窗口背景透明
+        if transparent:
+            self.setAttribute(Qt.WA_TranslucentBackground)  # 设置窗口背景透明
         self._init_size = size
         self.ask_if_close = ask_if_close
         # 基础样式
@@ -715,8 +847,11 @@ class Window(QWidget):
         self.title_label = TextLabel(None, self.title, YAHEI[11], self.fg)
         # 其他可能用到的控件
         self.status_label = QLabel(None)
+        # 自定义顶栏
+        self.customized_top_widget = QWidget(self.top_widget)
         # 顶部拖动区域事件和窗口缩放事件
         self.drag_area = self.init_drag_area()
+        # 状态
         self.move_flag = False
         self.resize_flag = False
         self.m_Position = None
@@ -758,8 +893,8 @@ class Window(QWidget):
     def init_drag_area(self):
         # 添加拖动条，控制窗口大小
         drag_widget = QWidget(self)
-        # # 设置宽度最大化
-        # drag_widget.setFixedWidth(10000)
+        # 设置宽度最大化
+        drag_widget.setFixedWidth(16777215)
         drag_widget.setStyleSheet("background-color: rgba(0,0,0,0)")
         drag_widget.mouseMoveEvent = self.mouseMoveEvent
         drag_widget.mousePressEvent = self.mousePressEvent
@@ -770,21 +905,21 @@ class Window(QWidget):
         super().mousePressEvent(event)
         # 开始拖动窗口
         if event.button() == Qt.LeftButton and self.isMaximized() is False:
-            if 5 < event.y() < self.topH:
+            if 5 < event.x() < self.topH:
                 self.move_flag = True
                 self.m_Position = event.globalPos() - self.pos()
-                event.accept()
+                # event.accept()
             elif self.resizable:
                 if event.x() < 5:
                     self.resize_dir = CONST.LEFT
                     self.resize_flag = True
-                elif event.y() > self.height() - 5:
+                elif event.x() > self.height() - 5:
                     self.resize_dir = CONST.DOWN
                     self.resize_flag = True
                 elif event.x() > self.width() - 5:
                     self.resize_dir = CONST.RIGHT
                     self.resize_flag = True
-                elif event.y() < 5:
+                elif event.x() < 5:
                     self.resize_dir = CONST.UP
                     self.resize_flag = True
                 if self.resize_flag:
@@ -812,31 +947,36 @@ class Window(QWidget):
             elif self.resizable:
                 if event.x() < 5:
                     self.setCursor(Qt.SizeHorCursor)
-                elif event.y() > self.height() - 5:
+                elif event.x() > self.height() - 5:
                     self.setCursor(Qt.SizeVerCursor)
                 elif event.x() > self.width() - 5:
                     self.setCursor(Qt.SizeHorCursor)
-                elif event.y() < 5:
+                elif event.x() < 5:
                     self.setCursor(Qt.SizeVerCursor)
                 else:
                     self.setCursor(Qt.ArrowCursor)
                 if self.resize_flag:
                     if self.resize_dir == CONST.LEFT:
-                        self.setGeometry(event.globalPos().x(), self.y(), self.width() + self.x() - event.globalPos().x(), self.height())
+                        self.setGeometry(event.globalPos().x(), self.y(),
+                                         self.width() + self.x() - event.globalPos().x(), self.height())
                     elif self.resize_dir == CONST.RIGHT:
                         self.setGeometry(self.x(), self.y(), event.globalPos().x() - self.x(), self.height())
                     elif self.resize_dir == CONST.UP:
-                        self.setGeometry(self.x(), event.globalPos().y(), self.width(), self.height() + self.y() - event.globalPos().y())
+                        self.setGeometry(self.x(), event.globalPos().x(), self.width(),
+                                         self.height() + self.y() - event.globalPos().x())
                     elif self.resize_dir == CONST.DOWN:
-                        self.setGeometry(self.x(), self.y(), self.width(), event.globalPos().y() - self.y())
+                        self.setGeometry(self.x(), self.y(), self.width(), event.globalPos().x() - self.y())
                     QCoreApplication.processEvents()
                     event.accept()
 
     def init_top_widget(self):
         self.top_widget.setFixedHeight(self.topH)
+        self.customized_top_widget.setFixedHeight(self.topH)
+        self.customized_top_widget.setLayout(QHBoxLayout())
         # 控件
         self.top_layout.addWidget(self.ico_label, Qt.AlignLeft | Qt.AlignVCenter)
-        self.top_layout.addWidget(self.drag_area, Qt.AlignLeft | Qt.AlignVCenter)
+        self.top_layout.addWidget(self.customized_top_widget, Qt.AlignLeft | Qt.AlignVCenter)
+        self.top_layout.addWidget(self.drag_area, Qt.AlignLeft | Qt.AlignVCenter, stretch=1)
         self.top_layout.addWidget(self.title_label, Qt.AlignLeft | Qt.AlignVCenter)
 
     @abstractmethod
@@ -873,6 +1013,7 @@ class Window(QWidget):
         self.animate(1, 0, 100)
         while self.windowOpacity() > 0:
             QApplication.processEvents()
+        self.closed.emit()
         super().close()
 
     def _show_statu(self, message, message_type: Literal['highlight', 'success', 'process', 'error'] = 'process'):

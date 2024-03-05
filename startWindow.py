@@ -4,6 +4,7 @@
 """
 
 from GUI import *
+from PyQt5.QtCore import Qt
 from funcs_utils import open_url
 
 
@@ -17,13 +18,13 @@ class _MyLabel(QLabel):
 
 
 def _set_buttons(
-        buttons, sizes, font=YAHEI[9], border=0, border_color=FG_COLOR0,
+        _buttons, sizes, font=YAHEI[9], border=0, border_color=FG_COLOR0,
         border_radius=10, padding=0, bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3),
         fg=FG_COLOR0
 ):
     """
     设置按钮样式
-    :param buttons: 按钮列表
+    :param _buttons: 按钮列表
     :param sizes:
     :param font: QFont对象
     :param border: 边框宽度
@@ -34,11 +35,11 @@ def _set_buttons(
     :param fg: 按钮字体颜色
     :return:
     """
-    buttons = list(buttons)
+    _buttons = list(_buttons)
     if isinstance(border_radius, int):
         border_radius = (border_radius, border_radius, border_radius, border_radius)
     if type(sizes[0]) in [int, None]:
-        sizes = [sizes] * len(buttons)
+        sizes = [sizes] * len(_buttons)
     if border != 0:
         border_text = f"{border}px solid {border_color}"
     else:
@@ -49,17 +50,17 @@ def _set_buttons(
         bg = (bg, bg, bg, bg)
     if isinstance(fg, ThemeColor) or isinstance(fg, str):
         fg = (fg, fg, fg, fg)
-    for button in buttons:
-        if sizes[buttons.index(button)][0] is None:
+    for button in _buttons:
+        if sizes[_buttons.index(button)][0] is None:
             # 宽度拉伸
             button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
-            button.setFixedHeight(sizes[buttons.index(button)][1])
-        elif sizes[buttons.index(button)][1] is None:
+            button.setFixedHeight(sizes[_buttons.index(button)][1])
+        elif sizes[_buttons.index(button)][1] is None:
             # 高度拉伸
             button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Maximum)
-            button.setFixedWidth(sizes[buttons.index(button)][0])
+            button.setFixedWidth(sizes[_buttons.index(button)][0])
         else:
-            button.setFixedSize(*sizes[buttons.index(button)])
+            button.setFixedSize(*sizes[_buttons.index(button)])
         button.setFont(font)
         button.setStyleSheet(f"""
             QPushButton{{
@@ -125,7 +126,8 @@ def _create_rounded_thumbnail(image_path, width, height, corner_radius):
 
 
 class _BasicDialog(QDialog):
-    def __init__(self, parent=None, border_radius=10, title=None, size=QSize(400, 300), center_layout=None,
+    def __init__(self, parent=None, border_radius: Union[int, Tuple[int, int, int, int]] = 10,
+                 title=None, size=QSize(400, 300), center_layout=None,
                  resizable=False, hide_top=False, hide_bottom=False, ensure_bt_fill=False):
         self.close_bg = QIcon(QPixmap.fromImage(CLOSE_IMAGE))
         self._parent = parent
@@ -259,22 +261,22 @@ class _BasicDialog(QDialog):
             self.bottom_layout.addWidget(self.cancel_button)
             self.bottom_layout.addWidget(self.ensure_button)
             _set_buttons([self.cancel_button], sizes=(80, 30), border=0, border_radius=10,
-                          bg=(BG_COLOR1, "#F76677", "#F76677", BG_COLOR2))
+                         bg=(BG_COLOR1, "#F76677", "#F76677", BG_COLOR2))
             _set_buttons([self.ensure_button], sizes=(80, 30), border=0, border_radius=10,
-                          bg=(BG_COLOR1, "#6DDF6D", "#6DDF6D", BG_COLOR2))
+                         bg=(BG_COLOR1, "#6DDF6D", "#6DDF6D", BG_COLOR2))
             self.cancel_button.clicked.connect(self.close)
             self.ensure_button.clicked.connect(self.ensure)
             self.ensure_button.setFocus()
         else:
             self.bottom_layout.addWidget(self.ensure_button)
             _set_buttons([self.ensure_button], sizes=(300, 35), border=0, border_radius=(0, 0, 15, 15),
-                          bg=(BG_COLOR2, "#6DDF6D", "#6DDF6D", BG_COLOR2))
+                         bg=(BG_COLOR2, "#6DDF6D", "#6DDF6D", BG_COLOR2))
             self.ensure_button.setFocusPolicy(Qt.NoFocus)
             self.ensure_button.clicked.connect(self.ensure)
 
     def mousePressEvent(self, event):
         # 鼠标按下时，记录当前位置，若在标题栏内且非最大化，则允许拖动
-        if event.button() == Qt.LeftButton and event.y() < self.topH and self.isMaximized() is False:
+        if event.button() == Qt.LeftButton and event.x() < self.topH and self.isMaximized() is False:
             self.m_flag = True
             self.m_Position = event.globalPos() - self.pos()
             event.accept()
@@ -287,18 +289,18 @@ class _BasicDialog(QDialog):
                 self.drag[0] = True
             if _pos.x() > self.width() - self.resize_area:
                 self.drag[1] = True
-            if _pos.y() < self.resize_area:
+            if _pos.x() < self.resize_area:
                 self.drag[2] = True
-            if _pos.y() > self.height() - self.resize_area:
+            if _pos.x() > self.height() - self.resize_area:
                 self.drag[3] = True
             # 判断鼠标所在的位置是否为角落
-            if _pos.x() < self.resize_area and _pos.y() < self.resize_area:
+            if _pos.x() < self.resize_area and _pos.x() < self.resize_area:
                 self.resize_dir = 'lt'
-            elif _pos.x() < self.resize_area and _pos.y() > self.height() - self.resize_area:
+            elif _pos.x() < self.resize_area and _pos.x() > self.height() - self.resize_area:
                 self.resize_dir = 'lb'
-            elif _pos.x() > self.width() - self.resize_area and _pos.y() < self.resize_area:
+            elif _pos.x() > self.width() - self.resize_area and _pos.x() < self.resize_area:
                 self.resize_dir = 'rt'
-            elif _pos.x() > self.width() - self.resize_area and _pos.y() > self.height() - self.resize_area:
+            elif _pos.x() > self.width() - self.resize_area and _pos.x() > self.height() - self.resize_area:
                 self.resize_dir = 'rb'
             event.accept()
         self.update()
@@ -323,17 +325,17 @@ class _BasicDialog(QDialog):
                 self.setCursor(Qt.SizeHorCursor)
             elif _pos.x() > self.width() - self.resize_area:
                 self.setCursor(Qt.SizeHorCursor)
-            elif _pos.y() < self.resize_area:
+            elif _pos.x() < self.resize_area:
                 self.setCursor(Qt.SizeVerCursor)
-            elif _pos.y() > self.height() - self.resize_area:
+            elif _pos.x() > self.height() - self.resize_area:
                 self.setCursor(Qt.SizeVerCursor)
-            elif _pos.x() < self.resize_area and _pos.y() < self.resize_area:
+            elif _pos.x() < self.resize_area and _pos.x() < self.resize_area:
                 self.setCursor(Qt.SizeFDiagCursor)
-            elif _pos.x() < self.resize_area and _pos.y() > self.height() - self.resize_area:
+            elif _pos.x() < self.resize_area and _pos.x() > self.height() - self.resize_area:
                 self.setCursor(Qt.SizeBDiagCursor)
-            elif _pos.x() > self.width() - self.resize_area and _pos.y() < self.resize_area:
+            elif _pos.x() > self.width() - self.resize_area and _pos.x() < self.resize_area:
                 self.setCursor(Qt.SizeBDiagCursor)
-            elif _pos.x() > self.width() - self.resize_area and _pos.y() > self.height() - self.resize_area:
+            elif _pos.x() > self.width() - self.resize_area and _pos.x() > self.height() - self.resize_area:
                 self.setCursor(Qt.SizeFDiagCursor)
             else:
                 self.setCursor(Qt.ArrowCursor)
@@ -341,7 +343,7 @@ class _BasicDialog(QDialog):
             if self.resize_flag:
                 _pos = QMouseEvent.pos()
                 _dx = QMouseEvent.globalPos().x() - self.m_Position.x()
-                _dy = QMouseEvent.globalPos().y() - self.m_Position.y()
+                _dy = QMouseEvent.globalPos().x() - self.m_Position.x()
                 if self.resize_dir == 'lt':
                     self.setGeometry(self.x() + _dx, self.y() + _dy, self.width() - _dx, self.height() - _dy)
                 elif self.resize_dir == 'lb':
@@ -378,7 +380,7 @@ class StartWindow(_BasicDialog):
     help_signal = pyqtSignal()
     about_signal = pyqtSignal()
 
-    def __init__(self, parent, title="", size=QSize(1100, 800)):
+    def __init__(self, parent=None, title="", size=QSize(1100, 800)):
         # 控件
         self.ICO = QPixmap.fromImage(ICO_IMAGE)
         self.TIP = QPixmap.fromImage(TIP_IMAGE)
@@ -415,14 +417,14 @@ class StartWindow(_BasicDialog):
         self.__connect_funcs()
         # 动画
         # 窗口透明度
-        self.animation0 = QPropertyAnimation(self.parent(), b"windowOpacity")
-        self.animation0.setStartValue(0)
-        self.animation0.setEndValue(1)
+        self.animation_opacity = QPropertyAnimation(self.parent(), b"windowOpacity")
+        self.animation_opacity.setStartValue(0)
+        self.animation_opacity.setEndValue(1)
         # 窗口位置（从右下）
-        self.animation1 = QPropertyAnimation(self, b"geometry")
-        self.animation1.setStartValue(QRect(self.x() + 100, self.y() + 100, 0, 0))
-        self.animation1.setEndValue(QRect(self.x(), self.y(), self.Wid, self.Hei))
-        self.animations = [self.animation0, self.animation1]
+        self.animation_geometry = QPropertyAnimation(self, b"geometry")
+        self.animation_geometry.setStartValue(QRect(self.x() + 100, self.y() + 100, 0, 0))
+        self.animation_geometry.setEndValue(QRect(self.x(), self.y(), self.Wid, self.Hei))
+        self.animations = [self.animation_opacity, self.animation_geometry]
 
     def show(self):
         super().show()
@@ -666,3 +668,12 @@ class StartWindow(_BasicDialog):
         for a in self.animations:
             a.setDuration(200)
             a.start()
+
+    def __closeAnimation(self):
+        self.animation_opacity.setDuration(100)
+        self.animation_opacity.setDirection(QAbstractAnimation.Backward)
+        self.animation_opacity.start()
+
+    def close(self):
+        self.__closeAnimation()
+        self.animation_opacity.finished.connect(super().close)

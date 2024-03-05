@@ -113,8 +113,10 @@ class Button(QPushButton):
             fg: Union[str, ThemeColor, Tuple[str, str, str, str]] = FG_COLOR0,
             font=YAHEI[6],
             align=Qt.AlignCenter,
-            size: Union[int, Tuple[int, int]] = (60, 26),
+            size: Union[int, Tuple[int, int], None] = (60, 26),
             alpha=1.0,
+            show_indicator: Union[bool, str] = False,
+            focus_policy=None
     ):
         super().__init__(parent)
         # 处理参数
@@ -124,8 +126,12 @@ class Button(QPushButton):
             bd_text = "none"
         if isinstance(bd_radius, int):
             bd_radius = [bd_radius] * 4
-        if isinstance(bg, (str, ThemeColor)):
+        if isinstance(bg, str):
             r, g, b = ThemeColor(bg).rgb
+            bg = f"rgba({r}, {g}, {b}, {alpha})"
+            bg = [bg] * 4
+        elif isinstance(bg, ThemeColor):
+            r, g, b = bg.rgb
             bg = f"rgba({r}, {g}, {b}, {alpha})"
             bg = [bg] * 4
         if isinstance(fg, (str, ThemeColor)):
@@ -143,14 +149,39 @@ class Button(QPushButton):
         self.padding = padding
         self._bd_text = bd_text
         self.alpha = alpha
+        self.show_indicator = show_indicator
         # 设置样式
         self.set_style()
-        self.setFixedSize(size[0], size[1])
+        if size:
+            self.setFixedSize(size[0], size[1])
         if tool_tip:
             self.setToolTip(tool_tip)
             self.setToolTipDuration(3000)
+        if focus_policy:
+            self.setFocusPolicy(focus_policy)
+        else:
+            self.setFocusPolicy(Qt.NoFocus)
 
     def set_style(self):
+        indicator_styleSheet = f"""
+            QPushButton::menu-indicator{{
+                subcontrol-origin: padding;
+                subcontrol-position: center right;
+                width: 0px;
+                height: 0px;
+            }}
+        """
+        if self.show_indicator is False:
+            pass
+        elif self.show_indicator is True:
+            indicator_styleSheet = f"""
+            """
+        else:
+            indicator_styleSheet = f"""
+                QPushButton::menu-indicator{{
+                    image: url({QPixmap(INDICATOR_IMAGE).toImage()});
+                }}
+            """
         self.setStyleSheet(f"""
             QPushButton{{
                 background-color:{self.bg[0]};
@@ -212,6 +243,7 @@ class Button(QPushButton):
                 border: {self._bd_text};
                 padding: {self.padding[0]}px {self.padding[1]}px {self.padding[2]}px {self.padding[3]}px;
             }}
+            {indicator_styleSheet}
         """)
 
     def reset_theme(self, theme_data):

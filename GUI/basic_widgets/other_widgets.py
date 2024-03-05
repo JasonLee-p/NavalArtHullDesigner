@@ -12,16 +12,16 @@ from PyQt5.QtGui import *
 
 
 class HorSpliter(QFrame):
-    def __init__(self):
-        super().__init__()
-        self.setFixedHeight(2)
+    def __init__(self, parent=None, height=2):
+        super().__init__(parent)
+        self.setFixedHeight(height)
         self.setStyleSheet(f"background-color: {BG_COLOR0};")
 
 
 class VerSpliter(QFrame):
-    def __init__(self, parent):
+    def __init__(self, parent=None, width=1):
         super().__init__(parent)
-        self.setFixedWidth(1)
+        self.setFixedWidth(width)
         self.setStyleSheet(f"background-color: {BG_COLOR0};")
 
 
@@ -40,6 +40,26 @@ class TextLabel(QLabel):
         self.setText(text)
 
 
+class ColoredTextLabel(QLabel):
+    def __init__(self, parent, text, font=YAHEI[10], color=FG_COLOR0, bg=BG_COLOR0, bd_radius=5, bd=0, bd_color=GRAY,
+                 align=Qt.AlignCenter, padding=6):
+        super().__init__(parent=parent, text=text)
+        self.text = text
+        self.setFont(font)
+        self.setStyleSheet(f"""
+            QLabel{{
+                background-color: {bg}; color: {color}; 
+                border: {bd}px solid {bd_color}; 
+                border-radius: {bd_radius}px;
+                padding-top: {padding}px;
+                padding-bottom: {padding}px;
+                padding-left: {padding + 5}px;
+                padding-right: {padding + 5}px;
+            }}
+        """)
+        self.setAlignment(align)
+
+
 class IconLabel(QLabel):
     def __init__(self, parent, ico_bytes, title, height):
         super().__init__(parent)
@@ -51,7 +71,7 @@ class IconLabel(QLabel):
         self.setPixmap(ico.pixmap(QSize(26, 26)))
         self.setFixedSize(55, height)
         self.setAlignment(Qt.AlignCenter)
-        self.setToolTip(title)
+        self.setToolTip(title) if title else None
         self.setToolTipDuration(5000)
 
 
@@ -98,33 +118,50 @@ class ProgressBar(QProgressBar):
 
 
 class TextEdit(QLineEdit):
-    def __init__(self, text, parent, tool_tip: str = None, font=YAHEI[10]):
+    def __init__(self, text, parent, tool_tip: str = None, font=YAHEI[10], bg="transparent", padding=3):
         super().__init__(text, parent)
         self.setFont(font)
+        side_padding = padding + 5
         self.setStyleSheet(f"""
             QLineEdit{{
-                background-color: rgba(0, 0, 0, 0);
+                background-color: {bg};
                 color: {FG_COLOR0}; 
                 border: 1px solid {FG_COLOR0}; 
                 border-radius: 5px;
+                padding-top: {padding}px;
+                padding-bottom: {padding}px;
+                padding-left: {side_padding}px;
+                padding-right: {side_padding}px;
             }}
             QLineEdit:hover{{
                 background-color: {BG_COLOR2}; 
                 color: {FG_COLOR0}; 
                 border: 1px solid {FG_COLOR0}; 
                 border-radius: 5px;
+                padding-top: {padding}px;
+                padding-bottom: {padding}px;
+                padding-left: {side_padding}px;
+                padding-right: {side_padding}px;
             }}
             QLineEdit::disabled{{
                 background-color: {BG_COLOR1}; 
                 color: {GRAY};
                 border: 1px solid {GRAY};
                 border-radius: 5px;
+                padding-top: {padding}px;
+                padding-bottom: {padding}px;
+                padding-left: {side_padding}px;
+                padding-right: {side_padding}px;
             }}
             QLineEdit::focus{{
                 background-color: {BG_COLOR2}; 
                 color: {FG_COLOR0}; 
                 border: 1px solid {FG_COLOR0}; 
                 border-radius: 5px;
+                padding-top: {padding}px;
+                padding-bottom: {padding}px;
+                padding-left: {side_padding}px;
+                padding-right: {side_padding}px;
             }}  
         """)
         if tool_tip:
@@ -133,17 +170,22 @@ class TextEdit(QLineEdit):
 
 
 class NumberEdit(TextEdit):
+    value_changed = pyqtSignal(float)
+
     def __init__(
             self, parent, root_parent,
-            size: Tuple[int, int] = (100, 20),
-            num_type: Type[int] = int, num_range: tuple = (-100000, 100000),
+            size: Union[Tuple[int, int], Tuple[int, None], Tuple[None, int], None] = (68, 24),
+            num_type: Union[Type[int], Type[float]] = int,
+            num_range: tuple = (-100000, 100000),
             rounding: int = 0,
             default_value: int = 0,
             step: Union[int, float] = int(1),
             font=YAHEI[10],
-            tool_tip: str = None
+            bg="transparent",
+            tool_tip: str = None,
+            padding=3
     ):
-        super().__init__(str(default_value), parent, tool_tip, font)
+        super().__init__(str(default_value), parent, tool_tip, font, bg, padding)
         self.root_parent = root_parent
         self.num_type = num_type
         self.num_range = num_range
@@ -152,11 +194,15 @@ class NumberEdit(TextEdit):
         self.current_value = round(self.num_type(default_value), self.rounding) if self.rounding else int(default_value)
         self.step = step
         # 设置属性
-        self.setFixedSize(size[0], size[1])
+        if size:
+            if size[0]:
+                self.setFixedWidth(size[0])
+            if size[1]:
+                self.setFixedHeight(size[1])
         self.setAlignment(Qt.AlignCenter)
         if self.num_type == int:
             self.setValidator(QIntValidator(self.num_range[0], self.num_range[1]))
-        else:
+        elif self.num_type == float:
             self.setValidator(QDoubleValidator(self.num_range[0], self.num_range[1], self.rounding))
         # 解绑滚轮事件，将来绑定到父控件上。这样做能够让控件在unfocus状态也能够响应滚轮事件进行值修改；
         self.wheelEvent = lambda event: None
@@ -180,8 +226,94 @@ class NumberEdit(TextEdit):
         else:
             self.current_value = 0
         self.setText(str(self.current_value))
+        self.value_changed.emit(self.current_value)
         self.root_parent.update()
         self.textChanging = False
+
+
+class Slider(QSlider):
+    value_changed = pyqtSignal(int)
+
+    def __init__(self, parent, orientation, range_, step, init_value=0):
+        super().__init__(orientation, parent)
+        self.setRange(range_[0], range_[1])
+        self.setValue(init_value)
+        self.setSingleStep(step)
+        self.setPageStep(0)
+        self.setToolTip(str(init_value))
+        self.setToolTipDuration(3000)
+        self.barWidth = 12
+        self.bdr = 6
+        self.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                background-color: {BG_COLOR0};
+                height: {self.barWidth}px;
+                border-radius: {self.bdr}px;
+            }}
+            QSlider::handle:horizontal {{
+                background-color: {FG_COLOR1};
+                width: 12px;
+                height: 20px;
+                border-radius: {self.bdr}px;
+            }}
+            QSlider::add-page:horizontal {{
+                background-color: {BG_COLOR2};
+                height: {self.barWidth}px;
+                border-radius: {self.bdr}px;
+            }}
+            QSlider::sub-page:horizontal {{
+                background-color: {BG_COLOR3};
+                height: {self.barWidth}px;
+                border-radius: {self.bdr}px;
+            }}
+            QSlider::groove:vertical {{
+                background-color: {BG_COLOR0};
+                width: {self.barWidth}px;
+                border-radius: {self.bdr}px;
+            }}
+            QSlider::handle:vertical {{
+                background-color: {FG_COLOR1};
+                width: 20px;
+                height: 12px;
+                border-radius: {self.bdr}px;
+            }}
+            QSlider::add-page:vertical {{
+                background-color: {BG_COLOR3};
+                width: {self.barWidth}px;
+                border-radius: {self.bdr}px;
+            }}
+            QSlider::sub-page:vertical {{
+                background-color: {BG_COLOR2};
+                width: {self.barWidth}px;
+                border-radius: {self.bdr}px;
+            }}
+        """)
+
+    def mousePressEvent(self, event):
+        # 将颜色直接设置到鼠标点击的位置
+        if event.button() == Qt.LeftButton:
+            if self.orientation() == Qt.Horizontal:
+                value = int(event.x() / self.width() * self.maximum())
+            else:
+                value = int(event.x() / self.height() * self.maximum())
+                value = self.maximum() - value
+            self.setValue(value)
+            self.value_changed.emit(value)
+            self.setToolTip(str(value))
+            self.update()
+
+    def mouseMoveEvent(self, event):
+        # 将颜色直接设置到鼠标点击的位置
+        if event.buttons() == Qt.LeftButton:
+            if self.orientation() == Qt.Horizontal:
+                value = int(event.x() / self.width() * self.maximum())
+            else:
+                value = int(event.x() / self.height() * self.maximum())
+                value = self.maximum() - value
+            self.setValue(value)
+            self.value_changed.emit(value)
+            self.setToolTip(str(value))
+            self.update()
 
 
 class ColorSlider(QSlider):
@@ -310,56 +442,55 @@ class Splitter(QSplitter):
 
 
 class ScrollArea(QScrollArea):
-    _STYLE_SHEET = f"""
-        QScrollArea{{
-            background-color: rgba(0, 0, 0, 0); color: {FG_COLOR0};
-            border: 0px solid {FG_COLOR0}; border-radius: 0px;
-        }}
-        QScrollBar:vertical {{
-            background-color: {BG_COLOR0}; border-radius: 4px; width: 8px; margin: 0px 0px 0px 0px;
-        }}
-        QScrollBar::handle:vertical {{
-            background-color: {BG_COLOR2}; border-radius: 4px; min-height: 20px;
-        }}
-        QScrollBar::handle:vertical:hover {{
-            background-color: {BG_COLOR3}; border-radius: 4px; min-height: 20px;
-        }}
-        QScrollBar::handle:vertical:pressed {{
-            background-color: {GRAY}; border-radius: 4px; min-height: 20px;
-        }}
-        QScrollBar::add-line:vertical {{
-            height: 0px; subcontrol-position: bottom; subcontrol-origin: margin;
-        }}
-        QScrollBar::sub-line:vertical {{
-            height: 0px; subcontrol-position: top; subcontrol-origin: margin;
-        }}
-        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
-            background: none;
-        }}
-        QScrollBar:horizontal {{
-            background-color: {BG_COLOR0}; border-radius: 4px; height: 8px; margin: 0px 0px 0px 0px;
-        }}
-        QScrollBar::handle:horizontal {{
-            background-color: {BG_COLOR2}; border-radius: 4px; min-width: 20px;
-        }}
-        QScrollBar::handle:horizontal:hover {{
-            background-color: {BG_COLOR3}; border-radius: 4px; min-width: 20px;
-        }}
-        QScrollBar::handle:horizontal:pressed {{
-            background-color: {GRAY}; border-radius: 4px; min-width: 20px;
-        }}
-        QScrollBar::add-line:horizontal {{
-            width: 0px; subcontrol-position: right; subcontrol-origin: margin;
-        }}
-        QScrollBar::sub-line:horizontal {{
-            width: 0px; subcontrol-position: left; subcontrol-origin: margin;
-        }}
-        QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
-            background: none;
-        }}
-    """
-
-    def __init__(self, parent, widget, orientation):
+    def __init__(self, parent, widget, orientation, bd=0, bd_radius=0, bg="transparent", bar_bg=BG_COLOR0):
+        self.styleSheet = f"""
+                QScrollArea{{
+                    background-color: {bg}; color: {FG_COLOR0};
+                    border: {bd}px solid {FG_COLOR0}; border-radius: {bd_radius}px;
+                }}
+                QScrollBar:vertical {{
+                    background-color: {bar_bg}; border-radius: 4px; width: 8px; margin: 0px 0px 0px 0px;
+                }}
+                QScrollBar::handle:vertical {{
+                    background-color: {BG_COLOR2}; border-radius: 4px; min-height: 20px;
+                }}
+                QScrollBar::handle:vertical:hover {{
+                    background-color: {BG_COLOR3}; border-radius: 4px; min-height: 20px;
+                }}
+                QScrollBar::handle:vertical:pressed {{
+                    background-color: {GRAY}; border-radius: 4px; min-height: 20px;
+                }}
+                QScrollBar::add-line:vertical {{
+                    height: 0px; subcontrol-position: bottom; subcontrol-origin: margin;
+                }}
+                QScrollBar::sub-line:vertical {{
+                    height: 0px; subcontrol-position: top; subcontrol-origin: margin;
+                }}
+                QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                    background: none;
+                }}
+                QScrollBar:horizontal {{
+                    background-color: {bar_bg}; border-radius: 4px; height: 8px; margin: 0px 0px 0px 0px;
+                }}
+                QScrollBar::handle:horizontal {{
+                    background-color: {BG_COLOR2}; border-radius: 4px; min-width: 20px;
+                }}
+                QScrollBar::handle:horizontal:hover {{
+                    background-color: {BG_COLOR3}; border-radius: 4px; min-width: 20px;
+                }}
+                QScrollBar::handle:horizontal:pressed {{
+                    background-color: {GRAY}; border-radius: 4px; min-width: 20px;
+                }}
+                QScrollBar::add-line:horizontal {{
+                    width: 0px; subcontrol-position: right; subcontrol-origin: margin;
+                }}
+                QScrollBar::sub-line:horizontal {{
+                    width: 0px; subcontrol-position: left; subcontrol-origin: margin;
+                }}
+                QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
+                    background: none;
+                }}
+            """
         super().__init__(parent)
         self.setWidget(widget)
         self.setWidgetResizable(True)
@@ -372,7 +503,7 @@ class ScrollArea(QScrollArea):
         else:
             self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
             self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.setStyleSheet(ScrollArea._STYLE_SHEET)
+        self.setStyleSheet(self.styleSheet)
         self.setContentsMargins(0, 0, 0, 0)
         self.setFrameShape(QFrame.NoFrame)
         self.setFrameShadow(QFrame.Plain)

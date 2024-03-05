@@ -42,9 +42,9 @@ class HSLColorPicker(QWidget):
         self.labelR = TextLabel(None, "R:", color="#FFCCCC")
         self.labelG = TextLabel(None, "G:", color="#CCFFCC")
         self.labelB = TextLabel(None, "B:", color="#CCCCFF")
-        self.labelR_value = NumberEdit(None, self, num_range=(0, 255), size=(35, 20))
-        self.labelG_value = NumberEdit(None, self, num_range=(0, 255), size=(35, 20))
-        self.labelB_value = NumberEdit(None, self, num_range=(0, 255), size=(35, 20))
+        self.labelR_value = NumberEdit(None, self, num_range=(0, 255), size=(49, 24))
+        self.labelG_value = NumberEdit(None, self, num_range=(0, 255), size=(49, 24))
+        self.labelB_value = NumberEdit(None, self, num_range=(0, 255), size=(49, 24))
         self.init_ui()
 
     def init_ui(self):
@@ -82,7 +82,7 @@ class HSLColorPicker(QWidget):
         self.message_layout.setAlignment(self.align)
         self.message_layout.setContentsMargins(1, 1, 1, 1)
         self.RGB_layout.setAlignment(self.align)
-        self.RGB_layout.setContentsMargins(20, 1, 20, 1)
+        self.RGB_layout.setContentsMargins(7, 1, 7, 1)
         self.RGB_layout.setVerticalSpacing(4)
         self.RGB_layout.setHorizontalSpacing(8)
         self.RGB_layout.setAlignment(self.align)
@@ -321,7 +321,7 @@ class BasicDialog(QDialog):
 
     def mousePressEvent(self, event):
         # 鼠标按下时，记录当前位置，若在标题栏内且非最大化，则允许拖动
-        if event.button() == Qt.LeftButton and event.y() < self.topH and self.isMaximized() is False:
+        if event.button() == Qt.LeftButton and event.x() < self.topH and self.isMaximized() is False:
             self.m_flag = True
             self.m_Position = event.globalPos() - self.pos()
             event.accept()
@@ -334,18 +334,18 @@ class BasicDialog(QDialog):
                 self.drag[0] = True
             if _pos.x() > self.width() - self.resize_area:
                 self.drag[1] = True
-            if _pos.y() < self.resize_area:
+            if _pos.x() < self.resize_area:
                 self.drag[2] = True
-            if _pos.y() > self.height() - self.resize_area:
+            if _pos.x() > self.height() - self.resize_area:
                 self.drag[3] = True
             # 判断鼠标所在的位置是否为角落
-            if _pos.x() < self.resize_area and _pos.y() < self.resize_area:
+            if _pos.x() < self.resize_area and _pos.x() < self.resize_area:
                 self.resize_dir = 'lt'
-            elif _pos.x() < self.resize_area and _pos.y() > self.height() - self.resize_area:
+            elif _pos.x() < self.resize_area and _pos.x() > self.height() - self.resize_area:
                 self.resize_dir = 'lb'
-            elif _pos.x() > self.width() - self.resize_area and _pos.y() < self.resize_area:
+            elif _pos.x() > self.width() - self.resize_area and _pos.x() < self.resize_area:
                 self.resize_dir = 'rt'
-            elif _pos.x() > self.width() - self.resize_area and _pos.y() > self.height() - self.resize_area:
+            elif _pos.x() > self.width() - self.resize_area and _pos.x() > self.height() - self.resize_area:
                 self.resize_dir = 'rb'
             event.accept()
         self.update()
@@ -370,17 +370,17 @@ class BasicDialog(QDialog):
                 self.setCursor(Qt.SizeHorCursor)
             elif _pos.x() > self.width() - self.resize_area:
                 self.setCursor(Qt.SizeHorCursor)
-            elif _pos.y() < self.resize_area:
+            elif _pos.x() < self.resize_area:
                 self.setCursor(Qt.SizeVerCursor)
-            elif _pos.y() > self.height() - self.resize_area:
+            elif _pos.x() > self.height() - self.resize_area:
                 self.setCursor(Qt.SizeVerCursor)
-            elif _pos.x() < self.resize_area and _pos.y() < self.resize_area:
+            elif _pos.x() < self.resize_area and _pos.x() < self.resize_area:
                 self.setCursor(Qt.SizeFDiagCursor)
-            elif _pos.x() < self.resize_area and _pos.y() > self.height() - self.resize_area:
+            elif _pos.x() < self.resize_area and _pos.x() > self.height() - self.resize_area:
                 self.setCursor(Qt.SizeBDiagCursor)
-            elif _pos.x() > self.width() - self.resize_area and _pos.y() < self.resize_area:
+            elif _pos.x() > self.width() - self.resize_area and _pos.x() < self.resize_area:
                 self.setCursor(Qt.SizeBDiagCursor)
-            elif _pos.x() > self.width() - self.resize_area and _pos.y() > self.height() - self.resize_area:
+            elif _pos.x() > self.width() - self.resize_area and _pos.x() > self.height() - self.resize_area:
                 self.setCursor(Qt.SizeFDiagCursor)
             else:
                 self.setCursor(Qt.ArrowCursor)
@@ -388,7 +388,7 @@ class BasicDialog(QDialog):
             if self.resize_flag:
                 _pos = event.pos()
                 _dx = event.globalPos().x() - self.m_Position.x()
-                _dy = event.globalPos().y() - self.m_Position.y()
+                _dy = event.globalPos().x() - self.m_Position.x()
                 if self.resize_dir == 'lt':
                     self.setGeometry(self.x() + _dx, self.y() + _dy, self.width() - _dx, self.height() - _dy)
                 elif self.resize_dir == 'lb':
