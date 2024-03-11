@@ -3,7 +3,6 @@
 编辑器运行逻辑
 """
 from GUI import MainEditorGUI
-from GLWidget_.draw_obj import *
 from funcs_utils import not_implemented
 
 

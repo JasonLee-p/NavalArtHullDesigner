@@ -9,6 +9,7 @@ from hashlib import sha1
 import ujson
 from PyQt5.QtGui import QVector3D, QColor
 from PyQt5.QtWidgets import QMessageBox
+from funcs_utils import color_print
 
 
 class SectionNodeXY:
@@ -44,6 +45,7 @@ class SectionNodeXZ:
 
 
 class Bridge:
+    bridge_id = {}
     """
     舰桥
     """
@@ -55,6 +57,8 @@ class Bridge:
         self.armor = None
         self.nodes: List[SectionNodeXZ] = []
         self.rail: Union[Railing, Handrail, None] = None
+        # 绘制对象（不包括栏杆栏板）
+        self.draw_obj = None
 
     def to_dict(self):
         return {
@@ -76,6 +80,7 @@ class HullSection:
         self.z = None
         self.nodes: List[SectionNodeXY] = []
         self.armor = None
+        self.draw_obj = None
 
     def to_dict(self):
         return {
@@ -96,6 +101,7 @@ class ArmorSection:
         self.z = None
         self.nodes: List[SectionNodeXY] = []
         self.armor = None
+        self.draw_obj = None
 
     def to_dict(self):
         return {
@@ -108,6 +114,7 @@ class ArmorSection:
 class HullSectionGroup:
     """
     船体截面组
+    不进行整体绘制（因为要分截面进行选中操作），绘制交给截面对象
     """
 
     def __init__(self, name):
@@ -118,9 +125,22 @@ class HullSectionGroup:
         self.topCur = 0.0  # 上层曲率
         self.botCur = 1.0  # 下层曲率
         # 截面组
-        self.sections: List[HullSection] = []
+        self.__sections: List[HullSection] = []
         # 栏杆
         self.rail: Union[Railing, Handrail, None] = None
+
+    @property
+    def draw_objs(self):
+        return [section.draw_obj for section in self.__sections]
+
+    def add_section(self, section: HullSection):
+        self.__sections.append(section)
+
+    def del_section(self, section: HullSection):
+        if section in self.__sections:
+            self.__sections.remove(section)
+        else:
+            color_print(f"[WARNING] {section} not in {self.__sections}", "red")
 
     def to_dict(self):
         return {
@@ -128,7 +148,7 @@ class HullSectionGroup:
             "rot": self.Rot,
             "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
             "armor": 0,
-            "sections": [section.to_dict() for section in self.sections],
+            "sections": [section.to_dict() for section in self.__sections],
             "rail": self.rail.to_dict() if self.rail else None
         }
 
@@ -146,7 +166,20 @@ class ArmorSectionGroup:
         self.topCur = 0.0  # 上层曲率
         self.botCur = 1.0  # 下层曲率
         # 装甲分区
-        self.sections: List[HullSection] = []
+        self.__sections: List[HullSection] = []
+
+    @property
+    def draw_objs(self):
+        return [section.draw_obj for section in self.__sections]
+
+    def add_section(self, section: HullSection):
+        self.__sections.append(section)
+
+    def del_section(self, section: HullSection):
+        if section in self.__sections:
+            self.__sections.remove(section)
+        else:
+            color_print(f"[WARNING] {section} not in {self.__sections}", "red")
 
     def to_dict(self):
         return {
@@ -154,7 +187,7 @@ class ArmorSectionGroup:
             "rot": self.Rot,
             "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
             "armor": 0,
-            "sections": [section.to_dict() for section in self.sections]
+            "sections": [section.to_dict() for section in self.__sections]
         }
 
 
@@ -480,7 +513,7 @@ class NaPrjReader:
             hull_section_group.Pos = QVector3D(*section_group['center'])
             hull_section_group.Rot = section_group['rot']
             hull_section_group.Col = QColor(section_group['col'])
-            hull_section_group.sections = self.load_hull_section(section_group['sections'], hull_section_group)
+            hull_section_group.__sections = self.load_hull_section(section_group['sections'], hull_section_group)
             self.hullProject.add_hullSectionGroup(hull_section_group)
             if "rail" in section_group:
                 self.load_rail(section_group['rail'], hull_section_group)
@@ -510,7 +543,7 @@ class NaPrjReader:
             armor_section_group.Pos = QVector3D(*section_group['center'])
             armor_section_group.Rot = section_group['rot']
             armor_section_group.Col = QColor(section_group['col'])
-            armor_section_group.sections = self.load_armor_section(section_group['sections'], armor_section_group)
+            armor_section_group.__sections = self.load_armor_section(section_group['sections'], armor_section_group)
             self.hullProject.add_armorSectionGroup(armor_section_group)
 
     def load_armor_section(self, data, parent):

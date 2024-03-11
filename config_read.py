@@ -4,26 +4,8 @@
 """
 
 import ujson
+from funcs_utils import merge_dict
 from path_vars import *
-
-
-def merge_dict(d1, d2):
-    """
-    递归地合并两个字典，d2的键值对优先级高
-    :param d1:
-    :param d2:
-    :return: 布尔值，是否有合并的操作
-    """
-    d1_changed = False
-    for key in d2:
-        if key in d1 and isinstance(d1[key], dict) and isinstance(d2[key], dict):
-            d_changed = merge_dict(d1[key], d2[key])
-            if d_changed:
-                d1_changed = True
-        else:
-            d1[key] = d2[key]
-            d1_changed = True
-    return d1_changed
 
 
 class ConfigHandler:
@@ -42,7 +24,8 @@ class ConfigHandler:
             },
             "CheckUpdate": True,
             "Guided": False,
-            "ExitAfterClosingEditor": False
+            "ExitAfterClosingEditor": False,
+            "OperationStackMaxLength": 10000
         },
         "Theme": {
             "ThemeName": "Night",

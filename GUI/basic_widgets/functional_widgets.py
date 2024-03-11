@@ -105,7 +105,7 @@ class HSLColorPicker(QWidget):
     def mousePressEvent(self, event):
         # 鼠标在控件外的时候，取色
         if event.button() == Qt.LeftButton:
-            if not self.rect().contains(event.pos()):
+            if not self.rect().contains(event.__pos()):
                 # 获取鼠标位置的颜色
                 _pos = event.globalPos()
                 _color = QColor.fromRgb(
@@ -328,7 +328,7 @@ class BasicDialog(QDialog):
         elif event.button() == Qt.LeftButton and self.resizable:
             self.resize_flag = True
             self.m_Position = event.globalPos()
-            _pos = event.pos()
+            _pos = event.__pos()
             # 判断鼠标所在的位置是否为边缘
             if _pos.x() < self.resize_area:
                 self.drag[0] = True
@@ -365,7 +365,7 @@ class BasicDialog(QDialog):
             event.accept()
         if self.resizable:
             # 检查是否需要改变鼠标样式
-            _pos = event.pos()
+            _pos = event.__pos()
             if _pos.x() < self.resize_area:
                 self.setCursor(Qt.SizeHorCursor)
             elif _pos.x() > self.width() - self.resize_area:
@@ -386,7 +386,7 @@ class BasicDialog(QDialog):
                 self.setCursor(Qt.ArrowCursor)
             # 检查是否需要拉伸窗口
             if self.resize_flag:
-                _pos = event.pos()
+                _pos = event.__pos()
                 _dx = event.globalPos().x() - self.m_Position.x()
                 _dy = event.globalPos().x() - self.m_Position.x()
                 if self.resize_dir == 'lt':
