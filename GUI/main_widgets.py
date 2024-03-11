@@ -438,9 +438,10 @@ class GLWidgetGUI(GLViewWidget):
         # self.drawObjHandler = DrawObjHandler(self)
         # self.gl_initialized.connect(self.__init_drawObjs)  # 链接gl初始化完成和初始化绘制物体
 
+        # 动画
         timer = QtCore.QTimer(self)
         timer.timeout.connect(self.onTimeout)
-        timer.start(60)
+        timer.start(16)  # 设置定时器，以便每隔一段时间调用onTimeout函数
 
     def onTimeout(self):
         self.light.rotate(0, 1, 0.4, 1)

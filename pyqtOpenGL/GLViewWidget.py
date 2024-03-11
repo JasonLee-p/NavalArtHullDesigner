@@ -1,14 +1,22 @@
+# -*- coding: utf-8 -*-
+"""
+This module provides a widget for displaying 3D data.
+"""
+import warnings
+import traceback
+import sys
+
 import time
 
 from GUI import TextLabel
 from OpenGL.GL import *  # noqa
-from math import radians, cos, sin, tan, sqrt
+from math import radians, tan
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal, QPoint
 
 from .camera import Camera
 from .functions import mkColor
-from .transform3d import Matrix4x4, Quaternion, Vector3
+from .transform3d import Vector3
 from typing import List, Set, Union
 from .GLGraphicsItem import GLGraphicsItem
 from .items.light import PointLight
@@ -88,7 +96,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         return self.height() / self.width()
 
     def reset(self):
-        self.camera.set_params(Vector3(0., 0., 10.), 0, 0, 0, 45)
+        self.camera.set_params(Vector3(0., 0., 10.), Vector3(0., 0., 0.), fov=45.)
 
     def addItem(self, item: GLGraphicsItem):
         self.items.append(item)
@@ -154,12 +162,11 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
 
     def drawItems(self):
         for it in self.items:
-            it.drawItemTree()
-            # try:
-            #     it.drawItemTree()
-            # except Exception as e:
-            #     printExc()
-            #     print("Error while drawing item %s." % str(it))
+            try:
+                it.drawItemTree()
+            except Exception as e:  # noqa
+                printExc()
+                print("Error while drawing item %s." % str(it))
 
         # draw lights
         for light in self.lights:
@@ -177,7 +184,6 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
 
     def mousePressEvent(self, ev):
         lpos = ev.position() if hasattr(ev, 'position') else ev.localPos()
-        self.last_cam_quat, self.last_cam_pos = self.camera.get_quat_pos()
         self.mouse_last_pos = lpos
         if ev.buttons() == self.select_btn:
             self.select_start = ev.localPos()
@@ -191,13 +197,16 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         diff = lpos - self.mouse_last_pos
         self.mouse_last_pos = lpos
 
+        if alt_down:
+            # 不进行视角变换
+            return
+
         if ctrl_down:
+            # 视角微调
             diff *= 0.1
 
-        if alt_down:
-            roll = -diff.x() / 5
-
         if shift_down:
+            # 限制移动方向
             if abs(diff.x()) > abs(diff.y()):
                 diff.setY(0)
             else:
@@ -219,7 +228,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         delta = ev.angleDelta().x()
         if delta == 0:
             delta = ev.angleDelta().y()
-        if (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier):  # 按下ctrl键
+        if ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier:  # 按下ctrl键
             self.camera.zoom(delta * 0.1)
         else:
             self.camera.zoom(delta)
@@ -243,15 +252,6 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             pos, euler = self.camera.get_params()
             print(f"pos: ({pos.x:.2f}, {pos.y:.2f}, {pos.z:.2f})  "
                   f"euler: ({euler[0]:.2f}, {euler[1]:.2f}, {euler[2]:.2f})")
-        elif a0.text() == '2':
-            self.camera.set_params((0.00, 0.00, 886.87),
-                                   pitch=-31.90, yaw=-0, roll=-90)
-            # self.camera.set_params((1.72, -2.23, 27.53),pitch=-27.17, yaw=2.64, roll=-70.07)
-
-
-import warnings
-import traceback
-import sys
 
 
 def formatException(exctype, value, tb, skip=0):
@@ -271,9 +271,9 @@ def formatException(exctype, value, tb, skip=0):
 def getExc(indent=4, prefix='|  ', skip=1):
     lines = formatException(*sys.exc_info(), skip=skip)
     lines2 = []
-    for l in lines:
-        lines2.extend(l.strip('\n').split('\n'))
-    lines3 = [" " * indent + prefix + l for l in lines2]
+    for line in lines:
+        lines2.extend(line.strip('\n').split('\n'))
+    lines3 = [" " * indent + prefix + line for line in lines2]
     return '\n'.join(lines3)
 
 
@@ -284,12 +284,3 @@ def printExc(msg='', indent=4, prefix='|'):
     # print(" "*indent + prefix + '='*30 + '>>')
     warnings.warn("\n".join([msg, exc]), RuntimeWarning, stacklevel=2)
     # print(" "*indent + prefix + '='*30 + '<<')
-
-
-if __name__ == '__main__':
-    import sys
-
-    app = QtWidgets.QApplication(sys.argv)
-    win = GLViewWidget(None)
-    win.show()
-    sys.exit(app.exec_())
