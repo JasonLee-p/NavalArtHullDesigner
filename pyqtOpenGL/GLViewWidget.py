@@ -4,12 +4,12 @@ from GUI import TextLabel
 from OpenGL.GL import *  # noqa
 from math import radians, cos, sin, tan, sqrt
 from PyQt5 import QtCore, QtWidgets, QtGui
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QPoint
 
-from .camera import Camera, Camera2
+from .camera import Camera
 from .functions import mkColor
 from .transform3d import Matrix4x4, Quaternion, Vector3
-from typing import List, Set
+from typing import List, Set, Union
 from .GLGraphicsItem import GLGraphicsItem
 from .items.light import PointLight
 
@@ -23,19 +23,28 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             cam_tar=Vector3(0., 0., 0.),
             cam_sensitivity=None,
             fov=45.,
-            bg_color=(0.1, 0.1, 0.1, 1.),
-            # bg_color = (0.95, 0.95, 0.95, 1.),
+            bg_color=(0.1, 0.1, 0.1, 1.),  # 背景颜色
             parent=None,
+            select_btn=QtCore.Qt.MouseButton.LeftButton,
+            pan_btn=QtCore.Qt.MouseButton.MiddleButton,
+            orbit_btn=QtCore.Qt.MouseButton.RightButton,
     ):
         """
         Basic widget for displaying 3D data
           - Rotation/scale controls
         """
         QtWidgets.QOpenGLWidget.__init__(self, parent)
-        self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         # self.camera = Camera2(cam_position, 0., 0., 0., fov, cam_sensitivity)  # TODO:
         self.camera = Camera(cam_position, cam_tar, fov=fov, sensitivity=cam_sensitivity)
         self.mouse_last_pos = None  # used for mouse move event
+        self.pan_btn = pan_btn
+        self.orbit_btn = orbit_btn
+
+        # select box
+        self.select_btn = select_btn
+        self.select_start: Union[QPoint, None] = None
+        self.select_end: Union[QPoint, None] = None
 
         self.bg_color = bg_color
         self.items: List[GLGraphicsItem] = []
@@ -170,6 +179,8 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         lpos = ev.position() if hasattr(ev, 'position') else ev.localPos()
         self.last_cam_quat, self.last_cam_pos = self.camera.get_quat_pos()
         self.mouse_last_pos = lpos
+        if ev.buttons() == self.select_btn:
+            self.select_start = ev.localPos()
 
     def mouseMoveEvent(self, ev):
         ctrl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
@@ -177,12 +188,8 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         alt_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier)
 
         lpos = ev.position() if hasattr(ev, 'position') else ev.localPos()
-        # if isinstance(self.camera, Camera2):
-        self.last_cam_quat, self.last_cam_pos = self.camera.get_quat_pos()
         diff = lpos - self.mouse_last_pos
         self.mouse_last_pos = lpos
-        # else:
-        # diff = lpos - self.mousePressPos
 
         if ctrl_down:
             diff *= 0.1
@@ -195,13 +202,17 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
                 diff.setY(0)
             else:
                 diff.setX(0)
-        if ev.buttons() == QtCore.Qt.MouseButton.LeftButton:
+
+        if ev.buttons() == self.pan_btn:
+            self.camera.pan(diff.x(), diff.y())
+        elif ev.buttons() == self.orbit_btn:
             if alt_down:
                 self.camera.orbit(diff.x(), diff.y())
             elif not alt_down:
                 self.camera.orbit(diff.x(), diff.y())
-        elif ev.buttons() == QtCore.Qt.MouseButton.MiddleButton:
-            self.camera.pan(diff.x(), diff.y())
+        elif ev.buttons() == self.select_btn:
+            self.select_end = ev.localPos()
+            print(self.select_start, self.select_end)
         self.update()
 
     def wheelEvent(self, ev):

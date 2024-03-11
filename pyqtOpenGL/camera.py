@@ -7,7 +7,7 @@ from PyQt5.QtGui import QVector3D as Qvec3, QMatrix4x4
 from .transform3d import Matrix4x4, Quaternion, Vector3
 
 
-class Camera2:
+class Camera_:
 
     def __init__(
             self,
@@ -78,13 +78,6 @@ class Camera2:
         if base is None:
             base = self.quat
 
-        self.quat = q * base
-
-    def orbit_in_view(self, dx, dy, dz=0.0, base=None):
-        """在世界坐标系下绕目标点y轴旋转，dx决定相机绕y轴旋转的角度，dy决定相机在世界坐标中的俯仰角变化"""
-        if base is None:
-            base = self.quat
-        q = Quaternion.fromEulerAngles(dy, dx, 0)
         self.quat = q * base
 
     def pan(self, dx, dy, dz=0.0, width=1000, base=None):
@@ -164,7 +157,7 @@ class Camera:
         self.lookAt.lookAt(Qvec3(*self.pos), Qvec3(*self.tar), Qvec3(0, 1, 0))
 
     def pan(self, dx, dy):
-        rate = self.sensitivity["平移"] * self.get_distance() * 0.00005
+        rate = self.sensitivity["平移"] * self.get_distance() * 0.00003
         right = (self.tar - self.pos).cross(self.up).normalized()
         right_offset = right * dx * rate
         up_offset = Vector3(0, 1, 0) * dy * rate
@@ -177,9 +170,7 @@ class Camera:
     def zoom(self, delta):
         self.pos -= self.tar
         rate = - delta * self.sensitivity["缩放"] * 0.00001
-        print(self.pos)
         self.pos *= (1 + rate)
-        print(self.pos)
         self.pos += self.tar
         self.lookAt = Matrix4x4()
         self.lookAt.lookAt(Qvec3(*self.pos), Qvec3(*self.tar), Qvec3(0, 1, 0))

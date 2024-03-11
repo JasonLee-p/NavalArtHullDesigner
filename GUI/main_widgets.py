@@ -10,6 +10,7 @@ from PyQt5.QtCore import Qt
 from ShipRead.na_project import ShipProject
 from funcs_utils import not_implemented
 from pyqtOpenGL import *
+from pyqtOpenGL.camera import Camera
 
 from .sub_widgets import *
 
@@ -266,7 +267,7 @@ class SettingTab(MutiDirectionTab):
     def __init__(self, parent, configHandler, camera):
         self.__configHandler = configHandler
         self.__camera_sensitivity = configHandler.get_config("Sensitivity")
-        self.__camera = camera
+        self.__camera: Camera = camera
         super().__init__(parent, CONST.RIGHT, "设置", SETTINGS_IMAGE)
         self.set_layout(QVBoxLayout())
         # 初始化标签页，分别为：主题、相机灵敏度 =================================================================
@@ -336,10 +337,10 @@ class GLWidgetGUI(GLViewWidget):
         ver1, ind1 = sphere(20, 20, 20)
         normal1 = ver1 / 2
         ver2, ind2 = cylinder(radius=[12, 10], cols=12, rows=8, length=2.4)
-        img = Image.open("./pyqtOpenGL/items/resources/textures/box.png")
-        img = np.array(img, dtype='f4')
+        # img = Image.open("./pyqtOpenGL/items/resources/textures/box.png")
+        # img = np.array(img, dtype='f4')
 
-        self.img = GLImageItem(img, width_height=(0.2, 0.2))
+        # self.img = GLImageItem(img, width_height=(0.2, 0.2))
         self.ax = GLAxisItem(size=(80, 80, 80))
         self.box = GLBoxTextureItem(size=(20, 20, 20))
         self.box.translate(0, 1.1, 0)
@@ -368,15 +369,15 @@ class GLWidgetGUI(GLViewWidget):
         )
 
         # -- model
-        self.model = GLModelItem(
-            "./pyqtOpenGL/items/resources/objects/cyborg/cyborg.obj",
-            lights=[self.light, self.light1, self.light2]
-        )
+        # self.model = GLModelItem(
+        #     "./pyqtOpenGL/items/resources/objects/cyborg/cyborg.obj",
+        #     lights=[self.light, self.light1, self.light2]
+        # )
         # self.model = GLModelItem(
         #     "./pyqtOpenGL/items/resources/objects/BB-63.obj",
         #     lights=[self.light, self.light1, self.light2]
         # )
-        self.model.translate(0, 2, 0)
+        # self.model.translate(0, 2, 0)
 
         # -- mesh
         self.mesh1 = GLInstancedMeshItem(
@@ -422,14 +423,14 @@ class GLWidgetGUI(GLViewWidget):
         self.addItem(self.grid3d)
         self.addItem(self.grid3d1)
         self.addItem(self.text)
-        self.addItem(self.img)
+        # self.addItem(self.img)
         self.addItem(self.ax)
         self.addItem(self.grid)
         self.addItem(self.scatter)
         self.addItem(self.line)
         self.addItem(self.box)
         self.addItem(self.arrow)
-        self.addItem(self.model)
+        # self.addItem(self.model)
         self.addItem(self.surf)
         self.addItem(self.mesh1)
         self.addItem(self.mesh2)
@@ -439,7 +440,7 @@ class GLWidgetGUI(GLViewWidget):
 
         timer = QtCore.QTimer(self)
         timer.timeout.connect(self.onTimeout)
-        timer.start(20)
+        timer.start(60)
 
     def onTimeout(self):
         self.light.rotate(0, 1, 0.4, 1)

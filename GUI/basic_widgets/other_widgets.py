@@ -7,7 +7,7 @@ from typing import Union, Tuple, Type
 from ..basic_data import *
 
 from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QSlider, QSplitter, QScrollArea, QFrame, QLabel, QLineEdit, QProgressBar
 from PyQt5.QtGui import *
 
 
@@ -295,7 +295,7 @@ class Slider(QSlider):
             if self.orientation() == Qt.Horizontal:
                 value = int(event.x() / self.width() * self.maximum())
             else:
-                value = int(event.x() / self.height() * self.maximum())
+                value = int(event.y() / self.height() * self.maximum())
                 value = self.maximum() - value
             self.setValue(value)
             self.value_changed.emit(value)
@@ -308,7 +308,7 @@ class Slider(QSlider):
             if self.orientation() == Qt.Horizontal:
                 value = int(event.x() / self.width() * self.maximum())
             else:
-                value = int(event.x() / self.height() * self.maximum())
+                value = int(event.y() / self.height() * self.maximum())
                 value = self.maximum() - value
             self.setValue(value)
             self.value_changed.emit(value)
