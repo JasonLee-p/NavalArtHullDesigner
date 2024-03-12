@@ -7,19 +7,25 @@ import traceback
 import sys
 
 import time
+from ctypes import c_float, c_void_p
 
+import numpy as np
 from GUI import TextLabel
 from OpenGL.GL import *  # noqa
+import OpenGL.GL as gl
 from math import radians, tan
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal, QPoint
+from pyqtOpenGL.items.GL2DSelectBox import GL2DSelectBox
 
 from .camera import Camera
 from .functions import mkColor
-from .transform3d import Vector3
+from .transform3d import Vector3, Matrix4x4
 from typing import List, Set, Union
 from .GLGraphicsItem import GLGraphicsItem
 from .items.light import PointLight
+from .items.shader import Shader
+from .items.BufferObject import VAO, VBO, EBO
 
 
 class GLViewWidget(QtWidgets.QOpenGLWidget):
@@ -53,7 +59,9 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self.select_btn = select_btn
         self.select_start: Union[QPoint, None] = None
         self.select_end: Union[QPoint, None] = None
+        self.select_box = GL2DSelectBox()
 
+        # 被绘制的物体
         self.bg_color = bg_color
         self.items: List[GLGraphicsItem] = []
         self.lights: Set[PointLight] = set()
@@ -68,12 +76,10 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self.setFormat(_format)
 
     def get_proj_view_matrix(self):
-        view = self.camera.get_view_matrix()
-        proj = self.camera.get_projection_matrix(
+        return self.camera.get_proj_view_matrix(
             self.deviceWidth(),
             self.deviceHeight()
         )
-        return proj * view
 
     def get_proj_matrix(self):
         return self.camera.get_projection_matrix(
@@ -141,6 +147,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
     def initializeGL(self):
         """initialize OpenGL state after creating the GL context."""
         PointLight.initializeGL()
+        self.select_box.initializeGL()
 
     def paintGL(self):
         """
@@ -153,6 +160,9 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         glDepthMask(GL_TRUE)
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)
         self.drawItems()
+        # 选择框
+        if self.select_start and self.select_end:
+            self.select_box.paint(self.camera.get_view_matrix(), self.select_start, self.select_end)
         self.__update_FPS()
 
     def __update_FPS(self):
@@ -186,7 +196,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         lpos = ev.position() if hasattr(ev, 'position') else ev.localPos()
         self.mouse_last_pos = lpos
         if ev.buttons() == self.select_btn:
-            self.select_start = ev.localPos()
+            self.select_start = QPoint(int(ev.localPos().x()), int(ev.localPos().y()))
 
     def mouseMoveEvent(self, ev):
         ctrl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
@@ -220,9 +230,14 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             elif not alt_down:
                 self.camera.orbit(diff.x(), diff.y())
         elif ev.buttons() == self.select_btn:
-            self.select_end = ev.localPos()
-            print(self.select_start, self.select_end)
+            self.select_end = QPoint(int(ev.localPos().x()), int(ev.localPos().y()))
         self.update()
+
+    def mouseReleaseEvent(self, ev):
+        if ev.button() == self.select_btn:
+            self.select_start = None
+            self.select_end = None
+            self.update()
 
     def wheelEvent(self, ev):
         delta = ev.angleDelta().x()

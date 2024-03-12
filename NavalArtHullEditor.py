@@ -8,10 +8,11 @@ Date: 2024-2-26
 
 # 系统库
 import sys
+import time
 import traceback
 import webbrowser
 
-from config_read import ConfigHandler
+from funcs_utils import color_print, singleton
 from main_editor import MainEditor
 from startWindow import StartWindow
 
@@ -32,17 +33,49 @@ VERSION = "1.0.0.0"
 TESTING = False
 
 
+@singleton
+class Log:
+    write_mutex = QMutex()
+
+    def __init__(self, path="logging.txt"):
+        self.path = path
+        self.file = open(path, "a", encoding="utf-8")
+
+    def error(self, trace, info):
+        err_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        self.write_mutex.lock()
+        self.file.write(f"[ERROR] {err_time}\n{trace}\n{info}\n\n")
+        self.write_mutex.unlock()
+
+    def warning(self, info):
+        warn_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        self.write_mutex.lock()
+        self.file.write(f"[WARNING] {warn_time}\n{info}\n\n")
+        self.write_mutex.unlock()
+
+    def info(self, info):
+        log_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        self.write_mutex.lock()
+        self.file.write(f"[INFO] {log_time}\n{info}\n\n")
+        self.write_mutex.unlock()
+
+    def save(self):
+        self.file.close()
+
+
+@singleton
 class MainEditorHandler(list):
-    def __init__(self, gl_widget_, configHandler_):
+    def __init__(self, gl_widget_, configHandler_, logger_):
         super().__init__()
         self.gl_widget = gl_widget_
         self.configHandler = configHandler_
+        self.logger = logger_
 
     def new(self):
         global startWindow
         if len(self) < 5:
             # 新建主编辑窗口
-            self.append(MainEditor(self.gl_widget, self.configHandler))
+            self.append(MainEditor(self.gl_widget, self.configHandler, self.logger))
             # 绑定mainWindow的close信号到该类的close函数
             self[-1].closed.connect(lambda: self.close(self[-1]))
             # 删除开始界面
@@ -117,24 +150,25 @@ def linkSignal(startwindow: StartWindow):
 
 
 if __name__ == '__main__':
-    # 设置 OpenGL 版本
-    # fmt = QSurfaceFormat()
-    # fmt.setVersion(2, 0)
-    # fmt.setProfile(QSurfaceFormat.CoreProfile)
-    # QSurfaceFormat.setDefaultFormat(fmt)
-    # 设置QApp
-    QApp = QApplication(sys.argv)
-    QApp.setWindowIcon(QIcon(QPixmap(ICO_IMAGE)))
-    QApp.setApplicationName("NavalArt HullEditor")
-    QApp.setApplicationVersion(VERSION)
-    QApp.setOrganizationName("JasonLee")
-    # 打开欢迎界面
-    startWindow = StartWindow()
-    startWindow.show()
-    # 初始化编辑界面集合
-    gl_widget = GLWidgetGUI(configHandler)  # configHandler已经在GUI中初始化
-    mainEditors: MainEditorHandler = MainEditorHandler(gl_widget, configHandler)
-    # 链接信号
-    linkSignal(startWindow)
-    # 结束程序
-    sys.exit(QApp.exec_())
+    Log()  # 初始化日志
+    try:
+        # 设置QApp
+        QApp = QApplication(sys.argv)
+        QApp.setWindowIcon(QIcon(QPixmap(ICO_IMAGE)))
+        QApp.setApplicationName("NavalArt HullEditor")
+        QApp.setApplicationVersion(VERSION)
+        QApp.setOrganizationName("JasonLee")
+        # 打开欢迎界面
+        startWindow = StartWindow()
+        startWindow.show()
+        # 初始化编辑界面集合
+        gl_widget = GLWidgetGUI(configHandler)  # configHandler已经在GUI中初始化
+        mainEditors: MainEditorHandler = MainEditorHandler(gl_widget, configHandler, Log())
+        # 链接信号
+        linkSignal(startWindow)
+        # 结束程序
+        sys.exit(QApp.exec_())
+    except Exception as e:
+        QMessageBox().critical(None, "错误", f"发生未知错误：{e}", QMessageBox.Ok)
+        Log().error(traceback.format_exc(), f"发生错误：{e}")
+    Log().save()

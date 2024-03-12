@@ -115,6 +115,22 @@ def not_implemented(func):
     return wrapper
 
 
+def singleton(cls):
+    """
+    单例模式装饰器
+    :param cls:
+    :return:
+    """
+    instances = {}
+
+    def wrapper(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+
+    return wrapper
+
+
 def empty_func(*args, **kwargs):
     """ 空函数，用于占位 """
     pass

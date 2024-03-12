@@ -32,7 +32,7 @@ class GLImageItem(GLGraphicsItem):
         self.left_bottom = None
         self.width_height = None
         self.vertices = np.array( [
-            # 顶点坐标             # texcoord
+            # 顶点坐标             # texcoord 纹理坐标
             -1, -1, 0,   0.0, 0.0,
              1, -1, 0,   1.0, 0.0,
              1,  1, 0,   1.0, 1.0,

@@ -572,10 +572,11 @@ class MainEditorGUI(Window):
     def tutorial(self):
         pass
 
-    def __init__(self, gl_widget, config_handler):
+    def __init__(self, gl_widget, config_handler, logger):
         self.gl_widget: GLWidgetGUI = gl_widget
         self.configHandler = config_handler
         self.gl_widget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.logger = logger
         # 主窗口
         self.main_widget = MultiDirTabMainFrame(self.gl_widget)
         # 标签页

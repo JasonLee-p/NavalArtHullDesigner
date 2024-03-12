@@ -111,7 +111,7 @@ class MemoryBlock:
         return repr
 
 
-class VBO():
+class VBO:
     def __init__(
             self,
             data: List[np.ndarray],

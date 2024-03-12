@@ -140,7 +140,7 @@ class Camera:
         return self.get_projection_matrix(width, height) * self.get_view_matrix()
 
     def orbit(self, dx, dy):
-        right = self.lookAt.right()
+        right = (self.tar - self.pos).cross(Vector3(0, 1, 0)).normalized()
         # up = self.lookAt.up()
         rate = self.sensitivity["旋转"] * 0.005
         right_angle = - dx * rate
@@ -150,15 +150,15 @@ class Camera:
         # 绕y轴旋转
         self.pos = Matrix4x4().fromAxisAndAngle(0, 1, 0, right_angle) * self.pos
         # 绕right向量旋转
-        self.pos = Matrix4x4().fromAxisAndAngle(right.x(), 0, right.z(), up_angle) * self.pos
+        self.pos = Matrix4x4().fromAxisAndAngle(right.x, 0, right.z, up_angle) * self.pos
         self.pos = Vector3(self.pos)
         self.pos += self.tar
         self.lookAt = Matrix4x4()
         self.lookAt.lookAt(Qvec3(*self.pos), Qvec3(*self.tar), Qvec3(0, 1, 0))
 
     def pan(self, dx, dy):
-        rate = self.sensitivity["平移"] * self.get_distance() * 0.00003
-        right = (self.tar - self.pos).cross(self.up).normalized()
+        rate = self.sensitivity["平移"] * self.get_distance() * 0.000025
+        right = (self.tar - self.pos).cross(Vector3(0, 1, 0)).normalized()
         right_offset = right * dx * rate
         up_offset = Vector3(0, 1, 0) * dy * rate
         _pan = Vector3(right_offset - up_offset)
@@ -195,6 +195,8 @@ class Camera:
 
     def set_lookAt(self, lookAt):
         self.lookAt = lookAt
+        self.pos = self.lookAt.position()
+        self.tar = self.lookAt.center()
 
     def get_lookAt(self):
         return self.lookAt
