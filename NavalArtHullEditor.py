@@ -8,6 +8,7 @@ Date: 2024-2-26
 
 # 系统库
 import sys
+import gc
 import time
 import traceback
 import webbrowser
@@ -88,6 +89,8 @@ class MainEditorHandler(list):
         global startWindow
         # 将窗口从数组删除
         self.remove(mainEditor)
+        # mainEditor.close()
+        gc.collect()
         # 保存配置
         self.configHandler.save_config()
         # # 如果没有窗口了，关闭程序

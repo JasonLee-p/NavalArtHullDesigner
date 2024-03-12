@@ -1013,7 +1013,7 @@ class Window(QWidget):
         if self.ask_if_close:
             reply = QMessageBox.question(self, '确认', '确认退出？', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
-                return
+                return False
         self.animate(1, 0, 100)
         while self.windowOpacity() > 0:
             QApplication.processEvents()

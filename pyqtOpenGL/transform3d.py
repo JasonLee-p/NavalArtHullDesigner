@@ -117,6 +117,16 @@ class Matrix4x4(QMatrix4x4):
     def up(self):
         return self.column(1).toVector3D()
 
+    def setByAxisAndAngle(self, x, y, z, angle):
+        self.setToIdentity()
+        self.rotate(angle, x, y, z)
+
+    def lookAt(self, eye: Union[QVector3D, 'Vector3'], center: Union[QVector3D, 'Vector3'], up: Union[QVector3D, 'Vector3']):
+        if isinstance(eye, (list, tuple, np.ndarray, Vector3)):
+            self.lookAt(QVector3D(*eye), QVector3D(*center), QVector3D(*up))
+        elif isinstance(eye, QVector3D):
+            super().lookAt(eye, center, up)
+
     @property
     def matrix33(self):
         m = np.array(self.copyDataTo()).reshape(4, 4)
@@ -324,6 +334,12 @@ class Vector3:
 
     def normalized(self):
         return Vector3(self._data / self.length())
+
+    def rotateByAxisAndAngle(self, x, y, z, angle) -> None:
+        """
+        rotate by angle(degree) around x,y,z
+        """
+        self._data = np.dot(Matrix4x4.fromAxisAndAngle(x, y, z, angle).matrix33, self._data)
 
     def __len__(self):
         return 3

@@ -17,14 +17,16 @@ __all__ = ['GLModelItem']
 class GLModelItem(GLGraphicsItem, LightMixin):
 
     def __init__(
-        self,
-        path,
-        lights = list(),
-        glOptions='translucent',
-        texcoords_scale=1,
-        parentItem=None,
+            self,
+            path,
+            lights=None,
+            glOptions='translucent',
+            texcoords_scale=1,
+            parentItem=None,
     ):
         super().__init__(parentItem=parentItem)
+        if lights is None:
+            lights = list()
         self._path = path
         self._directory = Path(path).parent
         self.setGLOptions(glOptions)
@@ -47,7 +49,7 @@ class GLModelItem(GLGraphicsItem, LightMixin):
         with self.shader:
             self.shader.set_uniform("view", self.proj_view_matrix().glData, "mat4")
             self.shader.set_uniform("model", model_matrix.glData, "mat4")
-            self.shader.set_uniform("ViewPos",self.view_pos(), "vec3")
+            self.shader.set_uniform("ViewPos", self.view_pos(), "vec3")
             for i in self._order:
                 self.meshes[i].paint(self.shader)
 
@@ -61,11 +63,11 @@ class GLModelItem(GLGraphicsItem, LightMixin):
         start_time = time.time()
 
         post_process = (assimp.Process_Triangulate |
-                        assimp.Process_FlipUVs|
-                        assimp.Process_GenNormals|
+                        assimp.Process_FlipUVs |
+                        assimp.Process_GenNormals |
                         assimp.Process_PreTransformVertices
                         )
-                        # assimp.Process_CalcTangentSpace 计算法线空间
+        # assimp.Process_CalcTangentSpace 计算法线空间
 
         scene = assimp.ImportFile(str(path), post_process)
         if not scene:
@@ -86,7 +88,7 @@ class GLModelItem(GLGraphicsItem, LightMixin):
             )
             faces += len(m.indices)
         self._order = list(range(len(self.meshes)))
-        print(f"Took {round(time.time()-start_time, 3)}s to load model {path} ({faces})")
+        print(f"Took {round(time.time() - start_time, 3)}s to load model {path} ({faces})")
 
     def setPaintOrder(self, order: list):
         """设置绘制顺序, order为mesh的索引列表"""

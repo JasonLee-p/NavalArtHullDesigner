@@ -3,10 +3,8 @@
 主要窗口
 """
 import numpy as np
-from GUI.basic_widgets import *
 import PIL.Image as Image
 from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
 from ShipRead.na_project import ShipProject
 from funcs_utils import not_implemented
 from pyqtOpenGL import *
@@ -264,9 +262,9 @@ class ElementEditTab(MutiDirectionTab):
 
 
 class SettingTab(MutiDirectionTab):
-    def __init__(self, parent, configHandler, camera):
-        self.__configHandler = configHandler
-        self.__camera_sensitivity = configHandler.get_config("Sensitivity")
+    def __init__(self, parent, configHandler_, camera):
+        self.__configHandler = configHandler_
+        self.__camera_sensitivity = configHandler_.get_config("Sensitivity")
         self.__camera: Camera = camera
         super().__init__(parent, CONST.RIGHT, "设置", SETTINGS_IMAGE)
         self.set_layout(QVBoxLayout())
@@ -325,7 +323,8 @@ class SettingTab(MutiDirectionTab):
             "旋转": self.slider_rot.value()
         }
         self.__configHandler.set_config("Sensitivity", sensitivity)
-        self.__camera.sensitivity = sensitivity
+        if self.__camera:
+            self.__camera.sensitivity = sensitivity
 
 
 class GLWidgetGUI(GLViewWidget):
@@ -373,11 +372,11 @@ class GLWidgetGUI(GLViewWidget):
         #     "./pyqtOpenGL/items/resources/objects/cyborg/cyborg.obj",
         #     lights=[self.light, self.light1, self.light2]
         # )
-        # self.model = GLModelItem(
-        #     "./pyqtOpenGL/items/resources/objects/BB-63.obj",
-        #     lights=[self.light, self.light1, self.light2]
-        # )
-        # self.model.translate(0, 2, 0)
+        self.model = GLModelItem(
+            "./pyqtOpenGL/items/resources/objects/BB-63.obj",
+            lights=[self.light, self.light1, self.light2]
+        )
+        self.model.translate(0, 2, 0)
 
         # -- mesh
         self.mesh1 = GLInstancedMeshItem(
@@ -430,7 +429,7 @@ class GLWidgetGUI(GLViewWidget):
         self.addItem(self.line)
         self.addItem(self.box)
         self.addItem(self.arrow)
-        # self.addItem(self.model)
+        self.addItem(self.model)
         self.addItem(self.surf)
         self.addItem(self.mesh1)
         self.addItem(self.mesh2)
@@ -439,9 +438,9 @@ class GLWidgetGUI(GLViewWidget):
         # self.gl_initialized.connect(self.__init_drawObjs)  # 链接gl初始化完成和初始化绘制物体
 
         # 动画
-        timer = QtCore.QTimer(self)
-        timer.timeout.connect(self.onTimeout)
-        timer.start(16)  # 设置定时器，以便每隔一段时间调用onTimeout函数
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.onTimeout)
+        self.timer.start(6)  # 设置定时器，以便每隔一段时间调用onTimeout函数
 
     def onTimeout(self):
         self.light.rotate(0, 1, 0.4, 1)
@@ -514,6 +513,15 @@ class GLWidgetGUI(GLViewWidget):
         #     button.setGeometry(sub_right + 10 + index * (self.ModBtWid + 35), 50, self.ModBtWid + 25, 23)
         ...
 
+    def clearResources(self):
+        self.timer.stop()
+        self.timer.deleteLater()
+        for it in self.items:
+            # it.release()
+            ...
+        self.items = []
+        self.lights = set()
+
 
 def sin_texture(t):
     delta = t % 100
@@ -585,7 +593,11 @@ class MainEditorGUI(Window):
         self.structure_tab = ElementStructureTab(self.main_widget)
         self.info_tab = PrjInfoTab(self.main_widget)
         self.edit_tab = ElementEditTab(self.main_widget)
-        self.setting_tab = SettingTab(self.main_widget, self.configHandler, self.gl_widget.camera)
+        if hasattr(self.gl_widget, "camera"):
+            self.camera = self.gl_widget.camera
+        else:
+            self.camera = None
+        self.setting_tab = SettingTab(self.main_widget, self.configHandler, self.camera)
         # 初始化标签页
         self.__init_tab_widgets()
         super().__init__(None, title='NavalArt Hull Editor', ico_bites=BYTES_ICO, size=(1000, 618), resizable=True,
@@ -779,5 +791,8 @@ class MainEditorGUI(Window):
         ...
 
     def close(self):
-        super().close()
+        closed = super().close()
+        if closed is False:
+            return closed
+        self.gl_widget.clearResources()
         MainEditorGUI.all.remove(self)

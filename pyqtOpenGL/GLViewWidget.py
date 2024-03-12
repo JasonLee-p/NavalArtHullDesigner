@@ -11,6 +11,7 @@ from ctypes import c_float, c_void_p
 
 import numpy as np
 from GUI import TextLabel
+
 from OpenGL.GL import *  # noqa
 import OpenGL.GL as gl
 from math import radians, tan
@@ -24,8 +25,8 @@ from .transform3d import Vector3, Matrix4x4
 from typing import List, Set, Union
 from .GLGraphicsItem import GLGraphicsItem
 from .items.light import PointLight
-from .items.shader import Shader
-from .items.BufferObject import VAO, VBO, EBO
+
+import mem_top
 
 
 class GLViewWidget(QtWidgets.QOpenGLWidget):
@@ -48,7 +49,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
           - Rotation/scale controls
         """
         QtWidgets.QOpenGLWidget.__init__(self, parent)
-        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
         # self.camera = Camera2(cam_position, 0., 0., 0., fov, cam_sensitivity)  # TODO:
         self.camera = Camera(cam_position, cam_tar, fov=fov, sensitivity=cam_sensitivity)
         self.mouse_last_pos = None  # used for mouse move event
@@ -57,8 +58,9 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
 
         # select box
         self.select_btn = select_btn
-        self.select_start: Union[QPoint, None] = None
-        self.select_end: Union[QPoint, None] = None
+        self.select_start = QPoint()
+        self.select_end = QPoint()
+        self.select_flag = False
         self.select_box = GL2DSelectBox()
 
         # 被绘制的物体
@@ -165,6 +167,12 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self.select_box.paint(self.camera.get_view_matrix(), self.select_start, self.select_end)
         self.__update_FPS()
 
+    def update(self):
+        # mt = mem_top.mem_top()
+        # with open('mem_top.txt', 'a') as f:
+        #     f.write(mt)
+        super().update()
+
     def __update_FPS(self):
         if time.time() - self.__last_time != 0:
             self.fps_label.setText(f"FPS: {round(1 / (time.time() - self.__last_time), 1)}")
@@ -196,7 +204,8 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         lpos = ev.position() if hasattr(ev, 'position') else ev.localPos()
         self.mouse_last_pos = lpos
         if ev.buttons() == self.select_btn:
-            self.select_start = QPoint(int(ev.localPos().x()), int(ev.localPos().y()))
+            self.select_start.setX(int(ev.localPos().x()))
+            self.select_start.setY(int(ev.localPos().y()))
 
     def mouseMoveEvent(self, ev):
         ctrl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
@@ -230,13 +239,14 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             elif not alt_down:
                 self.camera.orbit(diff.x(), diff.y())
         elif ev.buttons() == self.select_btn:
-            self.select_end = QPoint(int(ev.localPos().x()), int(ev.localPos().y()))
+            self.select_end.setX(int(ev.localPos().x()))
+            self.select_end.setY(int(ev.localPos().y()))
+            self.select_flag = True
         self.update()
 
     def mouseReleaseEvent(self, ev):
         if ev.button() == self.select_btn:
-            self.select_start = None
-            self.select_end = None
+            self.select_flag = False
             self.update()
 
     def wheelEvent(self, ev):
@@ -267,6 +277,9 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             pos, euler = self.camera.get_params()
             print(f"pos: ({pos.x:.2f}, {pos.y:.2f}, {pos.z:.2f})  "
                   f"euler: ({euler[0]:.2f}, {euler[1]:.2f}, {euler[2]:.2f})")
+
+    def close(self):
+        super().close()
 
 
 def formatException(exctype, value, tb, skip=0):
