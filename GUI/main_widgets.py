@@ -526,6 +526,7 @@ def sin_texture(t):
 
 class MainEditorGUI(Window):
     active_window = None
+    all = []
 
     @not_implemented
     @abstractmethod
@@ -617,6 +618,7 @@ class MainEditorGUI(Window):
         self.__init_cust_top_widget()
         # 状态变量池
         self.__operating_prj: Union[None, ShipProject] = None
+        MainEditorGUI.all.append(self)
 
     def __init_cust_top_widget(self):
         # 菜单：
@@ -775,3 +777,7 @@ class MainEditorGUI(Window):
 
     def resetTheme(self, theme_data):
         ...
+
+    def close(self):
+        super().close()
+        MainEditorGUI.all.remove(self)

@@ -5,8 +5,15 @@
 from abc import abstractmethod
 from typing import Literal, List, Dict
 
+from PyQt5.QtCore import QPoint, QRect, QCoreApplication
+from PyQt5.QtWidgets import (
+    QWidget, QGraphicsDropShadowEffect, QLayout, QApplication, QGridLayout, QStackedLayout,
+    QFormLayout, QTabWidget, QMessageBox
+)
+from PyQt5.QtGui import QColor
+
 from .buttons import *
-from PyQt5.QtCore import Qt
+
 
 from funcs_utils import CONST, color_print, bool_protection
 
@@ -327,7 +334,7 @@ class _MutiDirectionTab(QWidget):
         if not bt or not bt.click_pos:
             color_print(f"[WARNING] No dragging button or no click pos while drawing", "red")
         # 直接令鼠标位置为按钮中心，不考虑起始位置
-        new_pos = QCursor.pos() - QPoint(15, 15)
+        new_pos = QCursor().pos() - QPoint(14, 14)
         bt.move_temp_bt(new_pos)
 
 
@@ -903,12 +910,11 @@ class Window(QWidget):
         super().mousePressEvent(event)
         # 开始拖动窗口
         if event.button() == Qt.LeftButton and self.isMaximized() is False:
-            if 5 < event.x() < self.topH:
+            if 5 < event.y() < self.topH:
                 self.move_flag = True
                 self.m_Position = event.globalPos() - self.pos()
-                # event.accept()
             elif self.resizable:
-                if event.x() < 5:
+                if event.y() < 5:
                     self.resize_dir = CONST.LEFT
                     self.resize_flag = True
                 elif event.x() > self.height() - 5:
@@ -917,7 +923,7 @@ class Window(QWidget):
                 elif event.x() > self.width() - 5:
                     self.resize_dir = CONST.RIGHT
                     self.resize_flag = True
-                elif event.x() < 5:
+                elif event.y() < 5:
                     self.resize_dir = CONST.UP
                     self.resize_flag = True
                 if self.resize_flag:

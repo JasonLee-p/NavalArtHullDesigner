@@ -65,9 +65,8 @@ class Log:
 
 @singleton
 class MainEditorHandler(list):
-    def __init__(self, gl_widget_, configHandler_, logger_):
+    def __init__(self, configHandler_, logger_):
         super().__init__()
-        self.gl_widget = gl_widget_
         self.configHandler = configHandler_
         self.logger = logger_
 
@@ -75,7 +74,7 @@ class MainEditorHandler(list):
         global startWindow
         if len(self) < 5:
             # 新建主编辑窗口
-            self.append(MainEditor(self.gl_widget, self.configHandler, self.logger))
+            self.append(MainEditor(GLWidgetGUI(configHandler), self.configHandler, self.logger))
             # 绑定mainWindow的close信号到该类的close函数
             self[-1].closed.connect(lambda: self.close(self[-1]))
             # 删除开始界面
@@ -162,8 +161,7 @@ if __name__ == '__main__':
         startWindow = StartWindow()
         startWindow.show()
         # 初始化编辑界面集合
-        gl_widget = GLWidgetGUI(configHandler)  # configHandler已经在GUI中初始化
-        mainEditors: MainEditorHandler = MainEditorHandler(gl_widget, configHandler, Log())
+        mainEditors: MainEditorHandler = MainEditorHandler(configHandler, Log())
         # 链接信号
         linkSignal(startWindow)
         # 结束程序
