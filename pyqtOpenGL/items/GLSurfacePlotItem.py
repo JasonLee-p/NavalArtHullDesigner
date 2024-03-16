@@ -1,5 +1,4 @@
 import numpy as np
-import cv2
 import OpenGL.GL as gl
 from pathlib import Path
 from ..GLGraphicsItem import GLGraphicsItem
@@ -15,18 +14,41 @@ BASE_DIR = Path(__file__).resolve().parent
 __all__ = ['GLSurfacePlotItem']
 
 
+def gaussian_kernel(size: tuple, sigma: float):
+    x = np.arange(-size[0] // 2 + 1, size[0] // 2 + 1)
+    y = np.arange(-size[1] // 2 + 1, size[1] // 2 + 1)
+    x, y = np.meshgrid(x, y)
+    kernel = np.exp(-(x ** 2 + y ** 2) / (2 * sigma ** 2))
+    return kernel / kernel.sum()
+
+
+def convolve2d(image: np.ndarray, kernel: np.ndarray, mode='same'):
+    return np.real(np.fft.ifft2(np.fft.fft2(image) * np.fft.fft2(kernel, s=image.shape)))
+
+
+def gaussian_blur(image: np.ndarray, size: tuple, sigma: float):
+    if sigma == 0:
+        return image
+    kernel = gaussian_kernel(size, sigma)
+    return convolve2d(image, kernel, mode='same')
+
+
 class GLSurfacePlotItem(GLGraphicsItem, LightMixin):
 
     def __init__(
-        self,
-        zmap = None,
-        x_size = 10, # scale width to this size
-        material = dict(),
-        lights = list(),
-        glOptions = 'translucent',
-        parentItem = None
+            self,
+            zmap=None,
+            x_size=10,  # scale width to this size
+            material=None,
+            lights=None,
+            glOptions='translucent',
+            parentItem=None
     ):
         super().__init__(parentItem=parentItem)
+        if material is None:
+            material = dict()
+        if lights is None:
+            lights = list()
         self.setGLOptions(glOptions)
 
         self._zmap = None
@@ -74,16 +96,17 @@ class GLSurfacePlotItem(GLGraphicsItem, LightMixin):
 
         # calc normals texture
         v = self._vertexes[self._indices]  # Nf x 3 x 3
-        v = np.cross(v[:,1]-v[:,0], v[:,2]-v[:,0]) # face Normal Nf(c*r*2) x 3
-        v = v.reshape(h-1, 2, w-1, 3).sum(axis=1, keepdims=False)  # r x c x 3
-        v = cv2.GaussianBlur(v, (5, 5), 0)  #
+        v = np.cross(v[:, 1] - v[:, 0], v[:, 2] - v[:, 0])  # face Normal Nf(c*r*2) x 3
+        v = v.reshape(h - 1, 2, w - 1, 3).sum(axis=1, keepdims=False)  # r x c x 3
+        # v = cv2.GaussianBlur(v, (5, 5), 0)  #
+        v = gaussian_blur(v, (5, 5), 0)
         self._normal_texture = v / np.linalg.norm(v, axis=-1, keepdims=True)
         self.normal_texture.updateTexture(self._normal_texture)
 
     def initializeGL(self):
         self.shader = Shader(vertex_shader, light_fragment_shader)
         self.vao = VAO()
-        self.vbo = VBO([None], [3], usage = gl.GL_DYNAMIC_DRAW)
+        self.vbo = VBO([None], [3], usage=gl.GL_DYNAMIC_DRAW)
         self.vbo.setAttrPointer([0], attr_id=[0])
         self.ebo = EBO(None)
 
@@ -114,7 +137,7 @@ class GLSurfacePlotItem(GLGraphicsItem, LightMixin):
 
             self.shader.set_uniform("view", self.proj_view_matrix().glData, "mat4")
             self.shader.set_uniform("model", model_matrix.glData, "mat4")
-            self.shader.set_uniform("ViewPos",self.view_pos(), "vec3")
+            self.shader.set_uniform("ViewPos", self.view_pos(), "vec3")
 
             self._material.set_uniform(self.shader, "material")
             self.shader.set_uniform("norm_texture", self.normal_texture, "sampler2D")

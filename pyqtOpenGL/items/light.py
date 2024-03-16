@@ -8,7 +8,7 @@ from ..transform3d import Vector3, Matrix4x4
 from ..GLGraphicsItem import GLGraphicsItem
 from .MeshData import sphere
 
-__all__ = ["PointLight", "LightMixin"]
+__all__ = ["PointLight", "LightMixin", "light_fragment_shader"]
 
 
 class PointLight(GLGraphicsItem):
@@ -19,12 +19,12 @@ class PointLight(GLGraphicsItem):
             ambient=Vector3(0.2, 0.2, 0.2),
             diffuse=Vector3(0.8, 0.8, 0.8),
             specular=Vector3(1.0, 1.0, 1.0),
-            constant=1,  # 常数衰减
-            linear=0, # 线性衰减
+            constant=0.1,  # 常数衰减
+            linear=0.01,  # 线性衰减
             quadratic=0,  # 二次衰减
             visible=True,
             directional=False,  # 平行光源选项
-            glOptions="opaque",
+            glOptions="translucent"
     ):
         super().__init__(parentItem=None)
         self.setGLOptions(glOptions)

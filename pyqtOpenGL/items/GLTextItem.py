@@ -1,4 +1,6 @@
 import sys
+from typing import Literal
+
 from ..GLGraphicsItem import GLGraphicsItem
 from ..transform3d import Matrix4x4
 from .shader import Shader
@@ -8,6 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 import OpenGL.GL as gl
 from pathlib import Path
+
 BASE_DIR = Path(__file__).resolve().parent
 
 __all__ = ['GLTextItem']
@@ -15,19 +18,33 @@ __all__ = ['GLTextItem']
 
 class GLTextItem(GLGraphicsItem):
     """Draws points at a list of 3D positions."""
+    align_map = {
+        "TL": np.array([0, 0], np.float32),
+        "TC": np.array([0.5, 0], np.float32),
+        "TR": np.array([1, 0], np.float32),
+        "ML": np.array([0, 0.5], np.float32),
+        "MC": np.array([0.5, 0.5], np.float32),
+        "MR": np.array([1, 0.5], np.float32),
+        "BL": np.array([0, 1], np.float32),
+        "BC": np.array([0.5, 1], np.float32),
+        "BR": np.array([1, 1], np.float32),
+    }
 
     def __init__(
-        self,
-        text: str=None,
-        pos = [0, 0, -10],
-        font = None,  # "times.ttf", "msyh.ttc", "Deng.ttf"
-        color = (255, 255, 255, 255),
-        fontsize = 40,
-        fixed = True,  # 是否固定在视图上, if True, pos is in viewport, else in world
-        glOptions = 'ontop',
-        parentItem = None
+            self,
+            text: str = None,
+            pos=None,
+            font=None,  # "times.ttf", "msyh.ttc", "Deng.ttf"
+            color=(255, 255, 255, 255),
+            fontsize=28,
+            fixed=False,  # 是否固定在视图上, if True, pos is in viewport, else in world
+            glOptions='ontop',
+            parentItem=None,
+            align: Literal["TL", "TC", "TR", "ML", "MC", "MR", "BL", "BC", "BR"] = "MC"
     ):
         super().__init__(parentItem=parentItem)
+        if pos is None:
+            pos = [0, 50, 0]
         self.setGLOptions(glOptions)
         self.setDepthValue(100)
         self._fixed = fixed
@@ -36,14 +53,15 @@ class GLTextItem(GLGraphicsItem):
         self._pixel_wh = [0, 0]
         self._text_w = 0
         self._text_h = 0
-        self.vertices = np.array( [
+        self._align = align
+        self.vertices = np.array([
             # 顶点坐标             # texcoord
-            -1, -1, 0,   0.0, 0.0,
-             1, -1, 0,   1.0, 0.0,
-             1,  1, 0,   1.0, 1.0,
-             1,  1, 0,   1.0, 1.0,
-            -1,  1, 0,   0.0, 1.0,
-            -1, -1, 0,   0.0, 0.0,
+            -1, -1, 0, 0.0, 0.0,
+            1, -1, 0, 1.0, 0.0,
+            1, 1, 0, 1.0, 1.0,
+            1, 1, 0, 1.0, 1.0,
+            -1, 1, 0, 0.0, 1.0,
+            -1, -1, 0, 0.0, 0.0,
         ], dtype=np.float32).reshape(-1, 5)
 
         self.setData(text, font, color, fontsize, pos)
@@ -52,7 +70,7 @@ class GLTextItem(GLGraphicsItem):
         self.shader = Shader(vertex_shader, fragment_shader)
         self.vao = VAO()
         self.vbo = VBO([self.vertices], [[3, 2]], usage=gl.GL_STATIC_DRAW)
-        self.vbo.setAttrPointer([0], attr_id=[[0,1]])
+        self.vbo.setAttrPointer([0], attr_id=[[0, 1]])
         self.tex = Texture2D(None, flip_y=True, wrap_s=gl.GL_CLAMP_TO_EDGE, wrap_t=gl.GL_CLAMP_TO_EDGE)
 
     def updateGL(self):
@@ -71,7 +89,7 @@ class GLTextItem(GLGraphicsItem):
             self.vbo.updateData([0], [self.vertices])
             self._wh_update_flag = False
 
-    def setData(self, text: str=None, font=None, color=None, fontsize=None, pos=None):
+    def setData(self, text: str = None, font=None, color=None, fontsize=None, pos=None):
         if text is not None:
             self._text = text
             self._tex_update_flag = True
@@ -96,7 +114,7 @@ class GLTextItem(GLGraphicsItem):
             self._tex_update_flag = True
 
         if self._tex_update_flag:
-            font = ImageFont.truetype(self._font, self._fontsize, encoding="unic") # Deng.ttf, msyh.ttc
+            font = ImageFont.truetype(self._font, self._fontsize, encoding="unic")  # Deng.ttf, msyh.ttc
             self._pixel_wh = np.array(font.getbbox(text)[2:])
             image = Image.new("RGBA", tuple(self._pixel_wh), (0, 0, 0, 0))  # 背景透明
             draw = ImageDraw.Draw(image)
@@ -132,6 +150,8 @@ class GLTextItem(GLGraphicsItem):
         self.updateGL()
         self.setupGLState()
 
+        self.shader.set_uniform("align_data", self.align_map[self._align], "vec2")
+        self.shader.set_uniform("wh", [w, h], "vec2")
         self.shader.set_uniform("proj", self.proj_matrix().glData, "mat4")
         self.shader.set_uniform("view", self.view_matrix().glData, "mat4")
         self.shader.set_uniform("model", model_matrix.glData, "mat4")
@@ -147,6 +167,9 @@ class GLTextItem(GLGraphicsItem):
 
 vertex_shader = """
 #version 330 core
+
+uniform vec2 align_data;
+uniform vec2 wh;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -166,6 +189,8 @@ void main() {
         //gl_Position = vec4(text_pos + iPos, 1.0);
         vec4 tpos = view * model * vec4(text_pos, 1.0);
         gl_Position = proj * vec4(tpos.xyz + iPos, 1.0);
+        vec2 offset = align_data * wh;
+        gl_Position.xy -= offset;
     }
     TexCoord =iTexCoord;
 }

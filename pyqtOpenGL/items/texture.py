@@ -36,7 +36,7 @@ class Texture2D:
     def __init__(
             self,
             source: Union[str, np.ndarray] = None,
-            tex_type: str = "tex_diffuse",
+            tex_type: Union[str, None] = "tex_diffuse",
             mag_filter=gl.GL_LINEAR,
             min_filter=gl.GL_LINEAR_MIPMAP_LINEAR,
             wrap_s=gl.GL_REPEAT,
@@ -123,6 +123,9 @@ class Texture2D:
 
         else:  # bind texture
             gl.glBindTexture(gl.GL_TEXTURE_2D, self._id)
+
+    def unbind(self):
+        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 
     def delete(self):
         if self._id is not None:

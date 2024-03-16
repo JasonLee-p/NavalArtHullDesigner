@@ -1,11 +1,9 @@
 from pathlib import Path
 import time
-import ctypes
-import numpy as np
-import OpenGL.GL as gl
 import assimp_py as assimp
+
 from ..GLGraphicsItem import GLGraphicsItem
-from ..transform3d import Matrix4x4, Quaternion, Vector3
+from ..transform3d import Matrix4x4
 from .shader import Shader
 from .MeshData import Mesh
 from .light import LightMixin, light_fragment_shader
@@ -15,7 +13,6 @@ __all__ = ['GLModelItem']
 
 
 class GLModelItem(GLGraphicsItem, LightMixin):
-
     def __init__(
             self,
             path,
@@ -23,8 +20,9 @@ class GLModelItem(GLGraphicsItem, LightMixin):
             glOptions='translucent',
             texcoords_scale=1,
             parentItem=None,
+            selectable=False
     ):
-        super().__init__(parentItem=parentItem)
+        super().__init__(parentItem=parentItem, selectable=selectable)
         if lights is None:
             lights = list()
         self._path = path
@@ -38,20 +36,43 @@ class GLModelItem(GLGraphicsItem, LightMixin):
 
     def initializeGL(self):
         self.shader = Shader(vertex_shader, light_fragment_shader)
+        self.pick_shader = Shader(vertex_shader, self.pick_fragment_shader)
 
         for m in self.meshes:
             m.initializeGL()
 
     def paint(self, model_matrix=Matrix4x4()):
-        self.setupGLState()
-        self.setupLight(self.shader)
+        if not self.selected():
+            self.setupGLState()
+            self.setupLight(self.shader)
 
-        with self.shader:
-            self.shader.set_uniform("view", self.proj_view_matrix().glData, "mat4")
-            self.shader.set_uniform("model", model_matrix.glData, "mat4")
-            self.shader.set_uniform("ViewPos", self.view_pos(), "vec3")
+            with self.shader:
+                self.shader.set_uniform("view", self.proj_view_matrix().glData, "mat4")
+                self.shader.set_uniform("model", model_matrix.glData, "mat4")
+                self.shader.set_uniform("ViewPos", self.view_pos(), "vec3")
+                for i in self._order:
+                    self.meshes[i].paint(self.shader)
+        else:
+            # 利用模板缓冲区，在周围画一个轮廓
+            self.setupGLState()
+            with self.shader:
+                self.shader.set_uniform("view", self.proj_view_matrix().glData, "mat4")
+                self.shader.set_uniform("model", model_matrix.glData, "mat4")
+                self.shader.set_uniform("ViewPos", self.view_pos(), "vec3")
+                self.shader.set_uniform("selected", True, "bool")
+                for i in self._order:
+                    self.meshes[i].paint(self.shader)
+
+
+    def paint_pickMode(self, model_matrix=Matrix4x4()):
+        self.setupGLState()
+        with self.pick_shader:
+            self.pick_shader.set_uniform("view", self.proj_view_matrix().glData, "mat4")
+            self.pick_shader.set_uniform("model", model_matrix.glData, "mat4")
+            self.pick_shader.set_uniform("pickColor", self._pickColor, "vec3")
             for i in self._order:
-                self.meshes[i].paint(self.shader)
+                self.meshes[i].paint(self.pick_shader)
+
 
     def setMaterial(self, mesh_id, material):
         self.meshes[mesh_id].setMaterial(material)
@@ -88,6 +109,7 @@ class GLModelItem(GLGraphicsItem, LightMixin):
             )
             faces += len(m.indices)
         self._order = list(range(len(self.meshes)))
+        # 清理scene所占内存  # TODO
         print(f"Took {round(time.time() - start_time, 3)}s to load model {path} ({faces})")
 
     def setPaintOrder(self, order: list):

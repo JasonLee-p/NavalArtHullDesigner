@@ -1,7 +1,9 @@
-from math import acos, degrees
-import numpy as np
+"""
+
+"""
 import numpy as np
 from typing import Any, Union
+
 from .functions import dispatchmethod
 from PyQt5.QtGui import QQuaternion, QMatrix4x4, QVector3D, QMatrix3x3, QVector4D
 
@@ -123,9 +125,15 @@ class Matrix4x4(QMatrix4x4):
 
     def lookAt(self, eye: Union[QVector3D, 'Vector3'], center: Union[QVector3D, 'Vector3'], up: Union[QVector3D, 'Vector3']):
         if isinstance(eye, (list, tuple, np.ndarray, Vector3)):
-            self.lookAt(QVector3D(*eye), QVector3D(*center), QVector3D(*up))
+            super().lookAt(QVector3D(*eye), QVector3D(*center), QVector3D(*up))
         elif isinstance(eye, QVector3D):
             super().lookAt(eye, center, up)
+
+    @classmethod
+    def ortho_matrix(cls, left, right, bottom, top, near, far):
+        matrix = cls()
+        matrix.ortho(left, right, bottom, top, near, far)
+        return matrix
 
     @property
     def matrix33(self):

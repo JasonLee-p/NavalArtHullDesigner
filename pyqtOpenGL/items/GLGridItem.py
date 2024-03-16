@@ -39,16 +39,23 @@ class GLGridItem(GLGraphicsItem, LightMixin):
             size=(1., 1.),
             spacing=(1., 1.),
             color=(1., 1., 1., 1),
+            lineColor=(0., 0., 0., 1),
             lineWidth=1,
-            lights: List[PointLight] = list(),
+            lights=None,
             antialias: bool = True,
             glOptions='translucent',
             parentItem=None
     ):
         super().__init__(parentItem=parentItem)
+        if lights is None:
+            lights = list()
         self.__size = size
-        self.__color = np.array(color, dtype=np.float32).clip(0, 1)
+        if color is not None:
+            self.__color = np.array(color, dtype=np.float32).clip(0, 1)
+        else:
+            self.__color = None
         self.__lineWidth = lineWidth
+        self.__lineColor = np.array(lineColor, dtype=np.float32).clip(0, 1)
         self.antialias = antialias  # 抗锯齿
         self.setGLOptions(glOptions)
         self.line_vertices = make_grid_data(self.__size, spacing)
@@ -89,14 +96,15 @@ class GLGridItem(GLGraphicsItem, LightMixin):
 
             self.vao.bind()
             # draw surface
-            self.shader.set_uniform("oColor", self.__color, "vec4")
-            self.vbo1.setAttrPointer(1, attr_id=0)
-            gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4)
+            if self.__color is not None:
+                self.shader.set_uniform("oColor", self.__color, "vec4")
+                self.vbo1.setAttrPointer(1, attr_id=0)
+                gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4)
 
             # draw lines
             gl.glDisable(gl.GL_BLEND)
             gl.glDisable(gl.GL_DEPTH_TEST)
-            self.shader.set_uniform("oColor", np.array([0, 0, 0, 1], "f4"), "vec4")
+            self.shader.set_uniform("oColor", self.__lineColor, "vec4")
             self.vbo1.setAttrPointer(0, attr_id=0)
             gl.glDrawArrays(gl.GL_LINES, 0, len(self.line_vertices))
             gl.glEnable(gl.GL_DEPTH_TEST)

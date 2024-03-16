@@ -8,22 +8,20 @@ Date: 2024-2-26
 
 # 系统库
 import sys
-import gc
-import time
 import traceback
 import webbrowser
 
-from funcs_utils import color_print, singleton
-from main_editor import MainEditor
-from startWindow import StartWindow
-
-# 第三方库和自定义库
+# 第三方库和本地库
 try:
-    from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QMessageBox
     from OpenGL.GL import *
     from OpenGL.GLU import *
     from OpenGL.GLUT import *
+    # 本地库
+    from main_logger import Log
     from GUI import *
+    from funcs_utils import singleton
+    from main_editor import MainEditor
+    from startWindow import StartWindow
 except Exception as e:
     traceback.print_exc()
     print(f"[ERROR] {e}")
@@ -32,36 +30,6 @@ except Exception as e:
 
 VERSION = "1.0.0.0"
 TESTING = False
-
-
-@singleton
-class Log:
-    write_mutex = QMutex()
-
-    def __init__(self, path="logging.txt"):
-        self.path = path
-        self.file = open(path, "a", encoding="utf-8")
-
-    def error(self, trace, info):
-        err_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        self.write_mutex.lock()
-        self.file.write(f"[ERROR] {err_time}\n{trace}\n{info}\n\n")
-        self.write_mutex.unlock()
-
-    def warning(self, info):
-        warn_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        self.write_mutex.lock()
-        self.file.write(f"[WARNING] {warn_time}\n{info}\n\n")
-        self.write_mutex.unlock()
-
-    def info(self, info):
-        log_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        self.write_mutex.lock()
-        self.file.write(f"[INFO] {log_time}\n{info}\n\n")
-        self.write_mutex.unlock()
-
-    def save(self):
-        self.file.close()
 
 
 @singleton
@@ -82,7 +50,7 @@ class MainEditorHandler(list):
             startWindow.close()
             return self[-1]
         else:
-            QMessageBox.warning(None, "警告", "编辑窗口数量已达上限（5）", QMessageBox.Ok)
+            QMessageBox().warning(None, "警告", "编辑窗口数量已达上限（5）", QMessageBox.Ok)
             return None
 
     def close(self, mainEditor: MainEditor):
@@ -90,7 +58,6 @@ class MainEditorHandler(list):
         # 将窗口从数组删除
         self.remove(mainEditor)
         # mainEditor.close()
-        gc.collect()
         # 保存配置
         self.configHandler.save_config()
         # # 如果没有窗口了，关闭程序
@@ -103,35 +70,35 @@ class MainEditorHandler(list):
 
 
 def lastEdit():
-    color_print("[INFO] 最近编辑", "green")
+    print("[INFO] 最近编辑")
     mainEditor = mainEditors.new()
     if not mainEditor:
         return
 
 
 def newPrj():
-    color_print("[INFO] 新建项目", "green")
+    print("[INFO] 新建项目")
     mainEditor = mainEditors.new()
     if not mainEditor:
         return
 
 
 def openPrj():
-    color_print("[INFO] 打开项目", "green")
+    print("[INFO] 打开项目")
     mainEditor = mainEditors.new()
     if not mainEditor:
         return
 
 
 def setting():
-    color_print("[INFO] 设置", "green")
+    print("[INFO] 设置")
     mainEditor = mainEditors.new()
     if not mainEditor:
         return
 
 
 def _help():
-    color_print("[INFO] 帮助", "green")
+    print("[INFO] 帮助")
     mainEditor = mainEditors.new()
     if not mainEditor:
         return
@@ -160,13 +127,18 @@ if __name__ == '__main__':
         QApp.setApplicationName("NavalArt HullEditor")
         QApp.setApplicationVersion(VERSION)
         QApp.setOrganizationName("JasonLee")
-        # 打开欢迎界面
-        startWindow = StartWindow()
-        startWindow.show()
-        # 初始化编辑界面集合
-        mainEditors: MainEditorHandler = MainEditorHandler(configHandler, Log())
-        # 链接信号
-        linkSignal(startWindow)
+        QApp.setAttribute(Qt.AA_DisableHighDpiScaling)
+        if TESTING:
+            gl_widget = GLWidgetGUI(configHandler)
+            gl_widget.show()
+        else:
+            # 打开欢迎界面
+            startWindow = StartWindow()
+            startWindow.show()
+            # 初始化编辑界面集合
+            mainEditors: MainEditorHandler = MainEditorHandler(configHandler, Log())
+            # 链接信号
+            linkSignal(startWindow)
         # 结束程序
         sys.exit(QApp.exec_())
     except Exception as e:

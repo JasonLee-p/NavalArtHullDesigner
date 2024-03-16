@@ -3,7 +3,10 @@ import subprocess
 import os
 from pathlib import Path
 from .video_utils import VideoReader
-import av
+try:
+    import av
+except ImportError:
+    pass
 
 __all__ = ["optimize_gif", "video2gif"]
 

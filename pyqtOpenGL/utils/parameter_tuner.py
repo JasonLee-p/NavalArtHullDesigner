@@ -1,5 +1,8 @@
 import sys
-import cv2
+try:
+    import cv2
+except:
+    pass
 import numpy as np
 from time import time
 from pathlib import Path
@@ -12,10 +15,10 @@ from .video_utils import VirableRateVideoWriter, VideoReader
 from ..functions import Filter, increment_path
 
 from .QtTools import (QTablePanel,
-                    VisualizeWidget,
-                    QPushButton,
-                    QImageViewWidget,
-                    create_layout)
+                      VisualizeWidget,
+                      QPushButton,
+                      QImageViewWidget,
+                      create_layout)
 
 
 class InputType():
@@ -25,7 +28,8 @@ class InputType():
 
 class InputSource():
     """输入源"""
-    def __init__(self, source: Union[str, Path]=None, type: str=None):
+
+    def __init__(self, source: Union[str, Path] = None, type: str = None):
         """
         type: 'video', 'image'
         """
@@ -70,7 +74,7 @@ class InputSource():
         if self.type == InputType.VIDEO and self.input_source is not None:
             self.input_source.release()
 
-    def pause_toggle(self, val: bool=None):
+    def pause_toggle(self, val: bool = None):
         """video 暂停切换"""
         if self.type != InputType.VIDEO:
             return
@@ -121,7 +125,8 @@ class VideoControlWidget(QtWidgets.QWidget):
     """控制视频暂停/后退/快进, 显示视频流时间戳等信息"""
     sigRecordVideo = pyqtSignal(bool)
     sigVideoChanged = pyqtSignal(bool)
-    def __init__(self, parent, input_widget:InputSource):
+
+    def __init__(self, parent, input_widget: InputSource):
         super().__init__(parent)
         self.input_widget = input_widget
         self.init_ui()
@@ -150,11 +155,11 @@ class VideoControlWidget(QtWidgets.QWidget):
         self.stamp_label = QtWidgets.QLabel(self)
         self.hbox = create_layout(
             self,
-            type = "h",
-            widgets = [self.backButton, self.playButton, self.forwardButton,
-                       self.recordButton, self.stamp_label],
-            stretchs = [1, 1, 1, 1, 1],
-            spacing = 10,
+            type="h",
+            widgets=[self.backButton, self.playButton, self.forwardButton,
+                     self.recordButton, self.stamp_label],
+            stretchs=[1, 1, 1, 1, 1],
+            spacing=10,
         )
 
     @pyqtSlot()
@@ -212,7 +217,6 @@ class VideoControlWidget(QtWidgets.QWidget):
 
 
 class ParameterTuner(QWidget):
-
     panel_config = {
         "spacer0": ["spacer", 20],
         "Record Source Image": ["bool", 0],
@@ -224,11 +228,11 @@ class ParameterTuner(QWidget):
     }
 
     def __init__(
-        self,
-        func: Callable,
-        params: dict = {},
-        video: InputSource = None,
-        preprocess: Callable = None,
+            self,
+            func: Callable,
+            params: dict = {},
+            video: InputSource = None,
+            preprocess: Callable = None,
     ):
         """
         :param func: 待调参的图片处理函数
@@ -246,7 +250,7 @@ class ParameterTuner(QWidget):
         self.fps = Filter(0)
         self.video_writer = None
         self.record_flag = 0  # 0 normal, 1 start, 2 recording, 3 close
-        self.record_Transition ={(0,True): 1, (1,False): 3, (2,False): 3}
+        self.record_Transition = {(0, True): 1, (1, False): 3, (2, False): 3}
 
         self.setup_ui(self.panel_config)
 
@@ -256,8 +260,8 @@ class ParameterTuner(QWidget):
 
         self.vc_widget.sigRecordVideo.connect(
             lambda val:
-                setattr(self, "record_flag",
-                        self.record_Transition[(self.record_flag, val)])
+            setattr(self, "record_flag",
+                    self.record_Transition[(self.record_flag, val)])
         )
         self.vc_widget.sigVideoChanged.connect(self.on_video_changed)
 
@@ -270,27 +274,27 @@ class ParameterTuner(QWidget):
         self.src_img_widget.setMinimumWidth(150)
         self.hbox = create_layout(
             self,
-            type = "h",
-            widgets = [self.left_frame, self.right_frame, self.src_img_widget],
-            stretchs = [1, 4, 4],
+            type="h",
+            widgets=[self.left_frame, self.right_frame, self.src_img_widget],
+            stretchs=[1, 4, 4],
         )
 
         self.panel = QTablePanel(self, params)
         self.status_label = QtWidgets.QLabel(self)
         self.left_vbox = create_layout(
             self.left_frame,
-            type = "v",
-            widgets = [self.panel, self.status_label],
-            stretchs = [10, 1],
+            type="v",
+            widgets=[self.panel, self.status_label],
+            stretchs=[10, 1],
         )
 
         self.vis_widget = VisualizeWidget(self)
         self.vc_widget = VideoControlWidget(self, self.video)
         self.right_vbox = create_layout(
             self.right_frame,
-            type = "v",
-            widgets = [self.vis_widget, self.vc_widget],
-            stretchs = [15, 1],
+            type="v",
+            widgets=[self.vis_widget, self.vc_widget],
+            stretchs=[15, 1],
         )
 
     def on_timeout(self):
@@ -316,7 +320,7 @@ class ParameterTuner(QWidget):
 
         t0 = time()
         ret = self.func(img, **(self._get_params()))
-        self.fps.update(1 / (time()-t0+1e-5))  # 计算 fps
+        self.fps.update(1 / (time() - t0 + 1e-5))  # 计算 fps
 
         # 更新图片
         if isinstance(ret, tuple):
@@ -327,7 +331,7 @@ class ParameterTuner(QWidget):
         # 视频更新状态栏
         self.status_label.setText(
             f"fps:{self.fps.data:>8.3f} \
-            frame time:{1000/self.fps.data:>8.3f}ms"
+            frame time:{1000 / self.fps.data:>8.3f}ms"
         )
         self.vc_widget.update_stamp()
 
@@ -382,7 +386,7 @@ class ParameterTuner(QWidget):
         if a0.text() in ['a', 'A']:  # 快退一秒
             self.vc_widget.on_back()
         elif a0.text() in ['d', 'D']:
-            self.vc_widget.on_forward() # 快进一秒
+            self.vc_widget.on_forward()  # 快进一秒
         elif a0.text() in ['f', 'F']:  # 步进
             self.vc_widget.on_forward_frame()
         elif a0.text() in ['b', 'B']:  # 步进
@@ -407,7 +411,3 @@ class ParameterTuner(QWidget):
         for key in self.param_keys:
             params[key] = self.panel[key]
         return params
-
-
-
-

@@ -5,12 +5,7 @@
 from abc import abstractmethod
 from typing import Literal, List, Dict
 
-from PyQt5.QtCore import QPoint, QRect, QCoreApplication
-from PyQt5.QtWidgets import (
-    QWidget, QGraphicsDropShadowEffect, QLayout, QApplication, QGridLayout, QStackedLayout,
-    QFormLayout, QTabWidget, QMessageBox
-)
-from PyQt5.QtGui import QColor
+# from PyQt5.QtCore import QPoint, QRect, QCoreApplication
 
 from .buttons import *
 

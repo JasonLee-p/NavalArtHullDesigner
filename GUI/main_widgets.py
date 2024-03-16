@@ -4,7 +4,6 @@
 """
 import numpy as np
 import PIL.Image as Image
-from PyQt5 import QtCore
 from ShipRead.na_project import ShipProject
 from funcs_utils import not_implemented
 from pyqtOpenGL import *
@@ -333,120 +332,52 @@ class GLWidgetGUI(GLViewWidget):
         super().__init__(Vector3(100., 20., 40.), cam_sensitivity=camera_sensitivity)
         self.__init_GUI()
 
-        ver1, ind1 = sphere(20, 20, 20)
-        normal1 = ver1 / 2
-        ver2, ind2 = cylinder(radius=[12, 10], cols=12, rows=8, length=2.4)
-        # img = Image.open("./pyqtOpenGL/items/resources/textures/box.png")
-        # img = np.array(img, dtype='f4')
-
-        # self.img = GLImageItem(img, width_height=(0.2, 0.2))
-        self.ax = GLAxisItem(size=(80, 80, 80))
-        self.box = GLBoxTextureItem(size=(20, 20, 20))
-        self.box.translate(0, 1.1, 0)
-        self.text = GLTextItem(text="Hello World", pos=(2, 6, -1), color=(1, 0.6, 1), fixed=False)
-        self.arrow = GLArrowPlotItem(
-            start_pos=ver1 + [5, -1, 0],
-            end_pos=ver1 + normal1 + [5, -1, 0],
-            color=[1, 1, 0]
-        )
-
-        # -- scatter and line
-        pos = np.random.uniform(-2, 2, size=(15, 3)).astype('f4') * (2, 1, 2) + [0, -3, 0]
-        color = np.random.uniform(0, 1, size=(15, 3)).astype('f4')
-        self.scatter = GLScatterPlotItem(pos=pos, color=color, size=2)
-        self.line = GLLinePlotItem(pos=pos, color=color, lineWidth=2)
+        self.axis = GLAxisItem(fix_to_corner=True)
+        self.text = GLTextItem(text="BB-63 USS Missouri", pos=(0, 50, 0), color=(0.6, 0.6, 1), fixed=False)
 
         # -- lights
-        self.light = PointLight(pos=[0, 50, 40], ambient=(0.8, 0.8, 0.8), diffuse=(0.8, 0.8, 0.8))
+        self.light = PointLight(pos=[0, 100, 0], ambient=(0.7, 0.7, 0.7), diffuse=(0.7, 0.7, 0.7))
         self.light1 = PointLight(pos=[0, -50, 10], diffuse=(0, 0.8, 0))
         self.light2 = PointLight(pos=[-120, 30, 20], diffuse=(0.8, 0, 0))
+        self.light3 = PointLight(pos=[90, 90, 90], diffuse=(0, 0, 0.8))
+
+        self.all_lights = [self.light, self.light1, self.light2, self.light3]
 
         # -- grid
         self.grid = GLGridItem(
-            size=(70, 70), lineWidth=1,
-            lights=[self.light, self.light1, self.light2]
+            size=(500, 500), spacing=(50, 50),
+            lineWidth=0.4,
+            color=None,
+            lineColor=(0.4, 0.8, 0.9, 1.0),
+            lights=[self.light],
+            glOptions='translucent'
         )
 
-        # -- model
-        # self.model = GLModelItem(
-        #     "./pyqtOpenGL/items/resources/objects/cyborg/cyborg.obj",
-        #     lights=[self.light, self.light1, self.light2]
-        # )
         self.model = GLModelItem(
             "./pyqtOpenGL/items/resources/objects/BB-63.obj",
-            lights=[self.light, self.light1, self.light2]
-        )
-        self.model.translate(0, 2, 0)
-
-        # -- mesh
-        self.mesh1 = GLInstancedMeshItem(
-            pos=[[50, -10, 0], [-30, 50, -50], [40, 60, -80]],
-            lights=[self.light, self.light1, self.light2],
-            indices=ind1,
-            vertexes=ver1,
-            normals=normal1,
-            color=(0.7, 0.8, 0.8)
+            lights=self.all_lights,
+            selectable=True
         )
 
-        self.mesh2 = GLMeshItem(
-            indices=ind2,
-            vertexes=ver2,
-            lights=[self.light, self.light1, self.light2],
-            material=Material((0.4, 0.1, 0.1), diffuse=(0.6, 0.1, 0.3))
-        )
-        self.mesh2.rotate(-50, 1, 0.4, 0)
-        self.mesh2.translate(-6, 2, -2)
-
-        # -- surface
-        self.zmap = np.random.uniform(0, 1.5, (25, 25))
-        self.texture = Texture2D(sin_texture(0))
-        self.surf = GLSurfacePlotItem(
-            zmap=self.zmap, x_size=6, lights=[self.light, self.light1, self.light2],
-            material=Material((0.2, 0.2, 0.2), diffuse=(0.5, 0.5, 0.5), textures=[self.texture])
-        )
-        self.surf.rotate(-90, 1, 0, 0)
-        self.surf.translate(-6, -1, 0)
-
-        # -- 3d grid
-        z = np.random.uniform(-3, -2, (5, 6))
-        y = np.arange(5) + 2
-        x = np.arange(6) + 1
-        X, Y = np.meshgrid(x, y, indexing='xy')
-        grid = np.stack([X, Y, z], axis=2)
-        color = np.random.random((5, 6, 3))
-        self.grid3d = GL3DGridItem(grid=grid, fill=True, opacity=0.5, color=color)
-        self.grid3d.setDepthValue(10)
-        self.grid3d1 = GL3DGridItem(grid=grid, fill=False, color=(0, 0, 0))
-        self.grid3d1.setDepthValue(-1)
-
-        self.addItem(self.grid3d)
-        self.addItem(self.grid3d1)
-        self.addItem(self.text)
-        # self.addItem(self.img)
-        self.addItem(self.ax)
-        self.addItem(self.grid)
-        self.addItem(self.scatter)
-        self.addItem(self.line)
-        self.addItem(self.box)
-        self.addItem(self.arrow)
         self.addItem(self.model)
-        self.addItem(self.surf)
-        self.addItem(self.mesh1)
-        self.addItem(self.mesh2)
+        self.addItem(self.text)
+        self.addItem(self.axis)
+        self.addItem(self.grid)
 
         # self.drawObjHandler = DrawObjHandler(self)
-        # self.gl_initialized.connect(self.__init_drawObjs)  # 链接gl初始化完成和初始化绘制物体
 
         # 动画
-        self.timer = QtCore.QTimer(self)
-        self.timer.timeout.connect(self.onTimeout)
-        self.timer.start(6)  # 设置定时器，以便每隔一段时间调用onTimeout函数
+        self.frame_rate = 60
+        self.animation_timer = QTimer(self)
+        self.animation_timer.timeout.connect(self.animation)
+        self.animation_timer.start(1000 // self.frame_rate)  # 设置定时器，以便每隔一段时间调用onTimeout函数
 
-    def onTimeout(self):
+    def animation(self):
         self.light.rotate(0, 1, 0.4, 1)
         self.light1.rotate(1, 1, 0, -2)
         self.light2.rotate(0.2, 1., 0., 1.5)
-        self.update()
+        self.light3.rotate(0, 0.5, 0.5, 0.5)
+        self.parent().update()
 
     def __init_GUI(self):
         self.__init_fps_label()
@@ -498,9 +429,6 @@ class GLWidgetGUI(GLViewWidget):
     #     self.mod1_button.setChecked(True)
     #     self.subMod1_button.setChecked(True)
 
-    def draw_2D_objs(self):
-        pass
-
     def update_GUI_after_resize(self):
         # # 更新按钮位置
         # right = QOpenGLWidget.width(self) - 10 - 4 * (self.ModBtWid + 10)
@@ -514,8 +442,8 @@ class GLWidgetGUI(GLViewWidget):
         ...
 
     def clearResources(self):
-        self.timer.stop()
-        self.timer.deleteLater()
+        self.animation_timer.stop()
+        self.animation_timer.deleteLater()
         for it in self.items:
             # it.release()
             ...

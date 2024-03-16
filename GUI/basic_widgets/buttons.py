@@ -5,9 +5,9 @@
 from .other_widgets import *
 from ..basic_data import *
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QPushButton, QSizePolicy, QHBoxLayout, QVBoxLayout
-from PyQt5.QtGui import QIcon, QPixmap, QImage, QPainter, QPainterPath
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
 
 def _set_buttons(

@@ -28,7 +28,7 @@ class GLArrowPlotItem(GLGraphicsItem):
     ):
         super().__init__(parentItem=parentItem)
         if tip_size is None:
-            tip_size = [0.1, 0.2]
+            tip_size = [0.6, 1.2]
         if color is None:
             color = [1., 1., 1.]
         self.antialias = antialias
