@@ -55,6 +55,7 @@ def __find_na_root_path():
     return NA_path
 
 
+DESKTOP_PATH = os.path.join(os.path.expanduser("~"), 'Desktop')
 PTB_PATH = __find_ptb_path()
 NA_SHIP_PATH = __find_na_ship_path()
 NA_ROOT_PATH = __find_na_root_path()

@@ -68,18 +68,18 @@ class Camera:
         self.lookAt.setToIdentity()  # 重置lookAt
         self.lookAt.lookAt(self.pos, self.tar, Vector3(0, 1, 0))
 
-    @property
-    def quat(self):
-        return self.lookAt.toQuaternion()
-
     def zoom(self, delta):
         self.pos -= self.tar
-        rate = 1 - delta * self.sensitivity["缩放"] * 0.00001
+        rate = 1 - delta * self.sensitivity["缩放"] * 0.001
         self.pos *= rate
         self.distance *= rate
         self.pos += self.tar
         self.lookAt.setToIdentity()  # 重置lookAt
         self.lookAt.lookAt(self.pos, self.tar, Vector3(0, 1, 0))
+
+    @property
+    def quat(self):
+        return self.lookAt.toQuaternion()
 
     def set_sensitive(self, k, v):
         self.sensitivity[k] = v

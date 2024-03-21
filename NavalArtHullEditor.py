@@ -17,8 +17,8 @@ try:
     from OpenGL.GLU import *
     from OpenGL.GLUT import *
     # 本地库
-    from main_logger import Log
     from GUI import *
+    from main_logger import Log
     from funcs_utils import singleton
     from main_editor import MainEditor
     from startWindow import StartWindow
@@ -34,20 +34,32 @@ TESTING = False
 
 @singleton
 class MainEditorHandler(list):
-    def __init__(self, configHandler_, logger_):
+    def __init__(self, logger_):
         super().__init__()
-        self.configHandler = configHandler_
+        self.configHandler = configHandler
         self.logger = logger_
+        self.statusBarHandler = StatusBarHandler()
 
-    def new(self):
+    def new(self, mode: Literal["lastEdit", "newPrj", "openPrj", "setting", "help"] = "lastEdit"):
         global startWindow
         if len(self) < 5:
             # 新建主编辑窗口
-            self.append(MainEditor(GLWidgetGUI(configHandler), self.configHandler, self.logger))
+            self.append(MainEditor(GLWidgetGUI(), self.logger))
             # 绑定mainWindow的close信号到该类的close函数
             self[-1].closed.connect(lambda: self.close(self[-1]))
+            if mode == "lastEdit":
+                self[-1].load_last_project()
+            elif mode == "newPrj":
+                self[-1].new_prj()
+            elif mode == "openPrj":
+                self[-1].select_prj_toOpen()
+            elif mode == "setting":
+                self[-1].setting()
+            elif mode == "help":
+                self[-1].help()
             # 删除开始界面
             startWindow.close()
+            self.statusBarHandler.message.connect(lambda message, color: self[-1].show_status(message, color))
             return self[-1]
         else:
             QMessageBox().warning(None, "警告", "编辑窗口数量已达上限（5）", QMessageBox.Ok)
@@ -71,7 +83,7 @@ class MainEditorHandler(list):
 
 def lastEdit():
     print("[INFO] 最近编辑")
-    mainEditor = mainEditors.new()
+    mainEditor = mainEditors.new("lastEdit")
     if not mainEditor:
         return
 
@@ -128,15 +140,21 @@ if __name__ == '__main__':
         QApp.setApplicationVersion(VERSION)
         QApp.setOrganizationName("JasonLee")
         QApp.setAttribute(Qt.AA_DisableHighDpiScaling)
+        # # 在父控件中设置OpenGL格式
+        # format_ = QSurfaceFormat()
+        # format_.setVersion(3, 3)  # 设置OpenGL版本
+        # format_.setProfile(QSurfaceFormat.CoreProfile)  # 使用核心配置
+        # format_.setDepthBufferSize(24)  # 设置深度缓冲区大小等其他选项
+        # QSurfaceFormat.setDefaultFormat(format_)
         if TESTING:
-            gl_widget = GLWidgetGUI(configHandler)
+            gl_widget = GLWidgetGUI()
             gl_widget.show()
         else:
             # 打开欢迎界面
             startWindow = StartWindow()
             startWindow.show()
             # 初始化编辑界面集合
-            mainEditors: MainEditorHandler = MainEditorHandler(configHandler, Log())
+            mainEditors: MainEditorHandler = MainEditorHandler(Log())
             # 链接信号
             linkSignal(startWindow)
         # 结束程序

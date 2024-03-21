@@ -1,68 +1,68 @@
-from typing import Union
-
 from OpenGL.GL import *  # noqa
 from OpenGL import GL
+from math import radians
 from PyQt5 import QtCore
-from funcs_utils import singleton
-from main_logger import Log
+from PyQt5.QtCore import pyqtSignal
 
-from .transform3d import Matrix4x4
+from .transform3d import Matrix4x4, Quaternion
 import numpy as np
+from typing import Union
 
-__all__ = [
-    "GLOptions", "PickColorManager", "GLGraphicsItem"
-]
-
-GLOptions = {  # 几种常见的OpenGL状态设置
+GLOptions = {
     'opaque': {
-        GL_DEPTH_TEST: True,
         GL_BLEND: False,
         GL_ALPHA_TEST: False,
         GL_CULL_FACE: False,
+        "glDepthFunc": (GL_LEQUAL,),  # "glDepthFunc": (GL_LESS,),
         'glDepthMask': (GL_TRUE,),
     },
     'translucent': {
-        GL_DEPTH_TEST: True,
         GL_BLEND: True,
         GL_ALPHA_TEST: False,
         GL_CULL_FACE: False,
+        "glDepthFunc": (GL_LEQUAL,),  # "glDepthFunc": (GL_LESS,),
         'glDepthMask': (GL_TRUE,),
         'glBlendFunc': (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
     },
     'translucent_cull': {
-        GL_DEPTH_TEST: True,
         GL_BLEND: True,
         GL_ALPHA_TEST: False,
         GL_CULL_FACE: True,
+        "glDepthFunc": (GL_LEQUAL,),  # "glDepthFunc": (GL_LESS,),
         'glCullFace': (GL_BACK,),
         'glDepthMask': (GL_TRUE,),
         'glBlendFunc': (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
     },
     'additive': {
-        GL_DEPTH_TEST: False,
         GL_BLEND: True,
         GL_ALPHA_TEST: False,
         GL_CULL_FACE: False,
+        "glDepthFunc": (GL_ALWAYS,),
         'glDepthMask': (GL_TRUE,),
         'glBlendFunc': (GL_SRC_ALPHA, GL_ONE),
     },
     'ontop': {
-        GL_DEPTH_TEST: False,
         GL_BLEND: True,
         GL_ALPHA_TEST: False,
         GL_CULL_FACE: False,
+        "glDepthFunc": (GL_ALWAYS,),
         'glDepthMask': (GL_FALSE,),
         'glBlendFunc': (GL_SRC_ALPHA, GL_ONE),
     },
-    "ontop2D": {
-        GL_DEPTH_TEST: False,
-        GL_BLEND: True,
-        GL_ALPHA_TEST: True,
-        GL_CULL_FACE: False,
-        'glDepthMask': (GL_FALSE,),
-        'glBlendFunc': (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
-    },
 }
+
+__all__ = ['GLGraphicsItem', 'GLOptions', 'PickColorManager']
+
+
+def singleton(cls):
+    instances = {}
+
+    def get_instance(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+
+    return get_instance
 
 
 @singleton
@@ -70,7 +70,7 @@ class PickColorManager(dict):
     def __init__(self, glView=None):
         """
         For graphics items to be selectable, each item is assigned a unique color for color recognition when picking.
-        format: { color(int): itemObject }
+        format: { color(np.float32): itemObject }
         """
         self.__view = glView
         super().__init__()
@@ -83,14 +83,14 @@ class PickColorManager(dict):
 
     def new_item(self, item):
         """
-        为item分配一个颜色，用于拾取时的颜色识别
+        为item分配一个0-1之间的32位浮点颜色，用于拾取时的颜色识别
         Assign a color to the item for color recognition when picking
         :param item:
         :return:
         """
-        color = tuple(np.random.randint(0, 256) for _ in range(3))
-        while color in self:
-            color = tuple(np.random.randint(0, 256) for _ in range(3))
+        color = np.random.rand(1).astype(np.float32)[0]
+        if color in self:
+            color = np.random.rand(1).astype(np.float32)[0]
         self[color] = item
         return color
 
@@ -104,47 +104,37 @@ class PickColorManager(dict):
         if item in self.values():
             self.pop(item.pickColor())
         else:
-            Log().warning(f"GLGraphicsitem {item} not in PickColorManager")
+            raise Warning(f"item {item} not in PickColorManager")
 
 
 class GLGraphicsItem(QtCore.QObject):
     pick_fragment_shader = """
-        uniform vec3 pickColor;
+        uniform float pickColor;
         void main() {
-            pickColor = pickColor / 255.0;
-            gl_FragColor = vec4(pickColor, 1.0);
+            gl_FragColor = vec4(pickColor, 0.0, 0.0, 1.0);
         }
     """
+
+    selected_fragment_shader = """
+        uniform vec4 selectedColor;
+        void main() {
+            gl_FragColor = selectedColor;
+        }
+    """
+    be_selected = pyqtSignal()
 
     def __init__(
             self,
             parentItem: 'GLGraphicsItem' = None,
             depthValue: int = 0,
-            selectable: bool = False,
+            selectable=False,
+            selectedColor=(0.1, 0.9, 1.0, 0.3)
     ):
-        """
-        The GLGraphicsItem class is the base class for all OpenGL graphics items. It provides a method for drawing graphics in OpenGL.
-
-        这个类是所有OpenGL图形项的基类。它提供了一种在OpenGL中绘制图形的方法。
-
-        物体选择机制：
-        =======
-
-        1. 每个 Item 都会配置一个独一无二的颜色，用于拾取时的颜色识别，完成选择物体的功能
-        2. 在用 pickColor 获取颜色的时候，当存在父项的 selectable 为 True 时，会返回父项的颜色；
-        随后在外部会调用父项的 setSelected 方法，从而实现子项被选择时，父项及其所有子项也被选择的功能，
-        selected为True的物体会被渲染为选中状态，selected为False的物体会被渲染为未选中状态。
-        而由于父项的颜色是唯一的，所以只能在PickColorManager中返回父项，从而保证不会将子项添加到外部的被选择列表中。
-
-        :param parentItem: 父项
-        :param depthValue: 深度值，用于控制绘制顺序
-        :param selectable: 是否可选
-        """
         super().__init__()
         self.__parent: Union[GLGraphicsItem, None] = None
         self.__view = None
         self.__children: list[GLGraphicsItem] = list()
-        self.__transform = Matrix4x4()
+        self.__transform = Matrix4x4()  # local transform
         self.__visible = True
         self.__selectable = selectable
         self.__selected = False
@@ -154,13 +144,15 @@ class GLGraphicsItem(QtCore.QObject):
         self.setParentItem(parentItem)
         self.setDepthValue(depthValue)
         # 分配拾取时的颜色，用于拾取时的颜色识别，完成选择物体的功能
-        self._pickColor: tuple = PickColorManager().new_item(self)
+        self._pickColor: np.float32 = PickColorManager().new_item(self)
+        self._selectedColor = selectedColor
 
     def setParentItem(self, item: 'GLGraphicsItem'):
         """Set this item's parent in the scenegraph hierarchy."""
         if item is None:
             return
         item.addChildItem(self)
+        return self
 
     def addChildItem(self, item: 'GLGraphicsItem'):
         if item is not None and item not in self.__children:
@@ -171,7 +163,7 @@ class GLGraphicsItem(QtCore.QObject):
             item.__parent = self
 
     def parentItem(self):
-        """Return this item's parent in the scenegraph hierarchy."""
+        """Return item's parent in the scenegraph hierarchy."""
         return self.__parent
 
     def childItems(self):
@@ -185,57 +177,7 @@ class GLGraphicsItem(QtCore.QObject):
             items.extend(child.recursiveChildItems())
         return items
 
-    def selectable(self):
-        """Return whether this item is selectable."""
-        return self.__selectable
-
-    def setSelectable(self, s, children=True):
-        """Set whether this item is selectable."""
-        if self.__selectable is s:
-            return
-        self.__selectable = s
-        self.__selected = False
-        if children:
-            for child in self.__children:
-                child.setSelectable(s, children=True)
-
-    def selected(self, parent=False):
-        """Recursively return whether this item is selected."""
-        if self.__selectable:
-            return self.__selected
-        # unselectable items are only selected if their selectable parent is selected
-        if not parent:
-            return False
-        while self.__parent is not None:
-            if self.__parent.selectable():
-                return self.__parent.selected()
-        return False
-
-    def setSelected(self, s, children=True):
-        """Set the selected state of this item."""
-        self.__selected = s
-        if children:
-            for child in self.__children:
-                if child.selectable():
-                    child.setSelected(s)
-
-    def pickColor(self, parent_layers: Union[int, bool] = True) -> tuple:
-        """Return the color used to identify this item when picking.
-        if parent_layers is True, then the color of the parent is returned if the parent is selectable."""
-        if not self.__selectable:
-            return 0, 0, 0
-        if parent_layers is True:
-            while self.__parent is not None and self.__parent.__selectable:
-                return self.__parent._pickColor
-            return self._pickColor
-        elif parent_layers == 0 or parent_layers is False:
-            return self._pickColor
-        for i in range(parent_layers):
-            if self.__parent is not None and self.__parent.__selectable:
-                return self.__parent._pickColor
-        return self._pickColor
-
-    def setGLOptions(self, opts):
+    def setGLOptions(self, opts: Union[str, dict]):
         """
         Set the OpenGL state options to use immediately before drawing this item.
         (Note that subclasses must call setupGLState before painting for this to work)
@@ -271,7 +213,7 @@ class GLGraphicsItem(QtCore.QObject):
             opts = GLOptions[opts]
         self.__glOpts = opts.copy()
 
-    def updateGLOptions(self, opts):
+    def updateGLOptions(self, opts: dict):
         """
         Modify the OpenGL state options to use immediately before drawing this item.
         *opts* must be a dictionary as specified by setGLOptions.
@@ -279,15 +221,55 @@ class GLGraphicsItem(QtCore.QObject):
         """
         self.__glOpts.update(opts)
 
+    def selectable(self):
+        """Return whether this item is selectable."""
+        return self.__selectable
+
+    def setSelectable(self, s, children=True):
+        """Set whether this item is selectable."""
+        if self.__selectable is s:
+            return
+        self.__selectable = s
+        self.__selected = False
+        if children:
+            for child in self.__children:
+                child.setSelectable(s, children=True)
+
+    def selected(self, parent=False):
+        """Recursively return whether this item is selected."""
+        if self.__selectable:
+            return self.__selected
+        # unselectable items are only selected if their selectable parent is selected
+        return self.parent() is not None and self.parent().selected(parent=True)
+
+    def setSelected(self, s, children=True):
+        """Set the selected state of this item."""
+        if s:
+            self.be_selected.emit()
+        self.__selected = s
+        if children:
+            for child in self.__children:
+                if child.selectable():
+                    child.setSelected(s)
+
+    def pickColor(self, parent=True):
+        """Return the color assigned to this item for picking.
+        If it has parent, return the parent's pickColor."""
+        if not self.__selectable:
+            return np.float32(0.0)
+        if parent and self.__parent is not None and self.__parent.selectable():
+            return self.__parent.pickColor(parent=True)
+        return self._pickColor
+
     def setView(self, v):
         self.__view = v
 
     def view(self):
         return self.__view
 
-    def setDepthValue(self, value):
+    def setDepthValue(self, value: int):
         """
-        Sets the depth value of this item. Default is 0.
+        Sets the depth value of this item. Default is 0. Range is -1000 to 1000.
         This controls the order in which items are drawn--those with a greater depth value will be drawn later.
         Items with negative depth values are drawn before their parent.
         (This is analogous to QGraphicsItem.zValue)
@@ -382,8 +364,9 @@ class GLGraphicsItem(QtCore.QObject):
 
         if self.visible():
             self.paint(model_matrix)
-            for child in self.__children:
-                child.drawItemTree(model_matrix)
+
+        for child in self.__children:
+            child.drawItemTree(model_matrix)
 
     def drawItemTree_pickMode(self, model_matrix=Matrix4x4()):
         if not self.__selectable:
@@ -440,8 +423,6 @@ class GLGraphicsItem(QtCore.QObject):
         Translate the object by (*dx*, *dy*, *dz*) in its parent's coordinate system.
         If *local* is True, then translation takes place in local coordinates.
         """
-        if dx == 0 and dy == 0 and dz == 0:
-            return self
         self.__transform.translate(dx, dy, dz, local=local)
         return self
 
@@ -478,11 +459,13 @@ class GLGraphicsItem(QtCore.QObject):
         The widget's GL context is made current before this method is called.
         It is the responsibility of the item to set up its own modelview matrix,
         but the caller will take care of pushing/popping.
-        You can also define what to paint when the item is selected.
         """
         pass
         # self.setupGLState()
         # raise NotImplementedError()
+
+    def paint_selected(self, model_matrix=Matrix4x4()):
+        pass
 
     def paint_pickMode(self, model_matrix=Matrix4x4()):
         """
@@ -492,8 +475,6 @@ class GLGraphicsItem(QtCore.QObject):
         but the caller will take care of pushing/popping.
         """
         pass
-        # self.setupGLState()
-        # raise NotImplementedError()
 
     def __del__(self):
         if self.__selectable:
@@ -503,3 +484,8 @@ class GLGraphicsItem(QtCore.QObject):
         for child in self.__children:
             child.__parent = None
         self.__children.clear()
+
+
+class Material:
+    def __init__(self):
+        pass

@@ -668,7 +668,7 @@ class TabWidget(QTabWidget):
         """
         一个可各个方向拖动的标签页
         """
-        super().__init__(parent=None)
+        super().__init__(parent=parent)
         # 设置标签页
         # self.setDocumentMode(True)
         self.setTabPosition(position)
@@ -745,7 +745,7 @@ class TabWidget(QTabWidget):
         """)
         self.setFont(YAHEI[9])
 
-    def addTab(self, widget: QWidget, a1):
+    def addTab(self, widget, a1):
         super().addTab(widget, a1)
         radius_pos1 = 'bottom-left'
         radius_pos2 = 'bottom-right'
@@ -846,7 +846,7 @@ class Window(QWidget):
         # 标题
         self.title_label = TextLabel(None, self.title, YAHEI[11], self.fg)
         # 其他可能用到的控件
-        self.status_label = QLabel(None)
+        self.status_label = TextLabel(None, "", YAHEI[9], self.fg, align=Qt.AlignLeft | Qt.AlignVCenter)
         # 自定义顶栏
         self.customized_top_widget = QWidget(self.top_widget)
         # 顶部拖动区域事件和窗口缩放事件

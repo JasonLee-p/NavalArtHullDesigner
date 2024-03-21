@@ -20,6 +20,7 @@ from math import radians, tan
 
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal, QPoint, QMutex
+from PyQt5.QtWidgets import QOpenGLWidget
 from pyqtOpenGL.items.GL2DSelectBox import GLSelectBox
 
 from .camera import Camera
@@ -51,8 +52,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
           - Rotation/scale controls
         """
         QtWidgets.QOpenGLWidget.__init__(self, parent)
-        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
-        # self.camera = Camera2(cam_position, 0., 0., 0., fov, cam_sensitivity)  # TODO:
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
         self.camera = Camera(cam_position, cam_tar, fov=fov, sensitivity=cam_sensitivity)
         self.mouse_last_pos = None  # used for mouse move event
         self.pan_btn = pan_btn
@@ -80,6 +80,10 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         _format = QtGui.QSurfaceFormat()
         _format.setSamples(9)
         self.setFormat(_format)
+        # 加速渲染
+        self.setAutoFillBackground(True)
+        # self.setUpdateBehavior(QOpenGLWidget.DoubleBuffer)
+        self.frameSwapped.connect(self.parent().update) if self.parent() else None
 
     def change_proj_mode(self, proj_mode: Literal['ortho', 'perspective']):
         self.camera.change_proj_mode(proj_mode)
@@ -113,11 +117,15 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
     def reset(self):
         self.camera.set_params(Vector3(0., 0., 10.), Vector3(0., 0., 0.), fov=45.)
 
-    def addItem(self, item: GLGraphicsItem):
+    def addItem(self, item: GLGraphicsItem, add_light=False):
         self.items.append(item)
         item.setView(self)
         if hasattr(item, 'lights'):
-            self.lights |= set(item.lights)
+            if not item.lights:
+                if hasattr(item, 'addLight') and add_light:
+                    item.addLight(self.lights)
+            else:
+                self.lights |= set(item.lights)
         self.items.sort(key=lambda a: a.depthValue())
         self.update()
 
@@ -156,10 +164,10 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
     def initializeGL(self):
         """initialize OpenGL state after creating the GL context."""
         PointLight.initializeGL()
-        self.createFramebuffer(WIN_WID, WIN_HEI)
+        self._createFramebuffer(WIN_WID, WIN_HEI)
         self.select_box.initializeGL()
         gl.glEnable(GL_MULTISAMPLE)
-        self.addItem(self.select_box)
+        gl.glEnable(GL_DEPTH_TEST)
 
     def paintGL(self):
         """
@@ -170,73 +178,82 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         glClearColor(*self.bg_color)
         glDepthMask(GL_TRUE)
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
-        self.select_box.updateGL(self.select_start, self.select_end) if self.select_box.visible() else None
         self.drawItems(pickMode=False)
+        if self.select_box.visible():
+            self.select_box.updateGL(self.select_start, self.select_end)
+            self.select_box.paint()
         self.__update_FPS()
 
-    def createFramebuffer(self, width, height):
+    def _createFramebuffer(self, width, height):
+        """
+        创建帧缓冲区, 用于拾取
+        Create a framebuffer for picking
+        """
         self.__framebuffer = glGenFramebuffers(1)
         glBindFramebuffer(GL_FRAMEBUFFER, self.__framebuffer)
         self.__texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.__texture)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, None)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, self.__texture, 0)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-    def resizeFramebuffer(self, width, height):
+    def _resizeFramebuffer(self, width, height):
         glBindFramebuffer(GL_FRAMEBUFFER, self.__framebuffer)
         glBindTexture(GL_TEXTURE_2D, self.__texture)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, None)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    def pickItems(self, x_, y_, w_, h_):
+        ratio = 2  # 为了提高渲染和拾取速度，暂将渲染视口缩小4倍
+        x_, y_, w_, h_ = self._normalizeRect(x_, y_, w_, h_, ratio)
+        glBindFramebuffer(GL_FRAMEBUFFER, self.__framebuffer)
+        glViewport(0, 0, self.deviceWidth() // ratio, self.deviceHeight() // ratio)
+        glClearColor(0, 0, 0, 0)
+        glDisable(GL_MULTISAMPLE)
+        glEnable(GL_DEPTH_TEST)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
+        # 设置拾取区域
+        glScissor(x_, self.deviceHeight() // ratio - y_ - h_, w_, h_)
+        glEnable(GL_SCISSOR_TEST)
+        # 在这里设置额外的拾取参数，例如鼠标位置等
+        self.drawItems(pickMode=True)
+        glDisable(GL_SCISSOR_TEST)
+        pixels = glReadPixels(x_, self.deviceHeight() // ratio - y_ - h_, w_, h_, GL_RED, GL_FLOAT)
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        glClearColor(*self.bg_color)
+        glEnable(GL_MULTISAMPLE)
+        glViewport(0, 0, self.deviceWidth(), self.deviceHeight())
+        # 获取拾取到的物体
+        pick_data = np.frombuffer(pixels, dtype=np.float32)
+        # # 保存为图片
+        # img_data = np.frombuffer(pixels, dtype=np.float32).reshape(h_, w_)
+        # # 将单通道数据转为三通道灰色图像
+        # img_data = np.stack([img_data, img_data, img_data], axis=2)
+        # img_data = (img_data * 255).astype(np.uint8)
+        # img_data = np.flipud(img_data)
+        # import PIL.Image as Image
+        # img = Image.fromarray(img_data)
+        # img.save('pick.png')
+        # 去掉所有为0.0的数据
+        pick_data = pick_data[pick_data != 0.0]
+        # 获取选中的物体
+        selected_items = []
+        id_set = list()
+        for id_ in pick_data:
+            if id_ in id_set:
+                continue
+            item: GLGraphicsItem = PickColorManager().get(id_)
+            if item:
+                selected_items.append(item)
+            id_set.append(id_)
+        return selected_items
 
     def renderToImage(self, path):
         self.makeCurrent()
         self.grabFramebuffer().save(path)
         self.doneCurrent()
 
-    def pickItems(self, x_, y, w, h):
-        ratio = 3  # 为了提高渲染和拾取速度，暂将渲染视口缩小3倍，速度理论上提高9倍
-        x_, y, w, h = self.normalizeRect(x_, y, w, h, ratio)
-        glBindFramebuffer(GL_FRAMEBUFFER, self.__framebuffer)
-        glViewport(0, 0, self.deviceWidth() // ratio, self.deviceHeight() // ratio)
-        glClearColor(0, 0, 0, 0)
-        glDisable(GL_MULTISAMPLE)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
-        # 设置拾取区域
-        glScissor(x_, self.height() // ratio - y - h, w, h)
-        glEnable(GL_SCISSOR_TEST)
-        # 在这里设置额外的拾取参数，例如鼠标位置等
-        self.drawItems(pickMode=True)
-        glDisable(GL_SCISSOR_TEST)
-        pixels = glReadPixels(x_, self.deviceHeight() // ratio - y - h, w, h, GL_RGBA, GL_UNSIGNED_BYTE)
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
-        glClearColor(*self.bg_color)
-        glEnable(GL_MULTISAMPLE)
-        glViewport(0, 0, self.deviceWidth(), self.deviceHeight())
-        # 获取拾取到的物体
-        st = time.time()
-        pick_data = np.frombuffer(pixels, dtype=np.uint8).reshape(h * w, 4)
-        # # 保存为图片
-        # img_data = np.frombuffer(pixels, dtype=np.uint8).reshape(h, w, 4)
-        # img_data = np.flipud(img_data)
-        # img = Image.fromarray(img_data)
-        # img.save('pick.png')
-        # 去掉所有为[0.,0.,0.,0.]的数据
-        pick_data = pick_data[np.any(pick_data != 0, axis=1)]
-        # 获取选中的物体
-        selected_items = []
-        id_set = list()
-        for id_ in pick_data:
-            if tuple(id_) in id_set:
-                continue
-            item: GLGraphicsItem = PickColorManager().get(tuple(id_[0:3]))
-            if item:
-                selected_items.append(item)
-            id_set.append(tuple(id_))
-        # print(f"拾取耗时指数：{(time.time() - st) * 10000000 / (h * w)}")
-        return selected_items
-
-    def normalizeRect(self, x_, y, w, h, ratio: int = 3):
+    def _normalizeRect(self, x_, y, w, h, ratio: int = 3):
         """
         防止拾取区域超出窗口范围
         :param x_: 拾取区域左下角的x坐标
@@ -277,7 +294,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self.makeCurrent()
         self.paintGL()
         self.doneCurrent()
-        self.parent().update()
+        self.update()
 
     def __update_FPS(self):
         dt = time.time() - self.__last_time
@@ -314,8 +331,19 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         selected_items = self.pickItems(self.select_start.x(), self.select_start.y(), size.x(), size.y())
         self.paintGL()
         self.doneCurrent()
-        self.parent().update()
+        self.update()
         return selected_items
+
+    def selected_items_handler(self):
+        """
+        返回当前被选择绘图对象所对应的工程对象
+        :return:
+        """
+        items = []
+        for item in self.selected_items:
+            if hasattr(item, 'handler'):
+                items.append(item.handler)
+        return items
 
     def pixelSize(self, pos=Vector3(0, 0, 0)):
         """
@@ -333,7 +361,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         if ev.buttons() == self.select_btn:
             self.select_start.setX(int(ev.localPos().x()))
             self.select_start.setY(int(ev.localPos().y()))
-        self.paintGL_outside()
+        self.update()
 
     def mouseMoveEvent(self, ev):
         ctrl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
@@ -370,7 +398,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self.select_end.setX(int(ev.localPos().x()))
             self.select_end.setY(int(ev.localPos().y()))
             self.select_box.setVisible(True)
-        self.paintGL_outside()
+        self.update()
 
     def mouseReleaseEvent(self, ev):
         ctl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
@@ -379,39 +407,49 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         if ev.button() == self.select_btn:
             self.select_box.setVisible(False)
             new_s_items = self.get_selected_item()  # 此函数仅用于获取选中的物体，不改变物体的选中状态
-            if not new_s_items:  # 没有选中的物体
+            # 没有选中的物体，处理后直接返回
+            if not new_s_items:
                 if ctl_down:  # 如果按下ctrl键，不清空选中的物体
+                    self.update()
                     return
                 # 如果不按下ctrl键，清空选中的物体
+                self._clear_selected_items()
+                self.update()
+                return
+            # 有选中的物体：
+            # 如果不按下ctrl键，取两集合的交集的补集（即从选中的物体中去掉已经选中的物体）
+            if not ctl_down:
                 for it in self.selected_items:
                     it.setSelected(False)
                 self.selected_items.clear()
-                return
-            # 如果不按下ctrl键，取两集合的交集的补集（即从选中的物体中去掉已经选中的物体）
-            if not ctl_down:
                 for it in new_s_items:
-                    if it in self.selected_items:
-                        it.setSelected(False)
-                        self.selected_items.remove(it)
-                    else:
-                        it.setSelected(True)
-                        self.selected_items.append(it)
+                    it.setSelected(True)
+                    self.selected_items.append(it)
             # 如果按下ctrl键，取两集合相加
             else:
                 for it in new_s_items:
                     if it not in self.selected_items:
                         it.setSelected(True)
                         self.selected_items.append(it)
+            self._after_selection()
+        self.update()
 
     def wheelEvent(self, ev):
-        delta = ev.angleDelta().x()
-        if delta == 0:
-            delta = ev.angleDelta().y()
+        delta = ev.angleDelta().y()
+        delta = 1 if delta > 0 else -1
         if ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier:  # 按下ctrl键
             self.camera.zoom(delta * 0.1)
         else:
             self.camera.zoom(delta)
-        self.parent().update()
+        self.update()
+
+    def _clear_selected_items(self):
+        for it in self.selected_items:
+            it.setSelected(False)
+        self.selected_items.clear()
+
+    def _after_selection(self):
+        ...
 
     def readQImage(self):
         """

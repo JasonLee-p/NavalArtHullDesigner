@@ -23,6 +23,7 @@ class GLSelectBox(GLGraphicsItem):
     def __init__(self, glOptions='ontop', parentItem=None):
         super().__init__(parentItem=None)
         self.setGLOptions(glOptions)
+        self.__ortho_matrix = Matrix4x4()
         self.vertices = np.array([
             # 顶点坐标
             -1, -1,
@@ -55,15 +56,11 @@ class GLSelectBox(GLGraphicsItem):
     def drawItemTree_pickMode(self):
         pass
 
-    def proj_matrix(self) -> Matrix4x4:
-        """
-        :return: ortho matrix
-        """
-        return Matrix4x4.ortho_matrix(0, self.view().deviceWidth(), self.view().deviceHeight(), 0, -1, 1)
-
     def paint(self, _=None):
         self.setupGLState()
-        self.shader.set_uniform("projection", self.proj_matrix().glData, "mat4")
+        self.__ortho_matrix.setToIdentity()
+        self.__ortho_matrix.ortho(0, self.view().deviceWidth(), self.view().deviceHeight(), 0, -1, 1)
+        self.shader.set_uniform("projection", self.__ortho_matrix.glData, "mat4")
         with self.shader:
             self.vao.bind()
             # paint faces
@@ -92,8 +89,8 @@ fragment_shader = """
 uniform bool is_surface;
 out vec4 FragColor;
 
-vec4 surface_color = vec4(1.0, 1.0, 1.0, 0.1);
-vec4 border_color = vec4(1.0, 1.0, 1.0, 0.8);
+vec4 surface_color = vec4(1.0, 1.0, 1.0, 0.06);
+vec4 border_color = vec4(1.0, 1.0, 1.0, 1.0);
 
 void main() {
     if (is_surface) FragColor = surface_color;

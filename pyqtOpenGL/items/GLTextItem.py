@@ -155,7 +155,7 @@ class GLTextItem(GLGraphicsItem):
         self.shader.set_uniform("proj", self.proj_matrix().glData, "mat4")
         self.shader.set_uniform("view", self.view_matrix().glData, "mat4")
         self.shader.set_uniform("model", model_matrix.glData, "mat4")
-        self.shader.set_uniform("fixed", self._fixed, "bool")
+        self.shader.set_uniform("isFixed", self._fixed, "bool")
         self.shader.set_uniform("text_pos", pos, "vec3")
         self.tex.bind()
         self.shader.set_uniform("texture1", self.tex, "sample2D")
@@ -174,7 +174,7 @@ uniform vec2 wh;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 proj;
-uniform bool fixed;
+uniform bool isFixed;
 uniform vec3 text_pos;
 
 layout (location = 0) in vec3 iPos;
@@ -183,7 +183,7 @@ layout (location = 1) in vec2 iTexCoord;
 out vec2 TexCoord;
 
 void main() {
-    if (fixed) {
+    if (isFixed) {
         gl_Position = vec4(text_pos + iPos, 1.0);
     } else {
         //gl_Position = vec4(text_pos + iPos, 1.0);

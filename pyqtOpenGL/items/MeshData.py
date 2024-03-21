@@ -1,10 +1,14 @@
 import numpy as np
 import math
-from typing import List
+from typing import List, Union, Tuple
 from pathlib import Path
 import OpenGL.GL as gl
 import assimp_py as assimp
+from time import time
 from ctypes import c_float, sizeof, c_void_p, Structure
+
+from PyQt5.QtGui import QColor
+
 from .shader import Shader
 from .BufferObject import VAO, VBO, EBO
 from .texture import Texture2D
@@ -12,7 +16,7 @@ from ..transform3d import Vector3
 from ..functions import dispatchmethod
 
 __all__ = [
-    "Mesh", "Material", "direction_matrixs", "vertex_normal",
+    "Mesh", "Material", "EditItemMaterial", "direction_matrixs", "vertex_normal",
     "sphere", "cylinder", "cube", "cone", "plane"
 ]
 
@@ -32,33 +36,23 @@ class Material:
     @dispatchmethod
     def __init__(
             self,
-            ambient=None,
-            diffuse=None,
-            specular=None,
-            shininess=10,
-            opacity=1,
-            textures=None,
-            textures_paths=None,
-            directory=Path(),
+            ambient=(0.4, 0.4, 0.4),
+            diffuse=(0.8, 0.8, 0.8),
+            specular=(0.2, 0.2, 0.2),
+            shininess: float = 10.,
+            opacity: float = 1.,
+            textures: List[Texture2D] = None,
+            textures_paths: dict = None,
+            directory: Union[str, Path] = Path(),
     ):
-        if textures_paths is None:
-            textures_paths = {}
-        if textures is None:
-            textures = []
-        if specular is None:
-            specular = [0.2, 0.2, 0.2]
-        if diffuse is None:
-            diffuse = [1.0, 1.0, 1.0]
-        if ambient is None:
-            ambient = [0.4, 0.4, 0.4]
         self.ambient = Vector3(ambient)
         self.diffuse = Vector3(diffuse)
         self.specular = Vector3(specular)
         self.shininess = shininess
         self.opacity = opacity
         self.textures = list()
-        self.textures.extend(textures)
-        self.texture_paths = textures_paths
+        self.textures.extend(textures) if textures else None
+        self.texture_paths = textures_paths if textures_paths else dict()
         self.directory = directory
 
     @__init__.register(dict)
@@ -75,13 +69,13 @@ class Material:
 
     def load_textures(self):
         """在 initializeGL() 中调用 """
-        for type_, path in self.texture_paths.items():
+        for type, path in self.texture_paths.items():
             if isinstance(path, list):
                 path = path[0]
-            if type_ in TextureType.keys():
-                type_ = TextureType[type_]
+            if type in TextureType.keys():
+                type = TextureType[type]
             self.textures.append(
-                Texture2D(self.directory / path, tex_type=type_)
+                Texture2D(self.directory / path, tex_type=type)
             )
 
     def set_uniform(self, shader: Shader, name: str):
@@ -115,17 +109,15 @@ class Material:
 
 
 class Mesh:
-
     def __init__(
             self,
             vertexes,
-            indices,
+            indices=None,
             texcoords=None,
             normals=None,
             material=None,
             directory=None,
             usage=gl.GL_STATIC_DRAW,
-            texcoords_scale=1,
             calc_normals=False,
     ):
         self._vertexes = np.array(vertexes, dtype=np.float32)
@@ -133,21 +125,25 @@ class Mesh:
         if indices is not None:
             try:
                 self._indices = np.array(indices, dtype=np.uint32)
-            except:  # assimp 的 indices 有时出错, 例如 [(0, 1), (2, 3), (4, 5, 6), (7, 8, 9) ...]
+            except ValueError:
+                # assimp 的 indices 有时出错, 例如 [(0, 1), (2, 3), (4, 5, 6), (7, 8, 9) ...]
                 indices = [item for item in indices if len(item) == 3]
                 self._indices = np.array(indices, dtype=np.uint32)
         else:
             self._indices = None
 
-        if calc_normals and normals is None:
-            self._normals = vertex_normal(self._vertexes, self._indices)
+        if self._indices is not None:
+            if calc_normals and normals is None:
+                self._normals = vertex_normal(self._vertexes, self._indices)
+            else:
+                self._normals = np.array(normals, dtype=np.float32)
         else:
-            self._normals = np.array(normals, dtype=np.float32)
+            self._normals = None
 
         if texcoords is None:
             self._texcoords = None
         else:
-            self._texcoords = np.array(texcoords, dtype=np.float32)[..., :2] / texcoords_scale
+            self._texcoords = np.array(texcoords, dtype=np.float32)[..., :2]
 
         if isinstance(material, dict):
             self._material = Material(material, directory)
@@ -178,7 +174,7 @@ class Mesh:
         if self._indices is not None:
             gl.glDrawElements(gl.GL_TRIANGLES, self._indices.size, gl.GL_UNSIGNED_INT, c_void_p(0))
         else:
-            gl.glDrawArrays(gl.GL_TRIANGLES, 0, self._vertexes.size)
+            gl.glDrawArrays(gl.GL_TRIANGLES, 0, int(self._vertexes.size / 3))
 
     def setMaterial(self, material=None):
         if isinstance(material, dict):
@@ -186,8 +182,56 @@ class Mesh:
         elif isinstance(material, Material):
             self._material = material
 
+    def setMaterial_data(self, ambient, diffuse, specular, shininess, opacity=1.0):
+        self._material.set_data(ambient, diffuse, specular, shininess, opacity)
+
     def getMaterial(self):
         return self._material
+
+    @classmethod
+    def load_model(cls, path: Union[str, Path], material=None) -> List["Mesh"]:
+        meshes = list()
+        directory = Path(path).parent
+        face_num = 0
+
+        start_time = time()
+        post_process = (assimp.Process_Triangulate |
+                        assimp.Process_FlipUVs |
+                        assimp.Process_GenNormals |
+                        assimp.Process_PreTransformVertices
+                        )
+        # assimp.Process_CalcTangentSpace 计算法线空间
+        scene = assimp.ImportFile(str(path), post_process)
+        if not scene:
+            raise ValueError("ERROR:: Assimp model failed to load, {}".format(path))
+
+        is_dae = Path(path).suffix == ".dae"
+        for m in scene.meshes:
+
+            # 若模型是 dae 文件, 且其中 <up_axis>Z_UP</up_axis>, 则需要将原始坐标绕 x 轴旋转 90 度
+            verts = np.array(m.vertices, dtype=np.float32).reshape(-1, 3)
+            norms = np.array(m.normals, dtype=np.float32).reshape(-1, 3)
+            if is_dae:  # x, y, z -> x, -z, y
+                verts[:, 2] = -verts[:, 2]
+                verts[:, [1, 2]] = verts[:, [2, 1]]
+                norms[:, 2] = -norms[:, 2]
+                norms[:, [1, 2]] = norms[:, [2, 1]]
+
+            meshes.append(
+                cls(
+                    verts,
+                    m.indices,
+                    m.texcoords[0] if len(m.texcoords) > 0 else None,
+                    norms,
+                    scene.materials[m.material_index] if not material else material,
+                    directory=directory,
+                )
+            )
+            face_num += len(m.indices)
+
+        print(f"Took {round(time() - start_time, 3)}s to load {path} (faces: {face_num})")
+        return meshes
+
 
 
 def cone(radius, height, slices=12):
@@ -264,6 +308,10 @@ def sphere(radius=1.0, rows=12, cols=12, calc_uv_norm=False):
         Return a MeshData instance with vertexes and faces computed
         for a spherical surface.
         """
+    if rows > 2048:
+        raise RuntimeWarning("rows > 2048, may cause memory error")
+    if cols > 2048:
+        raise RuntimeWarning("cols > 2048, may cause memory error")
     verts = np.empty((rows + 1, cols + 1, 3), dtype=np.float32)
 
     # compute vertexes
@@ -496,3 +544,41 @@ def mesh_concat(verts: list, faces: list):
     faces = np.concatenate(faces, axis=0).astype(np.uint32)
 
     return verts, faces
+
+
+class EditItemMaterial(Material):
+    def __init__(self, color: Union[Tuple[float, float, float], Tuple[int, int, int], QColor] = (128, 128, 128),
+                 lightness: float = 0.8):
+        if isinstance(color, QColor):
+            self._color = color
+        elif isinstance(color[0], int):
+            self._color = QColor(*color)
+        else:
+            self._color = QColor(*[int(c * 255) for c in color])
+        self.lightness = lightness
+        col = self._color.getRgbF()[:3]
+        diffuse = (col[0] * 0.2 + 0.1, col[1] * 0.2 + 0.1, col[2] * 0.2 + 0.1)  # 映射到[0.1, 0.3]
+        col = (col[0] * self.lightness, col[1] * self.lightness, col[2] * self.lightness)
+        super().__init__(
+            ambient=col,
+            diffuse=diffuse,
+            specular=(0.1, 0.1, 0.1),  # 高光颜色
+            shininess=16.,
+            opacity=1.0
+        )
+
+    def setColor(self, r: int = 128, g: int = 128, b: int = 128):
+        self._color = QColor(r, g, b)
+        col = self._color.getRgbF()[:3]
+        diffuse = (col[0] * 0.2 + 0.1, col[1] * 0.2 + 0.1, col[2] * 0.2 + 0.1)  # 映射到[0.1, 0.3]
+        col = (col[0] * self.lightness, col[1] * self.lightness, col[2] * self.lightness)
+        self.set_data(ambient=col, diffuse=diffuse)
+
+    def setLightness(self, lightness: float):
+        self.lightness = lightness
+        col = self._color.getRgbF()[:3]
+        col = (col[0] * self.lightness, col[1] * self.lightness, col[2] * self.lightness)
+        self.set_data(ambient=col)
+
+    def getColor(self) -> tuple[int]:
+        return self._color.getRgb()[:3]

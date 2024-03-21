@@ -412,11 +412,21 @@ class EnsureButton(Button):
 
 
 class CircleSelectButton(Button):
-    def __init__(self, parent, relative_widgets: list, tool_tip, radius, color: str, check_color: str):
-        super().__init__(parent, tool_tip, 0, FG_COLOR0, 1, 0, (color, check_color, check_color, check_color),
+    def __init__(self, parent, relative_widgets: list, tool_tip, radius, color: str, hover_color:str, check_color: str):
+        """
+
+        :param parent:
+        :param relative_widgets: 与该按钮绑定的其他按钮
+        :param tool_tip:
+        :param radius:
+        :param color:
+        :param check_color:
+        """
+        super().__init__(parent, tool_tip, 0, FG_COLOR0, radius, 0, (color, hover_color, check_color, check_color),
                          FG_COLOR0, YAHEI[10], Qt.AlignCenter, (radius * 2, radius * 2))
         self.setCheckable(True)
         self.setChecked(False)
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         self.setCursor(Qt.PointingHandCursor)
         self.radius = radius
         self.relative_widgets = relative_widgets

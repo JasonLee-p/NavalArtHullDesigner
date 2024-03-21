@@ -3,7 +3,8 @@
 """
 import time
 
-from PyQt5.QtCore import QMutex
+from GUI import GRAY, LIGHTER_RED, FG_COLOR0
+from PyQt5.QtCore import QMutex, pyqtSignal, QObject
 from funcs_utils import singleton
 
 
@@ -35,3 +36,22 @@ class Log:
 
     def save(self):
         self.file.close()
+
+
+@singleton
+class StatusBarHandler(QObject):
+    message = pyqtSignal(str, str)
+
+    def __init__(self):
+        super().__init__()
+
+    def info(self, message):
+        self.message.emit(message, FG_COLOR0.__str__())
+
+    def warning(self, message):
+        self.message.emit(message, LIGHTER_RED.__str__())
+
+    def progress(self, message):
+        self.message.emit(message, GRAY.__str__())
+
+

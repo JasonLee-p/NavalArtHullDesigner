@@ -2,9 +2,11 @@
 """
 读取配置文件信息，保存配置信息
 """
+from typing import Union, Dict
 
 import ujson
 from funcs_utils import merge_dict, singleton
+# from main_logger import Log
 from path_vars import *
 
 
@@ -59,8 +61,14 @@ class ConfigHandler:
         "Projects": {
             # "KMS Hindenburg": "C:\/Users\/dlzx\/AppData\/LocalLow\/RZEntertainment\/NavalArt\/HullProjects\/KMS Hindenburg.naprj"
         },
+        "FindModelFolder": os.path.join(NA_ROOT_PATH, 'HullProjects'),
         # "ProjectsFolder": f"C:\/Users\/dlzx\/AppData\/LocalLow\/RZEntertainment\/NavalArt\/HullProjects"
-        "ProjectsFolder": os.path.join(NA_ROOT_PATH, 'HullProjects')
+        "ProjectsFolder": os.path.join(NA_ROOT_PATH, 'HullProjects'),
+        "ModelRenderSetting": {
+            "ModelDrawLine": True,
+            "ModelLineWith": 0.6,
+            "ModelLineColor": [0.0, 0.0, 0.0, 0.2]
+        }
     }
 
     def __init__(self):
@@ -76,7 +84,7 @@ class ConfigHandler:
                     dict_changed = merge_dict(self.__config, self.DEFAULT_CONFIG)
                     if dict_changed:
                         self.save_config()
-            except ValueError and KeyError:
+            except ValueError and KeyError as e:
                 self.__config = self.DEFAULT_CONFIG
                 self.save_config()
         else:
@@ -88,31 +96,39 @@ class ConfigHandler:
             ujson.dump(self.__config, f, ensure_ascii=False, indent=2)
 
     def get_config(self, key: str):
-        if key in self.__config:
-            return self.__config[key]
-        elif key in self.__config["Config"]:
-            return self.__config["Config"][key]
-        elif key in self.__config["Theme"]:
-            return self.__config["Theme"][key]
-        elif key in self.__config["Theme"]["GUITHeme"]:
-            return self.__config["Theme"]["GUITHeme"][key]
-        elif key in self.__config["THeme"]["GLTheme"]:
-            return self.__config["Theme"]["GLTheme"][key]
+        return self._get_key__(self.__config, key)
 
-    def set_config(self, key: str, value):
+    def _get_key__(self, dict_, key):
+        if key in dict_:
+            return dict_[key]
+        else:
+            for k, v in dict_.items():
+                if isinstance(v, dict):
+                    return self._get_key__(v, key)
+
+    def set_config(self, key: str, value, new_key=False):
         """
         只修改内存中的配置，不保存到文件
         :param key: 配置键
         :param value: 配置值
+        :param new_key: 若配置键不存在，是否创建新键
         """
-        if key in self.__config:
+        if new_key:
             self.__config[key] = value
-        elif key in self.__config["Config"]:
-            self.__config["Config"][key] = value
-        elif key in self.__config["Theme"]:
-            self.__config["Theme"][key] = value
-        elif key in self.__config["Theme"]["GUITHeme"]:
-            self.__config["Theme"]["GUITHeme"][key] = value
-        elif key in self.__config["THeme"]["GLTheme"]:
-            self.__config["Theme"]["GLTheme"][key] = value
+        else:
+            self._set_key__(self.__config, key, value)
+
         return value
+
+    def add_prj(self, prj_name, prj_path):
+        self.__config["Projects"][prj_name] = prj_path
+        self.save_config()
+
+    def _set_key__(self, dict_, key, value):
+        if key in dict_:
+            dict_[key] = value
+        else:
+            for k, v in dict_.items():
+                if isinstance(v, dict):
+                    return self._set_key__(v, key, value)
+        raise KeyError(f"配置键 {key} 不存在！")

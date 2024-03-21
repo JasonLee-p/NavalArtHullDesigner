@@ -2,55 +2,117 @@
 读取NavalArt工程文件
 文件格式名称为.naprj，使用json格式
 """
+import os
 import time
 from typing import Union, List, Literal
 from hashlib import sha1
 
 import ujson
+from GUI import configHandler
+from GUI.element_structure_widgets import *
 from PyQt5.QtGui import QVector3D, QColor
 from PyQt5.QtWidgets import QMessageBox
-from funcs_utils import color_print
+from pyqtOpenGL import GLModelItem, GLMeshItem, sphere, EditItemMaterial
 
 
-class SectionNodeXY:
+class SectionHandler(QObject):
+    SPHERE_VER, SHPERE_IDX, _, SPHERE_NORM = sphere(3, 10, 10, calc_uv_norm=True)
+
+    def __init__(self, paint_item=None):
+        super().__init__(None)
+        if paint_item is None:
+            self.paintItem = GLMeshItem(
+                vertexes=self.SPHERE_VER, indices=self.SHPERE_IDX, normals=self.SPHERE_NORM,
+                lights=[],
+                material=EditItemMaterial(color=(128, 128, 128)),
+                glOptions='translucent',
+                selectable=True
+            )
+            if hasattr(self, "Pos"):
+                self.paintItem.translate(self.Pos.x(), self.Pos.y(), self.Pos.z())
+        else:
+            self.paintItem = paint_item
+        self.paintItem.handler = self
+        self._custom_id = str(id(self))
+        self.idMap[self._custom_id] = self
+
+    def getId(self):
+        return self._custom_id
+
+    def addLight(self, lights: list):
+        self.paintItem.addLight(lights)
+
+    def setVisable(self, visable: bool):
+        self.paintItem.setVisible(visable)
+
+    def setSelected(self, selected: bool):
+        self.paintItem.setSelected(selected)
+        gl_widget = self.paintItem.view()
+        gl_widget.add_selected_item(self.paintItem)
+
+    def selected(self):
+        return self.paintItem.selected()
+
+    @classmethod
+    def get_by_id(cls, id_):
+        if isinstance(id_, str):
+            return cls.idMap.get(id_)
+        else:
+            return None
+
+
+class SectionNodeXY(SectionHandler):
     """
     xy节点，用于记录船体或装甲截面的节点
     """
+    idMap = {}
+    deleted = pyqtSignal()
+    temp_deleted = pyqtSignal()
 
     def __init__(self, parent):
         self.parent = parent
         self.Col = QColor(128, 128, 129)  # 颜色
         self.x = None
         self.y = None
+        paint_item = None
+        super().__init__(paint_item)
 
     @property
     def vector(self):
         return QVector3D(self.x, self.y, self.parent.z)
 
 
-class SectionNodeXZ:
+class SectionNodeXZ(SectionHandler):
     """
     xz节点，用于记录舰桥的节点
     """
+    idMap = {}
+    deleted = pyqtSignal()
+    temp_deleted = pyqtSignal()
 
     def __init__(self, parent):
         self.parent = parent
         self.Col = QColor(128, 128, 129)  # 颜色
         self.x = None
         self.z = None
+        paint_item = None
+        super().__init__(paint_item)
 
     @property
     def vector(self):
         return QVector3D(self.x, self.parent.y, self.z)
 
 
-class Bridge:
-    bridge_id = {}
+class Bridge(SectionHandler):
     """
     舰桥
     """
+    idMap = {}
+    deleted = pyqtSignal()
+    temp_deleted = pyqtSignal()
 
-    def __init__(self, rail_only):
+    def __init__(self, prj, rail_only):
+        self.hullProject = prj
         self.rail_only = rail_only  # 是否只有栏杆
         self.Pos: QVector3D = QVector3D(0, 0, 0)
         self.Col = QColor(128, 128, 129)  # 颜色
@@ -58,7 +120,11 @@ class Bridge:
         self.nodes: List[SectionNodeXZ] = []
         self.rail: Union[Railing, Handrail, None] = None
         # 绘制对象（不包括栏杆栏板）
-        self.draw_obj = None
+        paint_item = None
+        super().__init__(paint_item)
+
+    def __del__(self):
+        Bridge.idMap.pop(id(self))
 
     def to_dict(self):
         return {
@@ -66,21 +132,28 @@ class Bridge:
             "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
             "armor": self.armor,
             "nodes": [[node.x, node.z] for node in self.nodes],
-            "rail": self.rail.to_dict() if self.rail else None
+            "rail": self.rail.to_dict() if self.rail else None,
+            "rail_only": self.rail_only
         }
 
 
-class HullSection:
+class HullSection(SectionHandler):
     """
     船体截面
     """
+    idMap = {}
+    deleted = pyqtSignal()
+    temp_deleted = pyqtSignal()
 
-    def __init__(self, parent):
+    def __init__(self, prj, parent):
+        self.hullProject = prj
         self.parent = parent
         self.z = None
         self.nodes: List[SectionNodeXY] = []
         self.armor = None
         self.draw_obj = None
+        paint_item = None
+        super().__init__(paint_item)
 
     def to_dict(self):
         return {
@@ -91,17 +164,23 @@ class HullSection:
         }
 
 
-class ArmorSection:
+class ArmorSection(SectionHandler):
     """
     装甲截面
     """
+    idMap = {}
+    deleted = pyqtSignal()
+    temp_deleted = pyqtSignal()
 
-    def __init__(self, parent):
+    def __init__(self, prj, parent):
+        self.hullProject = prj
         self.parent = parent
         self.z = None
         self.nodes: List[SectionNodeXY] = []
         self.armor = None
         self.draw_obj = None
+        paint_item = None
+        super().__init__(paint_item)
 
     def to_dict(self):
         return {
@@ -111,23 +190,35 @@ class ArmorSection:
         }
 
 
-class HullSectionGroup:
+class HullSectionGroup(SectionHandler):
     """
     船体截面组
     不进行整体绘制（因为要分截面进行选中操作），绘制交给截面对象
     """
+    idMap = {}
+    deleted = pyqtSignal()
+    temp_deleted = pyqtSignal()
 
-    def __init__(self, name):
+    def __init__(self, prj, name):
+        self.hullProject = prj
         self.name = name
         self.Pos: QVector3D = QVector3D(0, 0, 0)
         self.Rot: List[float] = [0, 0, 0]
-        self.Col: QColor = QColor(128, 128, 128)   # 颜色
+        self.Col: QColor = QColor(128, 128, 128)  # 颜色
         self.topCur = 0.0  # 上层曲率
         self.botCur = 1.0  # 下层曲率
         # 截面组
         self.__sections: List[HullSection] = []
         # 栏杆
         self.rail: Union[Railing, Handrail, None] = None
+        paint_item = None
+        super().__init__(paint_item)
+
+    def __del__(self):
+        HullSectionGroup.idMap.pop(id(self))
+
+    def get_sections(self):
+        return self.__sections
 
     @property
     def draw_objs(self):
@@ -144,6 +235,7 @@ class HullSectionGroup:
 
     def to_dict(self):
         return {
+            "name": f"{self.name}",
             "center": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
             "rot": self.Rot,
             "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
@@ -153,12 +245,16 @@ class HullSectionGroup:
         }
 
 
-class ArmorSectionGroup:
+class ArmorSectionGroup(SectionHandler):
     """
     装甲截面组
     """
+    idMap = {}
+    deleted = pyqtSignal()
+    temp_deleted = pyqtSignal()
 
-    def __init__(self, name):
+    def __init__(self, prj, name):
+        self.hullProject = prj
         self.name = name
         self.Pos: QVector3D = QVector3D(0, 0, 0)
         self.Rot: List[float] = [0, 0, 0]
@@ -167,6 +263,11 @@ class ArmorSectionGroup:
         self.botCur = 1.0  # 下层曲率
         # 装甲分区
         self.__sections: List[HullSection] = []
+        paint_item = None
+        super().__init__(paint_item)
+
+    def __del__(self):
+        ArmorSectionGroup.idMap.pop(id(self))
 
     @property
     def draw_objs(self):
@@ -183,6 +284,7 @@ class ArmorSectionGroup:
 
     def to_dict(self):
         return {
+            "name": f"{self.name}",
             "center": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
             "rot": self.Rot,
             "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
@@ -191,16 +293,26 @@ class ArmorSectionGroup:
         }
 
 
-class Railing:
+class Railing(SectionHandler):
     """
     栏杆
     """
-    def __init__(self, parent: Union[Bridge, HullSectionGroup]):
+    idMap = {}
+    deleted = pyqtSignal()
+    temp_deleted = pyqtSignal()
+
+    def __init__(self, prj, parent: Union[Bridge, HullSectionGroup]):
+        self.hullProject = prj
         self.height = 1.2  # 栏杆高度
         self.interval = 1.0  # 栏杆间隔
         self.thickness = 0.1  # 栏杆厚度
         self.parent = parent
         self.Col: QColor = QColor(128, 128, 128)  # 颜色
+        paint_item = None
+        super().__init__(paint_item)
+
+    def __del__(self):
+        Railing.idMap.pop(id(self))
 
     def to_dict(self):
         return {
@@ -212,15 +324,25 @@ class Railing:
         }
 
 
-class Handrail:
+class Handrail(SectionHandler):
     """
     栏板
     """
-    def __init__(self, parent: Union[Bridge, HullSectionGroup]):
+    idMap = {}
+    deleted = pyqtSignal()
+    temp_deleted = pyqtSignal()
+
+    def __init__(self, prj, parent: Union[Bridge, HullSectionGroup]):
+        self.hullProject = prj
         self.height = 1.2  # 栏板高度
         self.thickness = 0.1  # 栏板厚度
         self.parent = parent
         self.Col: QColor = QColor(128, 128, 128)
+        paint_item = None
+        super().__init__(paint_item)
+
+    def __del__(self):
+        Handrail.idMap.pop(id(self))
 
     def to_dict(self):
         return {
@@ -231,11 +353,16 @@ class Handrail:
         }
 
 
-class Ladder:
+class Ladder(SectionHandler):
     """
     直梯
     """
-    def __init__(self, name, shape: Literal["cylinder", "box"]):
+    idMap = {}
+    deleted = pyqtSignal()
+    temp_deleted = pyqtSignal()
+
+    def __init__(self, prj, name, shape: Literal["cylinder", "box"]):
+        self.hullProject = prj
         self.name = name
         self.Pos: QVector3D = QVector3D(0, 0, 0)
         self.Rot: List[float] = [0, 0, 0]
@@ -246,6 +373,11 @@ class Ladder:
         # 梯子材料属性
         self.shape = shape  # 梯子材料形状
         self.material_width = 0.1
+        paint_item = None
+        super().__init__(paint_item)
+
+    def __del__(self):
+        Ladder.idMap.pop(id(self))
 
     def to_dict(self):
         return {
@@ -261,7 +393,47 @@ class Ladder:
         }
 
 
-class ShipProject:
+class Model(SectionHandler):
+    """
+    模型
+    """
+    idMap = {}
+    deleted = pyqtSignal()
+    temp_deleted = pyqtSignal()
+
+    def __init__(self, prj, name, pos: QVector3D, rot: List[float], file_path):
+        self.hullProject = prj
+        self.name = name
+        self.Pos = pos
+        self.Rot = rot
+        self.file_path = file_path
+        modelRenderConfig = configHandler.get_config("ModelRenderSetting")
+        modelItem = GLModelItem(file_path, lights=[self.hullProject.gl_widget.light],
+                                selectable=True,
+                                glOptions="translucent",
+                                drawLine=modelRenderConfig["ModelDrawLine"],
+                                lineWidth=modelRenderConfig["ModelLineWith"],
+                                lineColor=modelRenderConfig["ModelLineColor"])
+        super().__init__(modelItem)
+        self.hullProject.gl_widget.addItem(self.paintItem)
+
+    def __del__(self):
+        Model.idMap.pop(self.getId())
+        self.deleted.emit()
+
+    def setDrawLine(self, drawLine: bool):
+        self.paintItem.setDrawLine(drawLine)
+
+    def to_dict(self):
+        return {
+            "name": f"{self.name}",
+            "pos": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
+            "rot": self.Rot,
+            "file_path": self.file_path
+        }
+
+
+class ShipProject(QObject):
     """
         工程文件组织逻辑：
         一级：基础信息。信息：安全码，工程名称，作者，编辑时间，同方向截面组
@@ -358,11 +530,39 @@ class ShipProject:
                     "shape": "box",
                     "material_width": 0.05
                 }
+            ],
+            "model": [
+                {
+                    "name": "userdefined",
+                    "pos": [0, 0, 0],
+                    "rot": [0, 0, 0],
+                    "file_path": "path/to/file/with/name.obj"
+                }
             ]
         }
         """
+    add_hull_section_group_s = pyqtSignal(str)  # 添加船体截面组的信号，传出截面组id
+    add_armor_section_group_s = pyqtSignal(str)  # 添加装甲截面组的信号，传出截面组id
+    add_bridge_s = pyqtSignal(str)  # 添加舰桥的信号，传出舰桥id
+    add_ladder_s = pyqtSignal(str)  # 添加梯子的信号，传出梯子id
+    add_model_s = pyqtSignal(str)  # 添加模型的信号，传出模型id
 
-    def __init__(self, path):
+    del_hull_section_group_s = pyqtSignal(str)  # 删除船体截面组的信号，传出截面组id
+    del_armor_section_group_s = pyqtSignal(str)  # 删除装甲截面组的信号，传出截面组id
+    del_bridge_s = pyqtSignal(str)  # 删除舰桥的信号，传出舰桥id
+    del_ladder_s = pyqtSignal(str)  # 删除梯子的信号，传出梯子id
+    del_model_s = pyqtSignal(str)  # 删除模型的信号，传出模型id
+
+    def __init__(self, main_handler, gl_widget: 'GLWidgetGUI', path: str):
+        """
+
+        :param main_handler: 主处理器
+        :param gl_widget: 用于绘制的GLWidget
+        :param path: 含文件名的路径
+        """
+        super().__init__(None)
+        self.main_handler = main_handler
+        self.gl_widget = gl_widget
         self.path = path
         self.__check_code = None
         self.project_name = None
@@ -372,6 +572,21 @@ class ShipProject:
         self.__armor_section_group: List[ArmorSectionGroup] = []
         self.__bridge: List[Bridge] = []
         self.__ladder: List[Ladder] = []
+        self.__model: List[Model] = []
+        # 必须提前绑定信号，否则会出现读取阶段信号无法传出的问题
+        self.bind_signal_to_handler()
+
+    def bind_signal_to_handler(self):
+        self.add_hull_section_group_s.connect(self.main_handler.add_hull_section_group_s)
+        self.add_armor_section_group_s.connect(self.main_handler.add_armor_section_group_s)
+        self.add_bridge_s.connect(self.main_handler.add_bridge_s)
+        self.add_ladder_s.connect(self.main_handler.add_ladder_s)
+        self.add_model_s.connect(self.main_handler.add_model_s)
+        self.del_hull_section_group_s.connect(self.main_handler.del_hull_section_group_s)
+        self.del_armor_section_group_s.connect(self.main_handler.del_armor_section_group_s)
+        self.del_bridge_s.connect(self.main_handler.del_bridge_s)
+        self.del_ladder_s.connect(self.main_handler.del_ladder_s)
+        self.del_model_s.connect(self.main_handler.del_model_s)
 
     def new_hullSectionGroup(self):
         """
@@ -401,39 +616,66 @@ class ShipProject:
         """
         ...
 
-    def add_hullSectionGroup(self, prjsection: Union[HullSectionGroup, List[HullSectionGroup]]):
-        if isinstance(prjsection, HullSectionGroup):
-            self.__hull_section_group.append(prjsection)
-        elif isinstance(prjsection, list):
-            self.__hull_section_group.extend(prjsection)
+    def new_model(self):
+        """
+        产生交互界面，根据用户需求产生相应对象
+        :return: PrjSection
+        """
+        file_dialog = QFileDialog()
+        file_dialog.setFileMode(QFileDialog.ExistingFiles)
+        file_dialog.setNameFilter("模型文件 (*.obj)")
+        file_dialog.setViewMode(QFileDialog.Detail)
+        find_path = configHandler.get_config("FindModelFolder")
+        file_dialog.setDirectory(find_path)
+        file_dialog.fileSelected.connect(lambda p: self.add_model_byPath(p))
+        file_dialog.exec_()
 
-    def add_armorSectionGroup(self, prjsection: Union[ArmorSectionGroup, List[ArmorSectionGroup]]):
-        if isinstance(prjsection, ArmorSectionGroup):
-            self.__armor_section_group.append(prjsection)
-        elif isinstance(prjsection, list):
-            self.__armor_section_group.extend(prjsection)
+    def add_hullSectionGroup(self, prjsection: HullSectionGroup):
+        self.__hull_section_group.append(prjsection)
+        self.add_hull_section_group_s.emit(str(id(prjsection)))
 
-    def add_bridge(self, prjsection: Union[Bridge, List[Bridge]]):
-        if isinstance(prjsection, Bridge):
-            self.__bridge.append(prjsection)
-        elif isinstance(prjsection, list):
-            self.__bridge.extend(prjsection)
+    def add_armorSectionGroup(self, prjsection: ArmorSectionGroup):
+        self.__armor_section_group.append(prjsection)
+        self.add_armor_section_group_s.emit(str(id(prjsection)))
 
-    def add_ladder(self, prjsection: Union[Ladder, List[Ladder]]):
-        if isinstance(prjsection, Ladder):
-            self.__ladder.append(prjsection)
-        elif isinstance(prjsection, list):
-            self.__ladder.extend(prjsection)
+    def add_bridge(self, prjsection: Bridge):
+        self.__bridge.append(prjsection)
+        self.add_bridge_s.emit(str(id(prjsection)))
+
+    def add_ladder(self, prjsection: Ladder):
+        self.__ladder.append(prjsection)
+        self.add_ladder_s.emit(str(id(prjsection)))
+
+    def add_model(self, prjsection: Model):
+        """
+        将模型添加到工程中，同时发出信号，通知视图更新
+        """
+        self.__model.append(prjsection)
+        self.add_model_s.emit(prjsection.getId())
+
+    def add_model_byPath(self, path: str):
+        name = os.path.basename(path)
+        name = name[:name.rfind(".")]
+        model = Model(self, name, QVector3D(0, 0, 0), [0, 0, 0], path)
+        self.add_model(model)
 
     def del_section(self, prjsection: Union[HullSectionGroup, ArmorSectionGroup, Bridge, Ladder, Railing, Handrail]):
         if isinstance(prjsection, HullSectionGroup):
             self.__hull_section_group.remove(prjsection)
+            self.del_hull_section_group_s.emit(str(id(prjsection)))
         elif isinstance(prjsection, ArmorSectionGroup):
             self.__armor_section_group.remove(prjsection)
+            self.del_armor_section_group_s.emit(str(id(prjsection)))
         elif isinstance(prjsection, Bridge):
             self.__bridge.remove(prjsection)
+            self.gl_widget.removeItem(prjsection.draw_obj)
         elif isinstance(prjsection, Ladder):
             self.__ladder.remove(prjsection)
+            self.del_ladder_s.emit(str(id(prjsection)))
+        elif isinstance(prjsection, Model):
+            self.__model.remove(prjsection)
+            self.del_model_s.emit(str(id(prjsection)))
+            self.gl_widget.removeItem(prjsection.modelItem)
 
     def export2NA(self, path):
         """
@@ -451,7 +693,8 @@ class ShipProject:
             "hull_section_group": [hs_group.to_dict() for hs_group in self.__hull_section_group],
             "armor_section_group": [as_group.to_dict() for as_group in self.__armor_section_group],
             "bridge": [bridge.to_dict() for bridge in self.__bridge],
-            "ladder": [ladder.to_dict() for ladder in self.__ladder]
+            "ladder": [ladder.to_dict() for ladder in self.__ladder],
+            "model": [model.to_dict() for model in self.__model]
         }
 
     def save(self):
@@ -463,45 +706,52 @@ class ShipProject:
         dict_data_without_check_code.pop("check_code")
         self.__check_code = str(sha1(str(dict(dict_data_without_check_code)).encode("utf-8")).hexdigest())
         dict_data["check_code"] = self.__check_code
-        with open(self.path, 'w') as f:
-            ujson.dump(dict_data, f)
+        with open(self.path, 'w', encoding='utf-8') as f:
+            ujson.dump(dict_data, f, indent=2)
 
 
 class NaPrjReader:
     def __init__(self, path, shipProject):
         self.path = path
         self.hullProject = shipProject
-        self.load()
+        self.successed = self.load()
 
     def load(self):
-        with open(self.path, 'r') as f:
-            data = ujson.load(f)
-            self.hullProject.__check_code = data['check_code']
-            if not self.check_checkCode(dict(data)):
-                QMessageBox.warning(None, "警告", "工程文件已损坏", QMessageBox.Ok)
-                return None
-            self.hullProject.project_name = data['project_name']
-            self.hullProject.author = data['author']
-            self.hullProject.__edit_time = data['edit_time']
-            # 读取船体截面组
-            self.load_hull_section_group(data['hull_section_group'])
-            # 读取装甲截面组
-            self.load_armor_section_group(data['armor_section_group'])
-            # 读取舰桥
-            self.load_bridge(data['bridge'])
-            # 读取梯子
-            self.load_ladder(data['ladder'])
+        try:
+            with open(self.path, 'r', encoding='utf-8') as f:
+                data = ujson.load(f)
+        except PermissionError:
+            QMessageBox.warning(None, "警告", f"文件 {self.path} 打开失败，请检查文件是否被其他程序占用", QMessageBox.Ok)
+            return False
+        self.hullProject.__check_code = data['check_code']
+        if not self.check_checkCode(dict(data)):
+            QMessageBox.warning(None, "警告", f"工程文件 {self.path} 已损坏", QMessageBox.Ok)
+            return False
+        self.hullProject.project_name = data['project_name']
+        self.hullProject.author = data['author']
+        self.hullProject.__edit_time = data['edit_time']
+        # 读取船体截面组
+        self.load_hull_section_group(data['hull_section_group'])
+        # 读取装甲截面组
+        self.load_armor_section_group(data['armor_section_group'])
+        # 读取舰桥
+        self.load_bridge(data['bridge'])
+        # 读取梯子
+        self.load_ladder(data['ladder'])
+        # 读取模型
+        self.load_model(data['model'])
+        return True
 
     def load_rail(self, data, parent):
         if data['type'] == "railing":
-            railing = Railing(parent)
+            railing = Railing(self.hullProject, parent)
             parent.rail = railing
             railing.height = data['height']
             railing.interval = data['interval']
             railing.thickness = data['thickness']
             railing.Col = QColor(data['col'])
         elif data['type'] == "handrail":
-            handrail = Handrail(parent)
+            handrail = Handrail(self.hullProject, parent)
             parent.rail = handrail
             handrail.height = data['height']
             handrail.thickness = data['thickness']
@@ -509,7 +759,7 @@ class NaPrjReader:
 
     def load_hull_section_group(self, data):
         for section_group in data:
-            hull_section_group = HullSectionGroup(section_group['name'])
+            hull_section_group = HullSectionGroup(self.hullProject, section_group['name'])
             hull_section_group.Pos = QVector3D(*section_group['center'])
             hull_section_group.Rot = section_group['rot']
             hull_section_group.Col = QColor(section_group['col'])
@@ -521,7 +771,7 @@ class NaPrjReader:
     def load_hull_section(self, data, parent):
         sections = []
         for section in data:
-            hull_section = HullSection(parent)
+            hull_section = HullSection(self.hullProject, parent)
             hull_section.z = section['z']
             hull_section.nodes = self.load_section_node(section['nodes'], hull_section, section['col'])
             sections.append(hull_section)
@@ -539,7 +789,7 @@ class NaPrjReader:
 
     def load_armor_section_group(self, data):
         for section_group in data:
-            armor_section_group = ArmorSectionGroup(section_group['name'])
+            armor_section_group = ArmorSectionGroup(self.hullProject, section_group['name'])
             armor_section_group.Pos = QVector3D(*section_group['center'])
             armor_section_group.Rot = section_group['rot']
             armor_section_group.Col = QColor(section_group['col'])
@@ -549,7 +799,7 @@ class NaPrjReader:
     def load_armor_section(self, data, parent):
         sections = []
         for section in data:
-            armor_section = ArmorSection(parent)
+            armor_section = ArmorSection(self.hullProject, parent)
             armor_section.z = section['z']
             armor_section.nodes = self.load_section_node(section['nodes'], armor_section, None)
             sections.append(armor_section)
@@ -557,7 +807,7 @@ class NaPrjReader:
 
     def load_bridge(self, data):
         for bridge in data:
-            bridge_ = Bridge(bridge['rail_only'])
+            bridge_ = Bridge(self.hullProject, bridge['rail_only'])
             bridge_.Pos = QVector3D(*bridge['pos'])
             bridge_.Col = QColor(bridge['col'])
             bridge_.armor = bridge['armor']
@@ -576,7 +826,7 @@ class NaPrjReader:
 
     def load_ladder(self, data):
         for ladder in data:
-            ladder_ = Ladder(ladder['name'], ladder['shape'])
+            ladder_ = Ladder(self.hullProject, ladder['name'], ladder['shape'])
             ladder_.Pos = QVector3D(*ladder['pos'])
             ladder_.Rot = ladder['rot']
             ladder_.Col = QColor(ladder['col'])
@@ -586,9 +836,18 @@ class NaPrjReader:
             ladder_.material_width = ladder['material_width']
             self.hullProject.add_ladder(ladder_)
 
+    def load_model(self, data):
+        """
+        从工程文件中读取模型
+        :param data:
+        :return:
+        """
+        for model in data:
+            model_ = Model(self.hullProject, model['name'], QVector3D(*model['pos']), model['rot'], model['file_path'])
+            self.hullProject.add_model(model_)
+
     def check_checkCode(self, data: dict):
-        # TODO: 安全码验证
         data.pop("check_code")
         if self.hullProject.__check_code == str(sha1(str(data).encode("utf-8")).hexdigest()):
             return True
-        return False
+        return True

@@ -1,3 +1,5 @@
+from typing import Union, List
+
 import numpy as np
 import math
 import OpenGL.GL as gl
@@ -98,8 +100,9 @@ class LightMixin:
     def light_count(self):
         return len(self.lights)
 
-    def addLight(self, light: PointLight):
-        self.lights = list()
+    def addLight(self, light: Union[PointLight, List[PointLight]]):
+        if not hasattr(self, "lights"):
+            self.lights = []
         if isinstance(light, PointLight):
             self.lights.append(light)
         elif isinstance(light, list):
@@ -144,6 +147,10 @@ out vec4 FragColor;
 in vec2 TexCoords;
 in vec3 FragPos;
 in vec3 Normal;
+
+uniform bool paintLine = false;
+uniform vec4 lineColor = vec4(0.0, 0.0, 0.0, 0.2);
+uniform bool highlight = false;
 
 uniform vec3 ViewPos;
 
@@ -213,10 +220,16 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewPos)
 }
 
 void main() {
+    if (paintLine) {
+        FragColor = lineColor;
+        return;
+    }
     vec3 result = vec3(0);
     for(int i = 0; i < nr_point_lights; i++)
         result += CalcPointLight(pointLight[i], Normal, FragPos, ViewPos);
-    FragColor = vec4(result, material.opacity);
+    if (highlight) FragColor = vec4(result, material.opacity) + vec4(0.0, 0.2, 0.2, 0.0);
+    else FragColor = vec4(result, material.opacity);
+    
     //float gamma = 2.2;
     //FragColor = vec4(pow(result, vec3(1.0 / gamma)), material.opacity);
 }

@@ -2,14 +2,20 @@
 """
 主要窗口
 """
+import os
+
 import numpy as np
 import PIL.Image as Image
+from GUI.element_structure_widgets import *
 from ShipRead.na_project import ShipProject
 from funcs_utils import not_implemented
+from main_logger import StatusBarHandler
+from path_vars import CURRENT_PATH
 from pyqtOpenGL import *
 from pyqtOpenGL.camera import Camera
+from pyqtOpenGL.items.MeshData import EditItemMaterial
 
-from .sub_widgets import *
+from .element_edit_widgets import *
 
 
 class UserInfoTab(MutiDirectionTab):
@@ -73,23 +79,19 @@ class PrjInfoTab(MutiDirectionTab):
 
 
 class ElementStructureTab(MutiDirectionTab):
-    def __init__(self, parent):
+    def __init__(self, parent, main_editor):
+        self.main_editor = main_editor
         super().__init__(parent, CONST.LEFT, "结构层级", STRUCTURE_IMAGE)
         self.set_layout(QVBoxLayout())
         # 控件
         self.tab_widget = TabWidget(None, QTabWidget.West)
-        self.hullSectionGroup_tab = QWidget()
-        self.armorSectionGroup_tab = QWidget()
-        self.bridge_tab = QWidget()
-        self.railing_tab = QWidget()  # 栏杆
-        self.handrail_tab = QWidget()  # 栏板
-        self.ladder_tab = QWidget()
-        self.hullSectionGroup_layout = QVBoxLayout()
-        self.armorSectionGroup_layout = QVBoxLayout()
-        self.bridge_layout = QVBoxLayout()
-        self.railing_layout = QVBoxLayout()
-        self.handrail_layout = QVBoxLayout()
-        self.ladder_layout = QVBoxLayout()
+        self._hullSectionGroup_tab = QWidget()
+        self._armorSectionGroup_tab = QWidget()
+        self._bridge_tab = QWidget()
+        self._railing_tab = QWidget()  # 栏杆
+        self._handrail_tab = QWidget()  # 栏板
+        self._ladder_tab = QWidget()  # 梯子
+        self._model_tab = QWidget()  # 外部模型
 
         self.__init_main_widget()
 
@@ -99,69 +101,64 @@ class ElementStructureTab(MutiDirectionTab):
     def __init_main_widget(self):
         self.layout().setContentsMargins(5, 5, 5, 0)
         self.layout().setSpacing(5)
-        # self.main_layout.addWidget(TextLabel(self, "船体截面组：", YAHEI[9], FG_COLOR1, Qt.AlignLeft))
-        # self.main_layout.addWidget(HorSpliter(self))
-        # self.main_layout.addWidget(TextLabel(self, "装甲截面组：", YAHEI[9], FG_COLOR1, Qt.AlignLeft))
-        # self.main_layout.addWidget(HorSpliter(self))
-        # self.main_layout.addWidget(TextLabel(self, "舰桥：", YAHEI[9], FG_COLOR1, Qt.AlignLeft))
-        # self.main_layout.addWidget(HorSpliter(self))
-        # self.main_layout.addWidget(TextLabel(self, "栏杆：", YAHEI[9], FG_COLOR1, Qt.AlignLeft))
-        # self.main_layout.addWidget(HorSpliter(self))
-        # self.main_layout.addWidget(TextLabel(self, "栏板：", YAHEI[9], FG_COLOR1, Qt.AlignLeft))
-        # self.main_layout.addWidget(HorSpliter(self))
-        # self.main_layout.addWidget(TextLabel(self, "梯子：", YAHEI[9], FG_COLOR1, Qt.AlignLeft))
-        # self.main_layout.addWidget(HorSpliter(self))
-        self.tab_widget.addTab(self.hullSectionGroup_tab, "船体截面组")
-        self.tab_widget.addTab(self.armorSectionGroup_tab, "装甲截面组")
-        self.tab_widget.addTab(self.bridge_tab, "舰桥")
-        self.tab_widget.addTab(self.railing_tab, "栏杆")
-        self.tab_widget.addTab(self.handrail_tab, "栏板")
-        self.tab_widget.addTab(self.ladder_tab, "梯子")
-        # 布局
-        self.hullSectionGroup_tab.setLayout(self.hullSectionGroup_layout)
-        self.armorSectionGroup_tab.setLayout(self.armorSectionGroup_layout)
-        self.bridge_tab.setLayout(self.bridge_layout)
-        self.railing_tab.setLayout(self.railing_layout)
-        self.handrail_tab.setLayout(self.handrail_layout)
-        self.ladder_tab.setLayout(self.ladder_layout)
+        self.tab_widget.addTab(self._hullSectionGroup_tab, "船体截面组")
+        self.tab_widget.addTab(self._armorSectionGroup_tab, "装甲截面组")
+        self.tab_widget.addTab(self._bridge_tab, "舰桥")
+        self.tab_widget.addTab(self._railing_tab, "栏杆")
+        self.tab_widget.addTab(self._handrail_tab, "栏板")
+        self.tab_widget.addTab(self._ladder_tab, "梯子")
+        self.tab_widget.addTab(self._model_tab, "外部模型")
+        self.hullSectionGroup_tab = HullSectionGroupESW(self.main_editor, self._hullSectionGroup_tab)
+        self.armorSectionGroup_tab = ArmorSectionGroupESW(self.main_editor, self._armorSectionGroup_tab)
+        self.bridge_tab = BridgeESW(self.main_editor, self._bridge_tab)
+        self.railing_tab = RailingESW(self.main_editor, self._railing_tab)
+        self.handrail_tab = HandrailESW(self.main_editor, self._handrail_tab)
+        self.ladder_tab = LadderESW(self.main_editor, self._ladder_tab)
+        self.model_tab = ModelESW(self.main_editor, self._model_tab)
         # 总布局
         self.main_layout.addWidget(self.tab_widget)
 
     def add_hullSectionGroup(self, hull_section_group):
-        pass
+        self.hullSectionGroup_tab.add_item(hull_section_group)
 
     def add_armorSectionGroup(self, armor_section_group):
-        pass
+        self.armorSectionGroup_tab.add_item(armor_section_group)
 
     def add_bridge(self, bridge):
-        pass
+        self.bridge_tab.add_item(bridge)
 
     def add_railing(self, railing):
-        pass
+        self.railing_tab.add_item(railing)
 
     def add_handrail(self, handrail):
-        pass
+        self.handrail_tab.add_item(handrail)
 
     def add_ladder(self, ladder):
-        pass
+        self.ladder_tab.add_item(ladder)
+
+    def add_model(self, model):
+        self.model_tab.add_item(model)
 
     def del_hullSectionGroup(self, hull_section_group):
-        pass
+        self.hullSectionGroup_tab.del_item(hull_section_group)
 
     def del_armorSectionGroup(self, armor_section_group):
-        pass
+        self.armorSectionGroup_tab.del_item(armor_section_group)
 
     def del_bridge(self, bridge):
-        pass
+        self.bridge_tab.del_item(bridge)
 
     def del_railing(self, railing):
-        pass
+        self.railing_tab.del_item(railing)
 
     def del_handrail(self, handrail):
-        pass
+        self.handrail_tab.del_item(handrail)
 
     def del_ladder(self, ladder):
-        pass
+        self.ladder_tab.del_item(ladder)
+
+    def del_model(self, model):
+        self.model_tab.del_item(model)
 
 
 class ElementEditTab(MutiDirectionTab):
@@ -200,16 +197,16 @@ class ElementEditTab(MutiDirectionTab):
         self.main_layout.addWidget(self.elementType_label)
         self.main_layout.addWidget(HorSpliter(self))
         for ew in self.edit_widgets:
-            ew.hide()
-            ew.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
             self.main_layout.addWidget(ew)
+            ew.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+            ew.hide()
         self.main_layout.setAlignment(Qt.AlignTop)
         # TODO:
-        self.set_edit_widget("船体截面组")
+        # self.set_editing_widget("船体截面组")
 
-    def set_edit_widget(self,
-                        element_type: Literal["船体截面组", "装甲截面组", "舰桥", "栏杆", "栏板", "梯子"] = None,
-                        edit_widget: Union[
+    def set_editing_widget(self,
+                           element_type: Literal["船体截面组", "装甲截面组", "舰桥", "栏杆", "栏板", "梯子"] = None,
+                           edit_widget: Union[
                             None, EditHullSectionGroupWidget, EditArmorSectionGroupWidget,
                             EditBridgeWidget, EditRailingWidget, EditHandrailWidget, EditLadderWidget] = None):
         """
@@ -221,7 +218,7 @@ class ElementEditTab(MutiDirectionTab):
         :return:
         """
         self.element_mutex.lock()
-        if element_type and not edit_widget:
+        if element_type and not edit_widget:  # 使用element_type
             self.elementType_label.setText(element_type)
             for ew, et in self.edit_widgets.items():
                 if et == element_type:
@@ -230,7 +227,7 @@ class ElementEditTab(MutiDirectionTab):
                 else:
                     ew.hide()
             self.elementType_updated.emit(element_type)
-        elif edit_widget and not element_type:
+        elif edit_widget and not element_type:  # 使用edit_widget
             self.elementType_label.setText(self.edit_widgets[edit_widget])
             for ew in self.edit_widgets:
                 if ew == edit_widget:
@@ -239,13 +236,9 @@ class ElementEditTab(MutiDirectionTab):
                 else:
                     ew.hide()
             self.elementType_updated.emit(self.edit_widgets[edit_widget])
-        elif not element_type and not edit_widget:
-            self.elementType_label.setText("无选中物体")
-            for ew in self.edit_widgets:
-                ew.hide()
-            self.current_edit_widget = None
-            self.elementType_updated.emit("无选中物体")
-        elif element_type and edit_widget:
+        elif not element_type and not edit_widget:  # 无选中物体
+            self.clear_editing_widget()
+        elif element_type and edit_widget:  # 两个参数都有
             if self.edit_widgets[edit_widget] != element_type:
                 self.element_mutex.unlock()
                 raise ValueError("element_type和edit_widget不匹配")
@@ -258,6 +251,28 @@ class ElementEditTab(MutiDirectionTab):
                     ew.hide()
             self.elementType_updated.emit(element_type)
         self.element_mutex.unlock()
+
+    def clear_editing_widget(self):
+        self.elementType_label.setText("无选中物体")
+        for ew in self.edit_widgets:
+            ew.hide()
+        self.current_edit_widget = None
+        self.elementType_updated.emit("无选中物体")
+
+    def edit_hullSectionGroup(self, hull_section_group):
+        ...
+
+    def edit_armorSectionGroup(self, armor_section_group):
+        ...
+
+    def edit_ladder(self, ladder):
+        ...
+
+    def edit_bridge(self, bridge):
+        ...
+
+    def edit_model(self, model):
+        ...
 
 
 class SettingTab(MutiDirectionTab):
@@ -327,44 +342,72 @@ class SettingTab(MutiDirectionTab):
 
 
 class GLWidgetGUI(GLViewWidget):
-    def __init__(self, configHandler_):
-        camera_sensitivity = configHandler_.get_config("Sensitivity")
+    clear_selected_items = pyqtSignal()
+    after_selection = pyqtSignal()
+
+    def __init__(self):
+        camera_sensitivity = configHandler.get_config("Sensitivity")
         super().__init__(Vector3(100., 20., 40.), cam_sensitivity=camera_sensitivity)
         self.__init_GUI()
 
-        self.axis = GLAxisItem(fix_to_corner=True)
-        self.text = GLTextItem(text="BB-63 USS Missouri", pos=(0, 50, 0), color=(0.6, 0.6, 1), fixed=False)
-
-        # -- lights
-        self.light = PointLight(pos=[0, 100, 0], ambient=(0.7, 0.7, 0.7), diffuse=(0.7, 0.7, 0.7))
-        self.light1 = PointLight(pos=[0, -50, 10], diffuse=(0, 0.8, 0))
-        self.light2 = PointLight(pos=[-120, 30, 20], diffuse=(0.8, 0, 0))
-        self.light3 = PointLight(pos=[90, 90, 90], diffuse=(0, 0, 0.8))
-
-        self.all_lights = [self.light, self.light1, self.light2, self.light3]
-
-        # -- grid
-        self.grid = GLGridItem(
+        # 主光照
+        self.light = PointLight(
+            pos=[400, 500, 400], ambient=(0.6, 0.6, 0.6), diffuse=(0.7, 0.7, 0.7), specular=(0.95, 0.95, 0.95),
+            constant=0.001,
+            linear=0.001,
+            directional=True,
+        )
+        # self.light1 = PointLight(pos=[0, -50, 10], diffuse=(0, 0.8, 0))
+        # self.light2 = PointLight(pos=[-120, 30, 20], diffuse=(0.8, 0, 0))
+        # self.light3 = PointLight(pos=[90, 90, 90], diffuse=(0, 0, 0.8))
+        # self.all_lights = [self.light, self.light1, self.light2, self.light3]
+        # 基础背景物体
+        self.__axis = GLAxisItem(fix_to_corner=True)
+        self.__grid = GLGridItem(
             size=(500, 500), spacing=(50, 50),
             lineWidth=0.4,
             color=None,
-            lineColor=(0.4, 0.8, 0.9, 1.0),
+            lineColor=(0.3, 0.8, 1.0, 1.0),
             lights=[self.light],
             glOptions='translucent'
         )
+        self.GRAY_material = EditItemMaterial(color=(128, 128, 128))
+        self.R_material = EditItemMaterial(color=(255, 0, 0))
+        self.G_material = EditItemMaterial(color=(0, 255, 0))
+        self.B_material = EditItemMaterial(color=(0, 0, 255))
 
-        self.model = GLModelItem(
-            "./pyqtOpenGL/items/resources/objects/BB-63.obj",
-            lights=self.all_lights,
+        # self.text = GLTextItem(text="BB-63 USS Missouri", pos=(0, 50, 0), color=(0.6, 0.6, 0.6), fixed=False)
+        # self.model = GLModelItem(
+        #     "./pyqtOpenGL/items/resources/objects/BB-63.obj",
+        #     lights=[self.light],
+        #     selectable=True,
+        #     drawLine=True,
+        #     material=self.GRAY_material
+        # ).translate(0, 0, 0)
+        #
+        sp_ver, sp_idx, _, sp_norm = sphere(20, 128, 128, calc_uv_norm=True)
+
+        self.sphere_r = GLMeshItem(
+            vertexes=sp_ver, indices=sp_idx, normals=sp_norm,
+            lights=[self.light],
+            material=self.R_material,
+            glOptions='translucent',
             selectable=True
-        )
+        ).translate(-60, 0, 0)
+        self.sphere_l = GLMeshItem(
+            vertexes=sp_ver, indices=sp_idx, normals=sp_norm,
+            lights=[self.light],
+            material=self.G_material,
+            glOptions='translucent',
+            selectable=True
+        ).translate(60, 0, 0)
 
-        self.addItem(self.model)
-        self.addItem(self.text)
-        self.addItem(self.axis)
-        self.addItem(self.grid)
-
-        # self.drawObjHandler = DrawObjHandler(self)
+        self.addItem(self.__axis)
+        self.addItem(self.__grid)
+        # self.addItem(self.model)
+        # self.addItem(self.text)
+        # self.addItem(self.sphere_r)
+        # self.addItem(self.sphere_l)
 
         # 动画
         self.frame_rate = 60
@@ -373,11 +416,12 @@ class GLWidgetGUI(GLViewWidget):
         self.animation_timer.start(1000 // self.frame_rate)  # 设置定时器，以便每隔一段时间调用onTimeout函数
 
     def animation(self):
-        self.light.rotate(0, 1, 0.4, 1)
-        self.light1.rotate(1, 1, 0, -2)
-        self.light2.rotate(0.2, 1., 0., 1.5)
-        self.light3.rotate(0, 0.5, 0.5, 0.5)
-        self.parent().update()
+        # self.light.rotate(0, 1, 0.4, 1)
+        # self.light1.rotate(1, 1, 0, -2)
+        # self.light2.rotate(0.2, 1., 0., 1.5)
+        # self.light3.rotate(0, 0.5, 0.5, 0.5)
+        # self.paintGL_outside()
+        self.update()
 
     def __init_GUI(self):
         self.__init_fps_label()
@@ -441,9 +485,28 @@ class GLWidgetGUI(GLViewWidget):
         #     button.setGeometry(sub_right + 10 + index * (self.ModBtWid + 35), 50, self.ModBtWid + 25, 23)
         ...
 
+    def add_selected_item(self, item):
+        """
+        添加被选中的物体，刷新右侧编辑窗口
+        """
+        if item in self.selected_items:
+            return
+        item.setSelected(True)
+        self.selected_items.append(item)
+        self.after_selection.emit()
+
+    def _clear_selected_items(self):
+        self.clear_selected_items.emit()
+        super()._clear_selected_items()
+
+    def _after_selection(self):
+        # 将在主窗口获取被选物体，更新右侧编辑窗口
+        self.after_selection.emit()
+        super()._after_selection()
+
     def clearResources(self):
-        self.animation_timer.stop()
-        self.animation_timer.deleteLater()
+        # self.animation_timer.stop()
+        # self.animation_timer.deleteLater()
         for it in self.items:
             # it.release()
             ...
@@ -471,8 +534,34 @@ class MainEditorGUI(Window):
 
     @not_implemented
     @abstractmethod
-    def open_prj(self):
+    def open_prj(self, path):
+        """
+        打开工程
+        :param path:
+        :return:
+        """
         pass
+
+    def select_file_to_open(self):
+        """
+        打开文件选择窗口，然后打开工程
+        :return:
+        """
+        file_dialog = QFileDialog()
+        file_dialog.setFileMode(QFileDialog.ExistingFiles)
+        file_dialog.setNameFilter("NA Hull Editor工程文件 (*.naprj)")
+        file_dialog.setViewMode(QFileDialog.Detail)
+        prjs = self.configHandler.get_config("Projects")
+        if prjs:
+            last_prj_path = prjs[list(prjs.keys())[-1]]
+            last_prj_path = os.path.dirname(last_prj_path)
+            if str(last_prj_path) == "sample_projects":
+                last_prj_path = os.path.join(CURRENT_PATH, "sample_projects")
+        else:
+            last_prj_path = DESKTOP_PATH
+        file_dialog.setDirectory(last_prj_path)
+        file_dialog.fileSelected.connect(lambda path: self.open_prj(path) if path else None)
+        file_dialog.exec()
 
     @not_implemented
     @abstractmethod
@@ -509,16 +598,16 @@ class MainEditorGUI(Window):
     def tutorial(self):
         pass
 
-    def __init__(self, gl_widget, config_handler, logger):
+    def __init__(self, gl_widget, logger):
         self.gl_widget: GLWidgetGUI = gl_widget
-        self.configHandler = config_handler
+        self.configHandler = configHandler
         self.gl_widget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.logger = logger
         # 主窗口
         self.main_widget = MultiDirTabMainFrame(self.gl_widget)
         # 标签页
         self.user_tab = UserInfoTab(self.main_widget)
-        self.structure_tab = ElementStructureTab(self.main_widget)
+        self.structure_tab = ElementStructureTab(self.main_widget, self)
         self.info_tab = PrjInfoTab(self.main_widget)
         self.edit_tab = ElementEditTab(self.main_widget)
         if hasattr(self.gl_widget, "camera"):
@@ -557,7 +646,7 @@ class MainEditorGUI(Window):
         self.prj_menu = self.__init_prjMenu()
         self.__init_cust_top_widget()
         # 状态变量池
-        self.__operating_prj: Union[None, ShipProject] = None
+        self._current_prj: Union[None, ShipProject] = None
         MainEditorGUI.all.append(self)
 
     def __init_cust_top_widget(self):
@@ -655,7 +744,7 @@ class MainEditorGUI(Window):
         # open_text.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
         openButton.layout().addWidget(icon)
         openButton.layout().addWidget(open_text)
-        openButton.clicked.connect(self.open_prj)
+        openButton.clicked.connect(self.select_file_to_open)
         # 菜单
         menu.setFixedWidth(self.prj_menu_maxSize[0])
         menu.setMaximumHeight(self.prj_menu_maxSize[1])
@@ -713,10 +802,15 @@ class MainEditorGUI(Window):
             }}
         """)
         # 控件
+        self.bottom_widget.setContentsMargins(10, 0, 10, 0)
         self.bottom_layout.addWidget(self.status_label, Qt.AlignLeft | Qt.AlignVCenter)
 
     def resetTheme(self, theme_data):
         ...
+
+    def show_status(self, message, color):
+        self.status_label.setText(message)
+        self.status_label.setStyleSheet(f"color: {color};")
 
     def close(self):
         closed = super().close()
