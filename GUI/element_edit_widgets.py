@@ -139,6 +139,7 @@ class EditHullSectionGroupWidget(QWidget):
         self.__bind_signals()
 
     def __init_ui(self):
+        self.setMinimumWidth(280)
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(10)

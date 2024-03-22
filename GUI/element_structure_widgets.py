@@ -8,13 +8,12 @@ from .basic_widgets import *
 class ESW(QObject):
     def __init__(self, main_editor, tab_widget):
         super().__init__()
-        self._items = {
-            # item: item_widget
-        }
+        self._items = []
         self.title = ""
         self.main_editor = main_editor
         self.widget = tab_widget
         self.scroll_widget = QWidget()
+        self.none_show = NoneShow(80)
         self.scroll_area = ScrollArea(None, self.scroll_widget, Qt.Vertical)
         self.add_button = Button(None, "添加", bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3),
                                  bd_radius=(12, 12, 12, 12), align=Qt.AlignLeft | Qt.AlignTop, size=None)
@@ -31,6 +30,7 @@ class ESW(QObject):
         self.widget.layout().addWidget(self.add_button)
         self.scroll_widget.setLayout(QVBoxLayout())
         self.scroll_widget.layout().setAlignment(Qt.AlignTop)
+        self.scroll_widget.layout().addWidget(self.none_show)
         self.scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
     def _bind_signal(self):
@@ -48,19 +48,21 @@ class ESW(QObject):
 
     def add_item(self, item):
         """
-        在加入元素后更新界面
+        在加入元素后更新界面，并且如果当前没有元素则隐藏none_show
         :param item: 元素
         :return: 是否添加成功
         """
+        # self.none_show.hide()
         ...
 
     def del_item(self, item):
         """
-        删除元素后更新界面
+        删除元素后更新界面，并且如果当前没有元素则显示none_show
         :param item: 元素
         :return: 是否删除成功
         """
-        pass
+        # self.none_show.show()
+        ...
 
 
 class HullSectionGroupESW(ESW):
@@ -114,6 +116,7 @@ class LadderESW(ESW):
 class ModelESW(ESW):
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget)
+        tab_widget.setMinimumWidth(250)
         self.title = "外部模型："
         self._setup_ui()
         self._bind_signal()
@@ -127,11 +130,21 @@ class ModelESW(ESW):
     def create_item(self):
         if not super().create_item():
             return False
-        self.main_editor.getCurrentPrj().new_model()
+        self.main_editor.getCurrentPrj().new_model()  # 经过一圈信号传递，最终也调用了self.add_item
 
     def add_item(self, item):
-        show_widget = OnlyPosShow(self.scroll_widget, item)
-        self.scroll_widget.layout().addWidget(show_widget)
+        # show_widget = PosShow(self.main_editor.gl_widget, self.scroll_widget, item)
+        if not self._items:
+            self.none_show.hide()
+        self._items.append(item)
+        # self._items[item] = show_widget
+        # self.scroll_widget.layout().addWidget(show_widget)
+
+    def del_item(self, item):
+        show_widget = self._items.pop(item)
+        show_widget.deleteLater()
+        if not self._items:
+            self.none_show.show()
 
     def add_model_item(self, path):
         self.main_editor.getCurrentPrj().add_model_byPath(path)

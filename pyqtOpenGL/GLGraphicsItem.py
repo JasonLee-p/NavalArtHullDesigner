@@ -121,7 +121,7 @@ class GLGraphicsItem(QtCore.QObject):
             gl_FragColor = selectedColor;
         }
     """
-    be_selected = pyqtSignal()
+    set_selected_s = pyqtSignal(int)
 
     def __init__(
             self,
@@ -244,8 +244,8 @@ class GLGraphicsItem(QtCore.QObject):
 
     def setSelected(self, s, children=True):
         """Set the selected state of this item."""
-        if s:
-            self.be_selected.emit()
+        if self.__selected != s:
+            self.set_selected_s.emit(s)
         self.__selected = s
         if children:
             for child in self.__children:

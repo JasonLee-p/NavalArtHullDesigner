@@ -346,6 +346,7 @@ class GLWidgetGUI(GLViewWidget):
     after_selection = pyqtSignal()
 
     def __init__(self):
+        self.main_editor = None
         camera_sensitivity = configHandler.get_config("Sensitivity")
         super().__init__(Vector3(100., 20., 40.), cam_sensitivity=camera_sensitivity)
         self.__init_GUI()
@@ -485,15 +486,47 @@ class GLWidgetGUI(GLViewWidget):
         #     button.setGeometry(sub_right + 10 + index * (self.ModBtWid + 35), 50, self.ModBtWid + 25, 23)
         ...
 
-    def add_selected_item(self, item):
-        """
-        添加被选中的物体，刷新右侧编辑窗口
-        """
-        if item in self.selected_items:
-            return
-        item.setSelected(True)
-        self.selected_items.append(item)
+    # def add_selected_item(self, item):
+    #     """
+    #     添加被选中的绘制物体，刷新右侧编辑窗口
+    #     """
+    #     self.after_selection.emit()
+    #     if item in self.selected_items:
+    #         return
+    #     self._clear_selected_items()
+    #     self.selected_items.append(item)
+    #     if hasattr(item, "handler"):
+    #         item.handler.setSelected(True, set_button=False)
+    #     else:
+    #         item.setSelected(True)
+    #
+    # def del_selected_item(self, item):
+    #     """
+    #     删除被选中的绘制物体，刷新右侧编辑窗口
+    #     """
+    #     self.after_selection.emit()
+    #     if item not in self.selected_items:
+    #         return
+    #     self.selected_items.remove(item)
+    #     if hasattr(item, "handler"):
+    #         item.handler.setSelected(False, set_button=False)
+    #     else:
+    #         item.setSelected(False)
+
+    def set_item_selected(self, item, selected):
         self.after_selection.emit()
+        if selected and item not in self.selected_items:
+            self.selected_items.append(item)
+            if hasattr(item, "handler"):
+                item.handler.setSelected(True)
+            else:
+                item.setSelected(True)
+        elif not selected and item in self.selected_items:
+            self.selected_items.remove(item)
+            if hasattr(item, "handler"):
+                item.handler.setSelected(False)
+            else:
+                item.setSelected(False)
 
     def _clear_selected_items(self):
         self.clear_selected_items.emit()

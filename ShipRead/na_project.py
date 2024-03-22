@@ -19,6 +19,7 @@ class SectionHandler(QObject):
     SPHERE_VER, SHPERE_IDX, _, SPHERE_NORM = sphere(3, 10, 10, calc_uv_norm=True)
 
     def __init__(self, paint_item=None):
+        self._showButton = None
         super().__init__(None)
         if paint_item is None:
             self.paintItem = GLMeshItem(
@@ -32,6 +33,7 @@ class SectionHandler(QObject):
                 self.paintItem.translate(self.Pos.x(), self.Pos.y(), self.Pos.z())
         else:
             self.paintItem = paint_item
+        self.paintItem.set_selected_s.connect(self.set_showButton_checked)
         self.paintItem.handler = self
         self._custom_id = str(id(self))
         self.idMap[self._custom_id] = self
@@ -45,10 +47,18 @@ class SectionHandler(QObject):
     def setVisable(self, visable: bool):
         self.paintItem.setVisible(visable)
 
-    def setSelected(self, selected: bool):
+    def setSelected(self, selected: bool, set_button=True):
+        """
+        设置选中状态
+        :param selected:
+        :param set_button: 是否设置按钮状态
+        :return:
+        """
         self.paintItem.setSelected(selected)
-        gl_widget = self.paintItem.view()
-        gl_widget.add_selected_item(self.paintItem)
+        self.set_showButton_checked(selected) if set_button else None
+
+    def set_showButton_checked(self, selected: bool):
+        self._showButton.setChecked(selected)
 
     def selected(self):
         return self.paintItem.selected()
@@ -415,6 +425,11 @@ class Model(SectionHandler):
                                 lineWidth=modelRenderConfig["ModelLineWith"],
                                 lineColor=modelRenderConfig["ModelLineColor"])
         super().__init__(modelItem)
+        main_editor = self.hullProject.main_handler
+        scroll_widget = main_editor.structure_tab.model_tab.scroll_widget
+        self._showButton = PosShow(self.hullProject.gl_widget, scroll_widget, self)
+
+        scroll_widget.layout().addWidget(self._showButton)
         self.hullProject.gl_widget.addItem(self.paintItem)
 
     def __del__(self):
@@ -423,6 +438,10 @@ class Model(SectionHandler):
 
     def setDrawLine(self, drawLine: bool):
         self.paintItem.setDrawLine(drawLine)
+
+    def moveTo(self, pos: QVector3D):
+        self.Pos = pos
+        self.paintItem.moveTo(pos.x(), pos.y(), pos.z())
 
     def to_dict(self):
         return {

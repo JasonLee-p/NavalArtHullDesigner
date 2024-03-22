@@ -88,6 +88,7 @@ class MainEditor(MainEditorGUI):
         pass
 
     def __init__(self, gl_widget, logger):
+        gl_widget.main_editor = self
         super().__init__(gl_widget, logger)
         self._bind_signal()
 

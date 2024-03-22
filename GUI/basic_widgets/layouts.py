@@ -497,14 +497,21 @@ class FreeTabFrame(QFrame):
         :return:
         """
         if tab not in self.all_tabs:
-            color_print(f"[WARNING] Tab {tab} not in <{self}>.", "red")
-            return False
+            color_print(f"[WARNING] {tab} not in <{self}>.", "red")
+            # 到其他FreeTabFrame寻找
+            for frame in FreeTabFrame.all_tabFrames:
+                if tab in frame.all_tabs:
+                    frame.change_tab(tab)
         if self.current_tab:
             self.current_tab.hide()
+            # noinspection PyProtectedMember
+            self.current_tab._button.setChecked(False)
         self.current_tab = tab
         # noinspection PyProtectedMember
         tab._button.click_pos = None
         tab.show()
+        # noinspection PyProtectedMember
+        tab._button.setChecked(True)
 
 
 class MultiDirTabMainFrame(QFrame):
