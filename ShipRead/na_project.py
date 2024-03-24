@@ -67,6 +67,7 @@ class SectionHandler(QObject):
         self._model_bt_scroll_widget = self._model_tab.scroll_widget
         # 绘制对象添加到主绘制窗口
         self._gl_widget.addItem(self.paintItem)
+        self.paintItem.addLight(self._gl_widget.light)
         # 初始化showButton
         self._init_showButton(showButton_type)
         # 赋值一个唯一的id
