@@ -118,6 +118,9 @@ class ElementStructureTab(MutiDirectionTab):
         # 总布局
         self.main_layout.addWidget(self.tab_widget)
 
+    def setCurrentTab(self, tab: QWidget):
+        self.tab_widget.setCurrentWidget(tab)
+
     def add_hullSectionGroup(self, hull_section_group):
         self.hullSectionGroup_tab.add_item(hull_section_group)
 
@@ -162,11 +165,12 @@ class ElementStructureTab(MutiDirectionTab):
 
 
 class ElementEditTab(MutiDirectionTab):
-    element_mutex = QMutex()  # 互斥锁，用于保证只有一个元素被编辑
     elementType_updated = pyqtSignal(str)
 
     def __init__(self, parent):
         super().__init__(parent, CONST.RIGHT, "元素编辑", EDIT_IMAGE)
+        self.element_mutex = QMutex()  # 互斥锁，用于保证只有一个元素被编辑
+        self.element_locker = QMutexLocker(self.element_mutex)
         self.set_layout(QVBoxLayout())
         self.elementType_label = TextLabel(self, "无选中物体", YAHEI[9], FG_COLOR1, Qt.AlignLeft)
         self.edit_hullSectionGroup_widget = EditHullSectionGroupWidget()
@@ -217,40 +221,38 @@ class ElementEditTab(MutiDirectionTab):
                             self.edit_ladder_widget
         :return:
         """
-        self.element_mutex.lock()
-        if element_type and not edit_widget:  # 使用element_type
-            self.elementType_label.setText(element_type)
-            for ew, et in self.edit_widgets.items():
-                if et == element_type:
-                    ew.show()
-                    self.current_edit_widget = ew
-                else:
-                    ew.hide()
-            self.elementType_updated.emit(element_type)
-        elif edit_widget and not element_type:  # 使用edit_widget
-            self.elementType_label.setText(self.edit_widgets[edit_widget])
-            for ew in self.edit_widgets:
-                if ew == edit_widget:
-                    ew.show()
-                    self.current_edit_widget = ew
-                else:
-                    ew.hide()
-            self.elementType_updated.emit(self.edit_widgets[edit_widget])
-        elif not element_type and not edit_widget:  # 无选中物体
-            self.clear_editing_widget()
-        elif element_type and edit_widget:  # 两个参数都有
-            if self.edit_widgets[edit_widget] != element_type:
-                self.element_mutex.unlock()
-                raise ValueError("element_type和edit_widget不匹配")
-            self.elementType_label.setText(element_type)
-            for ew in self.edit_widgets:
-                if ew == edit_widget:
-                    ew.show()
-                    self.current_edit_widget = ew
-                else:
-                    ew.hide()
-            self.elementType_updated.emit(element_type)
-        self.element_mutex.unlock()
+        with self.element_locker:
+            if element_type and not edit_widget:  # 使用element_type
+                self.elementType_label.setText(element_type)
+                for ew, et in self.edit_widgets.items():
+                    if et == element_type:
+                        ew.show()
+                        self.current_edit_widget = ew
+                    else:
+                        ew.hide()
+                self.elementType_updated.emit(element_type)
+            elif edit_widget and not element_type:  # 使用edit_widget
+                self.elementType_label.setText(self.edit_widgets[edit_widget])
+                for ew in self.edit_widgets:
+                    if ew == edit_widget:
+                        ew.show()
+                        self.current_edit_widget = ew
+                    else:
+                        ew.hide()
+                self.elementType_updated.emit(self.edit_widgets[edit_widget])
+            elif not element_type and not edit_widget:  # 无选中物体
+                self.clear_editing_widget()
+            elif element_type and edit_widget:  # 两个参数都有
+                if self.edit_widgets[edit_widget] != element_type:
+                    raise ValueError("element_type和edit_widget不匹配")
+                self.elementType_label.setText(element_type)
+                for ew in self.edit_widgets:
+                    if ew == edit_widget:
+                        ew.show()
+                        self.current_edit_widget = ew
+                    else:
+                        ew.hide()
+                self.elementType_updated.emit(element_type)
 
     def clear_editing_widget(self):
         self.elementType_label.setText("无选中物体")
@@ -379,7 +381,7 @@ class GLWidgetGUI(GLViewWidget):
 
         # self.text = GLTextItem(text="BB-63 USS Missouri", pos=(0, 50, 0), color=(0.6, 0.6, 0.6), fixed=False)
         # self.model = GLModelItem(
-        #     "./pyqtOpenGL/items/resources/objects/BB-63.obj",
+        #     "./pyqtOpenGL/items/resources/models/BB-63.obj",
         #     lights=[self.light],
         #     selectable=True,
         #     drawLine=True,
@@ -514,7 +516,6 @@ class GLWidgetGUI(GLViewWidget):
     #         item.setSelected(False)
 
     def set_item_selected(self, item, selected):
-        self.after_selection.emit()
         if selected and item not in self.selected_items:
             self.selected_items.append(item)
             if hasattr(item, "handler"):
@@ -527,15 +528,14 @@ class GLWidgetGUI(GLViewWidget):
                 item.handler.setSelected(False)
             else:
                 item.setSelected(False)
+        self.after_selection.emit()
 
     def _clear_selected_items(self):
         self.clear_selected_items.emit()
         super()._clear_selected_items()
 
     def _after_selection(self):
-        # 将在主窗口获取被选物体，更新右侧编辑窗口
         self.after_selection.emit()
-        super()._after_selection()
 
     def clearResources(self):
         # self.animation_timer.stop()

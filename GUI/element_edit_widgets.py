@@ -8,13 +8,14 @@ from .basic_widgets import *
 class StructureHullSectionGroupWidget(Button):
     all_widgets = []
     current_widget = None
-    widget_change_mutex = QMutex()
 
     def __init__(self, edit_widget):
         """
         显示船体截面组的控件，包括中心位置，旋转角度（欧拉），截面数量，局部坐标长度，局部坐标宽度，局部坐标高度等信息
         """
         super().__init__(None, "船体截面组", bd_radius=5, align=Qt.AlignLeft | Qt.AlignTop)
+        self.widget_change_mutex = QMutex()
+        self.widget_change_locker = QMutexLocker(self.widget_change_mutex)
         self.edit_widget = edit_widget
         self.setLayout(QVBoxLayout())
         self.info_widget = QWidget()
@@ -54,15 +55,14 @@ class StructureHullSectionGroupWidget(Button):
         ...
 
     def click(self):
-        self.widget_change_mutex.lock()
-        super().click()
-        if self.isChecked():
-            if StructureHullSectionGroupWidget.current_widget is not None:
-                StructureHullSectionGroupWidget.current_widget.setChecked(False)
-            StructureHullSectionGroupWidget.current_widget = self
-        else:
-            StructureHullSectionGroupWidget.current_widget = None
-        self.widget_change_mutex.unlock()
+        with self.widget_change_locker:
+            super().click()
+            if self.isChecked():
+                if StructureHullSectionGroupWidget.current_widget is not None:
+                    StructureHullSectionGroupWidget.current_widget.setChecked(False)
+                StructureHullSectionGroupWidget.current_widget = self
+            else:
+                StructureHullSectionGroupWidget.current_widget = None
 
     def update_name(self, name: str):
         self.show_name_label.setText(name)

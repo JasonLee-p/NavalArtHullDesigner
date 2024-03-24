@@ -21,7 +21,7 @@ class GLGelSimItem(GLGraphicsItem):
         super().__init__(parentItem=parentItem)
 
         self.gelslim_base = GLModelItem(
-            path = BASE_DIR / "resources/objects/GelSlim_obj/GelSlim.obj",
+            path = BASE_DIR / "resources/models/GelSlim_obj/GelSlim.obj",
             lights = lights,
             glOptions = "translucent_cull",
             texcoords_scale = 40,

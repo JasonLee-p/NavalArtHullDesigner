@@ -52,8 +52,9 @@ class ESW(QObject):
         :param item: 元素
         :return: 是否添加成功
         """
-        # self.none_show.hide()
-        ...
+        if not self._items:
+            self.none_show.hide()
+        self._items.append(item)
 
     def del_item(self, item):
         """
@@ -61,8 +62,10 @@ class ESW(QObject):
         :param item: 元素
         :return: 是否删除成功
         """
-        # self.none_show.show()
-        ...
+        show_widget = self._items.pop(item)
+        show_widget.deleteLater()
+        if not self._items:
+            self.none_show.show()
 
 
 class HullSectionGroupESW(ESW):
@@ -121,30 +124,7 @@ class ModelESW(ESW):
         self._setup_ui()
         self._bind_signal()
 
-    def _setup_ui(self):
-        super()._setup_ui()
-
-    def _bind_signal(self):
-        super()._bind_signal()
-
     def create_item(self):
         if not super().create_item():
             return False
         self.main_editor.getCurrentPrj().new_model()  # 经过一圈信号传递，最终也调用了self.add_item
-
-    def add_item(self, item):
-        # show_widget = PosShow(self.main_editor.gl_widget, self.scroll_widget, item)
-        if not self._items:
-            self.none_show.hide()
-        self._items.append(item)
-        # self._items[item] = show_widget
-        # self.scroll_widget.layout().addWidget(show_widget)
-
-    def del_item(self, item):
-        show_widget = self._items.pop(item)
-        show_widget.deleteLater()
-        if not self._items:
-            self.none_show.show()
-
-    def add_model_item(self, path):
-        self.main_editor.getCurrentPrj().add_model_byPath(path)

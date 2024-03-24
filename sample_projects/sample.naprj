@@ -1,11 +1,11 @@
 {
-  "check_code": "e3abba1438f50af818b00a29aa223a9ce1de228a",
+  "check_code": "31dbaf3b41731152cd4521ae840a589b4fe81362",
   "project_name": "SampleProject",
   "author": "JasonLee",
-  "edit_time": "2024-3-22 5:32:52",
+  "edit_time": "2024-3-25 3:48:11",
   "hull_section_group": [
     {
-      "name": "\u8239\u4f53\u622a\u9762\u7ec4\uff081\uff09",
+      "name": "\u4e3b\u4f53",
       "center": [
         0.0,
         0.0,
@@ -30,7 +30,7 @@
   ],
   "armor_section_group": [
     {
-      "name": "\u88c5\u7532\u622a\u9762\u7ec4\uff081\uff09",
+      "name": "\u4e3b\u4f53",
       "center": [
         0.0,
         0.0,
@@ -48,6 +48,7 @@
   ],
   "bridge": [
     {
+      "name": "\u4e00\u5c42",
       "pos": [
         0.0,
         0.0,
@@ -135,7 +136,7 @@
         0,
         0
       ],
-      "file_path": "D:\/\/Program Files (x86)\/\/Steam\/\/steamapps\/\/common\/\/NavalArt\/\/NavalArt_Data\/\/3DPrinting\/\/BB-63 USS Missouri (WOWS).obj"
+      "file_path": "E:\\JasonLee\\python_projects\\NavalArtPluginNew\\resources\/models\/BB-63.obj"
     }
   ]
 }

@@ -12,6 +12,7 @@ from ctypes import c_float, c_void_p
 import funcs_utils
 from PIL import Image
 import numpy as np
+import numpy.core._exceptions as np_core_exc  # noqa
 from GUI import TextLabel, WIN_WID, WIN_HEI
 
 from OpenGL.GL import *  # noqa
@@ -20,7 +21,8 @@ from math import radians, tan
 
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal, QPoint, QMutex
-from PyQt5.QtWidgets import QOpenGLWidget
+from PyQt5.QtWidgets import QOpenGLWidget, QMessageBox
+from main_logger import Log
 from pyqtOpenGL.items.GL2DSelectBox import GLSelectBox
 
 from .camera import Camera
@@ -33,7 +35,6 @@ from .items.light import PointLight
 
 class GLViewWidget(QtWidgets.QOpenGLWidget):
     gl_initialized = pyqtSignal()
-    update_mutex = QMutex()
 
     def __init__(
             self,
@@ -52,6 +53,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
           - Rotation/scale controls
         """
         QtWidgets.QOpenGLWidget.__init__(self, parent)
+        self.update_mutex = QMutex()
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
         self.camera = Camera(cam_position, cam_tar, fov=fov, sensitivity=cam_sensitivity)
         self.mouse_last_pos = None  # used for mouse move event
@@ -184,6 +186,12 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self.select_box.paint()
         self.__update_FPS()
 
+    def resizeGL(self, w, h):
+        """
+        Update the viewport and projection matrix.
+        """
+        glViewport(0, 0, w, h)
+
     def _createFramebuffer(self, width, height):
         """
         创建帧缓冲区, 用于拾取
@@ -314,6 +322,10 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             for it in self.items:  # 正常模式
                 try:
                     it.drawItemTree()
+                except np_core_exc._ArrayMemoryError as _:  # noqa
+                    QMessageBox().warning(None, "严重错误", "无法申请足够的内存，程序即将退出")
+                    Log().error(traceback.format_exc(), "无法申请足够的内存，程序即将退出")
+                    sys.exit(1)
                 except Exception as e:  # noqa
                     printExc()
                     print("Error while drawing item %s." % str(it))
@@ -449,7 +461,11 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self.selected_items.clear()
 
     def _after_selection(self):
-        ...
+        """
+        选中物体后的处理
+        :return:
+        """
+        pass
 
     def readQImage(self):
         """

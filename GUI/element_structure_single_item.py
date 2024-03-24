@@ -49,8 +49,7 @@ class ShowButton(Button):
         self.textChanged = self.name_edit.textChanged
         self.name_edit.textChanged.connect(self.nameTextChanged)
         self.vis_btn.clicked.connect(self.visableClicked)
-        self.item_handler.temp_deleted.connect(self.hide)
-        self.item_handler.deleted.connect(self.deleteLater)
+        self.item_handler.deleted_s.connect(self.deleteLater)
 
     def nameTextChanged(self, text):
         if len(text) > 20:
@@ -99,15 +98,20 @@ class PosShow(ShowButton):
         self.layout_.addWidget(self.posZ_show, 1, 3)
 
 
-class PosRotShow(PosShow):
-    def __init__(self, scroll_widget, item_handler, height=105):
+class PosRotShow(ShowButton):
+    def __init__(self, gl_widget, scroll_widget, item_handler, height=110):
         """
-        只需要预览位置和旋转，并且有名字的元素
+        预览位置和旋转角度的元素
+        :param gl_widget:
         :param scroll_widget:
         :param item_handler:
         """
-        super().__init__(scroll_widget, item_handler, height)
+        super().__init__(gl_widget, scroll_widget, item_handler, height=height)
+        self.pos_text = ColoredTextLabel(None, "位置：", self._font, bg=BG_COLOR0, bd=0, padding=3)
         self.rot_text = ColoredTextLabel(None, "旋转：", self._font, bg=BG_COLOR0, bd=0, padding=3)
+        self.posX_show = ColoredTextLabel(None, "0", self._font, bg=BG_COLOR0, bd=0, padding=3)
+        self.posY_show = ColoredTextLabel(None, "0", self._font, bg=BG_COLOR0, bd=0, padding=3)
+        self.posZ_show = ColoredTextLabel(None, "0", self._font, bg=BG_COLOR0, bd=0, padding=3)
         self.rotX_show = ColoredTextLabel(None, "0", self._font, bg=BG_COLOR0, bd=0, padding=3)
         self.rotY_show = ColoredTextLabel(None, "0", self._font, bg=BG_COLOR0, bd=0, padding=3)
         self.rotZ_show = ColoredTextLabel(None, "0", self._font, bg=BG_COLOR0, bd=0, padding=3)
@@ -115,9 +119,15 @@ class PosRotShow(PosShow):
         self._bind_signal()
 
     def _setup_ui(self):
-        super()._setup_ui()
         # 设置自控件样式
+        self.pos_text.setFixedHeight(26)
         self.rot_text.setFixedHeight(26)
+        self.posX_show.setFixedHeight(26)
+        self.posY_show.setFixedHeight(26)
+        self.posZ_show.setFixedHeight(26)
+        self.posX_show.setMinimumWidth(40)
+        self.posY_show.setMinimumWidth(40)
+        self.posZ_show.setMinimumWidth(40)
         self.rotX_show.setFixedHeight(26)
         self.rotY_show.setFixedHeight(26)
         self.rotZ_show.setFixedHeight(26)
@@ -125,7 +135,14 @@ class PosRotShow(PosShow):
         self.rotY_show.setMinimumWidth(40)
         self.rotZ_show.setMinimumWidth(40)
         # 布局
+        self.layout_.addWidget(self.vis_btn, 0, 0)
+        self.layout_.addWidget(self.name_edit, 0, 1, 1, 3)
+        self.layout_.addWidget(self.pos_text, 1, 0)
+        self.layout_.addWidget(self.posX_show, 1, 1)
+        self.layout_.addWidget(self.posY_show, 1, 2)
+        self.layout_.addWidget(self.posZ_show, 1, 3)
         self.layout_.addWidget(self.rot_text, 2, 0)
         self.layout_.addWidget(self.rotX_show, 2, 1)
         self.layout_.addWidget(self.rotY_show, 2, 2)
         self.layout_.addWidget(self.rotZ_show, 2, 3)
+

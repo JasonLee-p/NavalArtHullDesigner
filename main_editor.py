@@ -63,6 +63,7 @@ class MainEditor(MainEditorGUI):
 
     def save_prj(self):
         self._current_prj.save() if self._current_prj else None
+        self._show_statu(f"保存工程：{self._current_prj.project_name}", "success")
 
     @not_implemented
     def save_as_prj(self):
@@ -88,31 +89,33 @@ class MainEditor(MainEditorGUI):
         pass
 
     def __init__(self, gl_widget, logger):
+        self.SHORTCUTS = {
+            "Ctrl+S": self.save_prj,
+            "Ctrl+Shift+S": self.save_as_prj,
+        }
         gl_widget.main_editor = self
         super().__init__(gl_widget, logger)
         self._bind_signal()
+        self._bind_shortcut()
 
     def _bind_signal(self):
         self.gl_widget.clear_selected_items.connect(self.edit_tab.clear_editing_widget)
         self.gl_widget.after_selection.connect(
             lambda: self.show_editor(self.gl_widget.selected_items_handler()))
 
+    def _bind_shortcut(self):
+        # 绑定快捷键
+        for key, func in self.SHORTCUTS.items():
+            action = QAction(self)
+            action.setShortcut(QKeySequence(key))
+            action.triggered.connect(func)
+            self.addAction(action)
+
     def setCurrentPrj(self, prj):
         self._current_prj = prj
 
     def getCurrentPrj(self):
         return self._current_prj
-
-    # def __bind_prj_signal(self):
-    #     self._current_prj.add_hull_section_group_s.connect(self.add_hull_section_group_s)
-    #     self._current_prj.add_armor_section_group_s.connect(self.add_armor_section_group_s)
-    #     self._current_prj.add_bridge_s.connect(self.add_bridge_s)
-    #     self._current_prj.add_ladder_s.connect(self.add_ladder_s)
-    #     self._current_prj.add_model_s.connect(self.add_model_s)
-    #     self._current_prj.del_hull_section_group_s.connect(self.del_hull_section_group_s)
-    #     self._current_prj.del_armor_section_group_s.connect(self.del_armor_section_group_s)
-    #     self._current_prj.del_bridge_s.connect(self.del_bridge_s)
-    #     self._current_prj.del_ladder_s.connect(self.del_ladder_s)
 
     def add_hull_section_group_s(self, group_id):
         hsGroup = HullSectionGroup.get_by_id(group_id)
@@ -156,6 +159,8 @@ class MainEditor(MainEditorGUI):
 
     def show_editor(self, item):
         if isinstance(item, list):
+            if not item:
+                self.edit_tab.clear_editing_widget()
             if len(item) == 1:
                 item = item[0]
             else:
