@@ -158,6 +158,9 @@ class GLGraphicsItem(QtCore.QObject):
         if item is not None and item not in self.__children:
             self.__children.append(item)
             self.__children.sort(key=lambda a: a.depthValue())
+            item.setSelectable(self.__selectable)
+            item.setSelected(self.__selected)
+            item.setView(self.__view)
             if item.__parent is not None:
                 item.__parent.__children.remove(item)
             item.__parent = self
@@ -258,7 +261,7 @@ class GLGraphicsItem(QtCore.QObject):
         if not self.__selectable:
             return np.float32(0.0)
         if parent and self.__parent is not None and self.__parent.selectable():
-            return self.__parent.pickColor(parent=True)
+            return self.__parent.pickColor(parent=parent)
         return self._pickColor
 
     def setView(self, v):
@@ -313,12 +316,12 @@ class GLGraphicsItem(QtCore.QObject):
             tr = p.transform() * tr
         return tr
 
-    def setVisible(self, vis, recursive=False):
+    def setVisible(self, vis, recursive=True):
         """Set the visibility of this item."""
         self.__visible = vis
         if recursive:
             for child in self.recursiveChildItems():
-                child.setVisible(vis, recursive=False)
+                child.setVisible(vis, recursive=recursive)
         self.update()
 
     def visible(self):

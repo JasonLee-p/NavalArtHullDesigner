@@ -629,7 +629,7 @@ class MultiDirTabMainFrame(QFrame):
                     return tw
             if tw.geometry().contains(pos - tw.parent().mapToGlobal(QPoint(0, 0))):
                 return tw
-            elif btw.geometry().contains(pos - btw.parent().mapToGlobal(QPoint(0, 0))):
+            elif btw.geometry().contains(pos - btw._parent().mapToGlobal(QPoint(0, 0))):
                 return tw
         return None
 

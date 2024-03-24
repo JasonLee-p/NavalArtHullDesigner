@@ -7,6 +7,7 @@ import time
 from typing import Union, List, Literal
 from hashlib import sha1
 
+import numpy as np
 import ujson
 from GUI import configHandler
 from GUI.element_structure_widgets import *
@@ -17,7 +18,7 @@ from pyqtOpenGL import GLModelItem, GLMeshItem, sphere, cube, EditItemMaterial
 
 
 class SectionHandler(QObject):
-    SPHERE_VER, SHPERE_IDX, SPHERE_UV, SPHERE_NORM = sphere(3, 10, 10, calc_uv_norm=True)
+    SPHERE_VER, SHPERE_IDX, SPHERE_UV, SPHERE_NORM = sphere(2, 16, 16, calc_uv_norm=True)
     CUBE_VER, CUBE_NORM, CUBE_TEX = cube(1, 1, 1)
 
     @classmethod
@@ -34,10 +35,11 @@ class SectionHandler(QObject):
             self.Pos = QVector3D(0, 0, 0)
         # 初始化绘制对象
         if paint_item is None:
+            random_color = (np.random.randint(100, 255), np.random.randint(0, 255), np.random.randint(0, 255))
             self.paintItem = GLMeshItem(
                 vertexes=self.SPHERE_VER, indices=self.SHPERE_IDX, normals=self.SPHERE_NORM,
                 lights=[],
-                material=EditItemMaterial(color=(128, 128, 128)),
+                material=EditItemMaterial(color=random_color),
                 glOptions='translucent',
                 selectable=True
             ).translate(self.Pos.x(), self.Pos.y(), self.Pos.z())
@@ -94,7 +96,7 @@ class SectionHandler(QObject):
         self.paintItem.addLight(lights)
 
     def setVisable(self, visable: bool):
-        self.paintItem.setVisible(visable)
+        self.paintItem.setVisible(visable, recursive=True)
 
     def setSelected(self, selected: bool, set_button=True):
         """
@@ -155,15 +157,13 @@ class SubSectionHandler(QObject):
             self.paintItem = paint_item
         self.paintItem.handler = self
         # 获取主绘制窗口，使其能够连接到主窗口及其下属控件
-        if not hasattr(self, "hullProject"):
-            if hasattr(self, "_parent"):
-                self.hullProject = self._parent.hullProject
-            else:
-                raise AttributeError("No hullProject attribute or parent attribute")
+        self.hullProject = self._parent.hullProject
         self._main_handler = self.hullProject.main_handler
         self._gl_widget = self._main_handler.gl_widget
+        self._parent.paintItem.addChildItem(self.paintItem)
         # 绘制对象添加到主绘制窗口
         self._gl_widget.addItem(self.paintItem)
+        self.paintItem.addLight(self._gl_widget.light)
         # 赋值一个唯一的id
         self._custom_id = str(id(self))
 
@@ -261,7 +261,7 @@ class HullSection(SubSectionHandler):
 
     def __init__(self, prj, parent):
         self.hullProject = prj
-        self.parent = parent
+        self._parent = parent
         self.z = None
         self.nodes: List[SectionNodeXY] = []
         self.armor = None
@@ -287,7 +287,7 @@ class ArmorSection(SubSectionHandler):
 
     def __init__(self, prj, parent):
         self.hullProject = prj
-        self.parent = parent
+        self._parent = parent
         self.z = None
         self.nodes: List[SectionNodeXY] = []
         self.armor = None
@@ -428,7 +428,7 @@ class Railing(SubSectionHandler):
         self.height = 1.2  # 栏杆高度
         self.interval = 1.0  # 栏杆间隔
         self.thickness = 0.1  # 栏杆厚度
-        self.parent = parent
+        self._parent = parent
         self.Col: QColor = QColor(128, 128, 128)  # 颜色
         paint_item = None
         super().__init__(paint_item)
@@ -454,7 +454,7 @@ class Handrail(SubSectionHandler):
         self.hullProject = prj
         self.height = 1.2  # 栏板高度
         self.thickness = 0.1  # 栏板厚度
-        self.parent = parent
+        self._parent = parent
         self.Col: QColor = QColor(128, 128, 128)
         paint_item = None
         super().__init__(paint_item)
@@ -527,7 +527,7 @@ class Model(SectionHandler):
         self.Rot = rot
         self.file_path = file_path
         modelRenderConfig = configHandler.get_config("ModelRenderSetting")
-        modelItem = GLModelItem(file_path, lights=[self.hullProject.gl_widget.light],
+        modelItem = GLModelItem(file_path, lights=[],
                                 selectable=True,
                                 glOptions="translucent",
                                 drawLine=modelRenderConfig["ModelDrawLine"],

@@ -805,7 +805,7 @@ class QMenu(QWidget):
 
 
 def add_line(layout, type: str='h'):
-    line = QtWidgets.QFrame(layout.parent())
+    line = QtWidgets.QFrame(layout._parent())
     if type == "h":
         line.setFrameShape(QtWidgets.QFrame.HLine)
     if type == "v":
