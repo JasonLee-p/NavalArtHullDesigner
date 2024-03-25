@@ -17,7 +17,7 @@ class EditTabWidget(QWidget):
 
     def __init__(self):
         super().__init__(None)
-        self.current_sectionHandler = None
+        self._current_item = None
         self.basic_info_widget = QWidget()
         self.basic_info_layout = QGridLayout()
         self.sub_elements_widget = QWidget()
@@ -74,16 +74,40 @@ class EditTabWidget(QWidget):
         self.sub_elements_layout.setSpacing(2)
 
     def _bind_signals(self):
-        self.posX_edit.value_changed.connect(lambda x: self.pos_changed_s.emit([x, self.posY_edit.value(), self.posZ_edit.value()]))
-        self.posY_edit.value_changed.connect(lambda y: self.pos_changed_s.emit([self.posX_edit.value(), y, self.posZ_edit.value()]))
-        self.posZ_edit.value_changed.connect(lambda z: self.pos_changed_s.emit([self.posX_edit.value(), self.posY_edit.value(), z]))
-        self.rotX_edit.value_changed.connect(lambda x: self.rot_changed_s.emit([x, self.rotY_edit.value(), self.rotZ_edit.value()]))
-        self.rotY_edit.value_changed.connect(lambda y: self.rot_changed_s.emit([self.rotX_edit.value(), y, self.rotZ_edit.value()]))
-        self.rotZ_edit.value_changed.connect(lambda z: self.rot_changed_s.emit([self.rotX_edit.value(), self.rotY_edit.value(), z]))
+        self.posX_edit.value_changed.connect(lambda x: self.pos_changed_s.emit([x, self._current_item.Pos.y(), self._current_item.Pos.z()]))
+        self.posY_edit.value_changed.connect(lambda y: self.pos_changed_s.emit([self._current_item.Pos.x(), y, self._current_item.Pos.z()]))
+        self.posZ_edit.value_changed.connect(lambda z: self.pos_changed_s.emit([self._current_item.Pos.x(), self._current_item.Pos.y(), z]))
+        self.rotX_edit.value_changed.connect(lambda x: self.rot_changed_s.emit([x, self._current_item.Rot[1], self._current_item.Rot[2]]))
+        self.rotY_edit.value_changed.connect(lambda y: self.rot_changed_s.emit([self._current_item.Rot[0], y, self._current_item.Rot[2]]))
+        self.rotZ_edit.value_changed.connect(lambda z: self.rot_changed_s.emit([self._current_item.Rot[0], self._current_item.Rot[1], z]))
 
     @abstractmethod
     def updateSectionHandler(self, item):
-        ...
+        self._current_item = item
+
+    def setPosX(self, x, edits):
+        op = MoveToOperation(self._current_item, QVector3D(x, self._current_item.Pos.y(), self._current_item.Pos.z()), edits)
+        self.operationStack.execute(op)
+
+    def setPosY(self, y, edits):
+        op = MoveToOperation(self._current_item, QVector3D(self._current_item.Pos.x(), y, self._current_item.Pos.z()), edits)
+        self.operationStack.execute(op)
+
+    def setPosZ(self, z, edits):
+        op = MoveToOperation(self._current_item, QVector3D(self._current_item.Pos.x(), self._current_item.Pos.y(), z), edits)
+        self.operationStack.execute(op)
+
+    def setRotX(self, x, edits):
+        op = RotateOperation(self._current_item, [x, self._current_item.Rot[1], self._current_item.Rot[2]], edits)
+        self.operationStack.execute(op)
+
+    def setRotY(self, y, edits):
+        op = RotateOperation(self._current_item, [self._current_item.Rot[0], y, self._current_item.Rot[2]], edits)
+        self.operationStack.execute(op)
+
+    def setRotZ(self, z, edits):
+        op = RotateOperation(self._current_item, [self._current_item.Rot[0], self._current_item.Rot[1], z], edits)
+        self.operationStack.execute(op)
 
 
 class EditHullSectionGroupWidget(EditTabWidget):
@@ -198,5 +222,20 @@ class EditModelWidget(EditTabWidget):
         self._bind_signals()
 
     def updateSectionHandler(self, item):
-        ...
+        super().updateSectionHandler(item)
+        self.posX_edit.setValue(item.Pos.x())
+        self.posY_edit.setValue(item.Pos.y())
+        self.posZ_edit.setValue(item.Pos.z())
+        self.rotX_edit.setValue(item.Rot[0])
+        self.rotY_edit.setValue(item.Rot[1])
+        self.rotZ_edit.setValue(item.Rot[2])
+
+    def _bind_signals(self):
+        super()._bind_signals()
+        self.posX_edit.value_changed.connect(lambda x: self.setPosX(x, [self.posX_edit, self.posY_edit, self.posZ_edit]))
+        self.posY_edit.value_changed.connect(lambda y: self.setPosY(y, [self.posX_edit, self.posY_edit, self.posZ_edit]))
+        self.posZ_edit.value_changed.connect(lambda z: self.setPosZ(z, [self.posX_edit, self.posY_edit, self.posZ_edit]))
+        self.rotX_edit.value_changed.connect(lambda x: self.setRotX(x, [self.rotX_edit, self.rotY_edit, self.rotZ_edit]))
+        self.rotY_edit.value_changed.connect(lambda y: self.setRotY(y, [self.rotX_edit, self.rotY_edit, self.rotZ_edit]))
+        self.rotZ_edit.value_changed.connect(lambda z: self.setRotZ(z, [self.rotX_edit, self.rotY_edit, self.rotZ_edit]))
 

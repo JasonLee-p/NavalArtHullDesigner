@@ -118,6 +118,18 @@ class SectionHandler(QObject):
         self.Pos = pos
         self.paintItem.moveTo(pos.x(), pos.y(), pos.z())
 
+    def setPosX(self, x: float):
+        self.Pos.setX(x)
+        self.paintItem.moveTo(x, self.Pos.y(), self.Pos.z())
+
+    def setPosY(self, y: float):
+        self.Pos.setY(y)
+        self.paintItem.moveTo(self.Pos.x(), y, self.Pos.z())
+
+    def setPosZ(self, z: float):
+        self.Pos.setZ(z)
+        self.paintItem.moveTo(self.Pos.x(), self.Pos.y(), z)
+
     def addPos(self, vec: QVector3D):
         self.Pos += vec
         self.paintItem.moveTo(self.Pos.x(), self.Pos.y(), self.Pos.z())
@@ -125,6 +137,18 @@ class SectionHandler(QObject):
     def setRot(self, rot: List[float]):
         self.Rot = rot
         self.paintItem.setEuler(rot[0], rot[1], rot[2])
+
+    def setRotX(self, x: float):
+        self.Rot[0] = x
+        self.paintItem.setEuler(x, self.Rot[1], self.Rot[2])
+
+    def setRotY(self, y: float):
+        self.Rot[1] = y
+        self.paintItem.setEuler(self.Rot[0], y, self.Rot[2])
+
+    def setRotZ(self, z: float):
+        self.Rot[2] = z
+        self.paintItem.setEuler(self.Rot[0], self.Rot[1], z)
 
     def setScl(self, scl: QVector3D):
         self.paintItem.scale(scl.x(), scl.y(), scl.z())
@@ -359,6 +383,9 @@ class HullSectionGroup(SectionHandler):
             color_print(f"[WARNING] {section} not in {self.__sections}", "red")
 
     def to_dict(self):
+        if isinstance(self.Rot, QVector3D):
+            self.Rot = [self.Rot.x(), self.Rot.y(), self.Rot.z()]
+            print(f"[WARNING] {self} Rot is QVector3D, change to list")
         return {
             "name": f"{self.name}",
             "center": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
@@ -413,6 +440,9 @@ class ArmorSectionGroup(SectionHandler):
             color_print(f"[WARNING] {section} not in {self.__sections}", "red")
 
     def to_dict(self):
+        if isinstance(self.Rot, QVector3D):
+            self.Rot = [self.Rot.x(), self.Rot.y(), self.Rot.z()]
+            print(f"[WARNING] {self} Rot is QVector3D, change to list")
         return {
             "name": f"{self.name}",
             "center": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
@@ -507,6 +537,9 @@ class Ladder(SectionHandler):
         self._structure_tab.setCurrentTab(self._ladder_tab.widget)
 
     def to_dict(self):
+        if isinstance(self.Rot, QVector3D):
+            self.Rot = [self.Rot.x(), self.Rot.y(), self.Rot.z()]
+            print(f"[WARNING] {self} Rot is QVector3D, change to list")
         return {
             "name": f"{self.name}",
             "pos": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
@@ -541,10 +574,10 @@ class Model(SectionHandler):
                                 drawLine=modelRenderConfig["ModelDrawLine"],
                                 lineWidth=modelRenderConfig["ModelLineWith"],
                                 lineColor=modelRenderConfig["ModelLineColor"])
-        modelItem.translate(self.Pos.x(), self.Pos.y(), self.Pos.z())
-        modelItem.setEuler(*self.Rot)
 
         super().__init__(modelItem, showButton_type='PosShow')
+        self.setPos(pos)
+        self.setRot(rot)
 
     def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
         super()._init_showButton(type_)
@@ -558,10 +591,6 @@ class Model(SectionHandler):
     def setDrawLine(self, drawLine: bool):
         self.paintItem.setDrawLine(drawLine)
 
-    def moveTo(self, pos: QVector3D):
-        self.Pos = pos
-        self.paintItem.moveTo(pos.x(), pos.y(), pos.z())
-
     def delete(self):
         """
         所有的删除操作都应该调用这个方法，即使是在控件中删除
@@ -572,12 +601,18 @@ class Model(SectionHandler):
         super().delete()
 
     def to_dict(self):
+        if isinstance(self.Rot, QVector3D):
+            self.Rot = [self.Rot.x(), self.Rot.y(), self.Rot.z()]
+            print(f"[WARNING] {self} Rot is QVector3D, change to list")
+        if isinstance(self.Scl, QVector3D):
+            self.Scl = [self.Scl.x(), self.Scl.y(), self.Scl.z()]
+            print(f"[WARNING] {self} Scl is QVector3D, change to list")
         return {
             "name": f"{self.name}",
             "pos": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
             "rot": self.Rot,
             "scl": self.Scl,
-            "file_path": self.file_path
+            "file_path": str(self.file_path)
         }
 
 
@@ -855,14 +890,19 @@ class ShipProject(QObject):
         """
         保存工程文件
         """
-        with self.locker:
-            dict_data = self.to_dict()
-            dict_data_without_check_code = dict_data.copy()
-            dict_data_without_check_code.pop("check_code")
-            self.__check_code = str(sha1(str(dict(dict_data_without_check_code)).encode("utf-8")).hexdigest())
-            dict_data["check_code"] = self.__check_code
+        dict_data = self.to_dict()
+        dict_data_without_check_code = dict_data.copy()
+        dict_data_without_check_code.pop("check_code")
+        self.__check_code = str(sha1(str(dict(dict_data_without_check_code)).encode("utf-8")).hexdigest())
+        dict_data["check_code"] = self.__check_code
+        try:
             with open(self.path, 'w', encoding='utf-8') as f:
                 ujson.dump(dict_data, f, indent=2)
+        except TypeError as e:
+            QMessageBox.warning(None, "严重错误", f"数据转换时出现错误，无法保存！{e}", QMessageBox.Ok)
+            with open(self.path, 'w', encoding='utf-8') as f:
+                f.write(str(dict_data))
+
 
 
 class NaPrjReader:
@@ -1002,7 +1042,8 @@ class NaPrjReader:
             if m_p.startswith("resources/"):  # 说明是内置模型，需要转换为绝对路径
                 m_p = os.path.join(CURRENT_PATH, m_p)
             try:
-                model_ = Model(self.hullProject, model['name'], QVector3D(*model['pos']), model['rot'], model['scl'], m_p)
+                model_ = Model(self.hullProject, model['name'], QVector3D(*model['pos']), model['rot'], model['scl'],
+                               m_p)
             except KeyError:
                 raise KeyError(f"模型 {model['name']} 的数据不完整")
             self.hullProject.add_model(model_)

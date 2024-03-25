@@ -1023,12 +1023,13 @@ class Window(QWidget):
         self.closed.emit()
         super().close()
 
-    def _show_statu(self, message, message_type: Literal['highlight', 'success', 'process', 'error'] = 'process'):
+    def show_statu_(self, message, message_type: Literal['highlight', 'success', 'process', 'error'] = 'process'):
         color_map = {
             'highlight': 'orange',
             'success': f"{FG_COLOR0}",
             'process': f"{GRAY}",
-            'error': f"{FG_COLOR1}",
+            'error': f"{LIGHTER_RED}",
+            'warning': f"{LIGHTER_RED}"
         }
         self.status_label.setStyleSheet(f"color: {color_map[message_type]};")
         self.status_label.setText(message)
@@ -1037,7 +1038,7 @@ class Window(QWidget):
     @classmethod
     def show_statu(cls, window: 'Window', message,
                    message_type: Literal['highlight', 'success', 'process', 'error'] = 'process'):
-        window._show_statu(message, message_type)
+        window.show_statu_(message, message_type)
 
     def showMaximized(self):
         if self.resizable and not self.isMaximized():

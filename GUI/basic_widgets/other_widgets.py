@@ -187,6 +187,7 @@ class NumberEdit(TextEdit):
             padding=3
     ):
         super().__init__(str(default_value), parent, tool_tip, font, bg, padding)
+        self.update_mutex = QMutex()
         self.root_parent = root_parent
         self.num_type = num_type
         self.num_range = num_range
@@ -205,16 +206,63 @@ class NumberEdit(TextEdit):
             self.setValidator(QIntValidator(self.num_range[0], self.num_range[1]))
         elif self.num_type == float:
             self.setValidator(QDoubleValidator(self.num_range[0], self.num_range[1], self.rounding))
-        # 解绑滚轮事件，将来绑定到父控件上。这样做能够让控件在unfocus状态也能够响应滚轮事件进行值修改；
-        self.wheelEvent = lambda event: None
         # 绑定值改变事件
-        self.textChanging = False  # 防止递归
         self.textChanged.connect(self.text_changed)
 
+    def setValue(self, value):
+        if self.rounding:
+            self.current_value = round(value, self.rounding)
+        elif self.rounding == 0:
+            self.current_value = int(value)
+        self.setText(str(self.current_value))
+
+    def wheelEvent(self, event):
+        self.update_mutex.lock()
+        if event.angleDelta().y() > 0:
+            self.current_value += self.step
+        else:
+            self.current_value -= self.step
+        self.current_value = round(
+            self.current_value, self.rounding
+        ) if self.rounding else int(self.text())
+        self.setText(str(self.current_value))
+        self.value_changed.emit(self.current_value)
+        self.root_parent.update()
+        self.update_mutex.unlock()
+
     def text_changed(self):
-        if self.textChanging:
-            return
-        self.textChanging = True
+        pass
+        # if self.textChanging:
+        #     return
+        # self.textChanging = True
+        # if self.text() != "":
+        #     if self.text()[0] == "0" and len(self.text()) > 1:
+        #         self.setText(self.text()[1:])
+        #     try:
+        #         if self.num_range[0] <= self.num_type(self.text()) <= self.num_range[1]:
+        #             self.current_value = round(self.num_type(self.text()), self.rounding) if self.rounding else int(
+        #                 self.text())
+        #     except ValueError:
+        #         pass
+        # else:
+        #     self.current_value = 0
+        # self.setText(str(self.current_value))
+        # self.value_changed.emit(self.current_value)
+        # self.root_parent.update()
+        # self.textChanging = False
+
+    def keyPressEvent(self, event):
+        # 将回车绑定到焦点离开事件
+        if event.key() == Qt.Key_Return:
+            self.clearFocus()
+        super().keyPressEvent(event)
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+
+    # 当光标离开时，将值设置为当前值
+    def focusOutEvent(self, event):
+        self.update_mutex.lock()
         if self.text() != "":
             if self.text()[0] == "0" and len(self.text()) > 1:
                 self.setText(self.text()[1:])
@@ -229,7 +277,8 @@ class NumberEdit(TextEdit):
         self.setText(str(self.current_value))
         self.value_changed.emit(self.current_value)
         self.root_parent.update()
-        self.textChanging = False
+        self.update_mutex.unlock()
+        super().focusOutEvent(event)
 
 
 class Slider(QSlider):

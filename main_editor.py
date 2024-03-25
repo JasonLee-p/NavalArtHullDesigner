@@ -89,7 +89,7 @@ class MainEditor(MainEditorGUI):
 
     def save_prj(self):
         self._current_prj.save() if self._current_prj else None
-        self._show_statu(f"保存工程：{self._current_prj.project_name}", "success")
+        self.show_statu_(f"保存工程：{self._current_prj.project_name}", "success")
 
     @not_implemented
     def save_as_prj(self):
@@ -123,6 +123,7 @@ class MainEditor(MainEditorGUI):
 
         # 管理所有操作
         self.operationStack = OperationStack(self)
+        self.operationStack.init_stack()
         super().__init__(gl_widget, logger)
         # 创建内存监控线程
         self.memoryThread = MemoryThread()

@@ -4,6 +4,8 @@
 """
 from abc import abstractmethod
 from typing import List, Union
+
+from GUI import FG_COLOR0, FG_COLOR1, GRAY, BG_COLOR3, LIGHTER_RED
 from PyQt5.QtCore import QMutex
 
 
@@ -13,6 +15,7 @@ class Operation:
         操作栈中的操作基类
         在state_history.py中，
         """
+        self.name = '操作'
         pass
 
     @abstractmethod
@@ -65,15 +68,19 @@ class OperationStack:
         :param operation:
         :return:
         """
+        if self.current_index is None:
+            raise Exception("OperationStack not initialized, please call init_stack() first")
         self.operationMutex.lock()
         operation.execute()
         if self.current_index == self.max_length - 1:
             self.stateStack = self.stateStack[1:] + [operation]
-            # self.show_statu_func("操作栈已满", "warning")
+            self.main_editor.show_statu_("操作栈已满", "warning")
         else:
             self.current_index += 1
             self.stateStack[self.current_index] = operation
-            # self.show_statu_func(f"{operation_obj.name}\t{self.current_index + 1}", "process")
+            self.main_editor.show_statu_(f"{operation.name}\t{self.current_index + 1}", "process")
+        self.main_editor.gl_widget.paintGL_outside()
+        self.main_editor.gl_widget.update()
         self.operationMutex.unlock()
 
     def undo(self):
@@ -83,11 +90,14 @@ class OperationStack:
         self.operationMutex.lock()
         if self.current_index > 0:
             self.stateStack[self.current_index].undo()
-            # self.show_statu_func(f"Ctrl+Z 撤回 {self.stateStack[self.current_index].name}\t{self.current_index}", "process")
+            self.main_editor.show_statu_(
+                f"Ctrl+Z 撤回 {self.stateStack[self.current_index].name}\t{self.current_index}", "process")
             self.current_index -= 1
         else:
-            # self.show_statu_func("Ctrl+Z 没有更多的历史记录", "warning")
+            self.main_editor.show_statu_("Ctrl+Z 没有更多的历史记录", "warning")
             ...
+        self.main_editor.gl_widget.paintGL_outside()
+        self.main_editor.gl_widget.update()
         self.operationMutex.unlock()
 
     def redo(self):
@@ -98,10 +108,11 @@ class OperationStack:
         if self.current_index is not None and self.stateStack[self.current_index + 1] is not None:
             self.current_index += 1
             self.stateStack[self.current_index].redo()
-            # self.show_statu_func(
-            #     f"Ctrl+Shift+Z 重做 {self.stateStack[self.current_index].name}\t{self.current_index + 1}",
-            #     "process")
+            self.main_editor.show_statu_(
+                f"Ctrl+Shift+Z 重做 {self.stateStack[self.current_index].name}\t{self.current_index + 1}",
+                "process")
         else:
-            # self.show_statu_func("Ctrl+Shift+Z 没有更多的历史记录", "warning")
-            ...
+            self.main_editor.show_statu_("Ctrl+Shift+Z 没有更多的历史记录", "warning")
+        self.main_editor.gl_widget.paintGL_outside()
+        self.main_editor.gl_widget.update()
         self.operationMutex.unlock()

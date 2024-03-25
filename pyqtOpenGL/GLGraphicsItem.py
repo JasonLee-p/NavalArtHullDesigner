@@ -438,13 +438,16 @@ class GLGraphicsItem(QtCore.QObject):
         self.__transform.rotate(angle, x, y, z, local=local)
         return self
 
-    def setEuler(self, x, y, z, local=True):
+    def setEuler(self, x, y, z):
         """
         Rotate the object around the axis specified by (x,y,z).
         *angle* is in degrees.
 
         """
+        # 保持物体位置不变的情况下设置欧拉角
+        _pos = self.__transform.column(3)
         self.__transform = Matrix4x4.fromEulerAngles(x, y, z)
+        self.__transform.setColumn(3, _pos)
         return self
 
     def scale(self, x, y, z, local=True):

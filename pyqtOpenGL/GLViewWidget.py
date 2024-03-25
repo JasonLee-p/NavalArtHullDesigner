@@ -65,7 +65,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
           - Rotation/scale controls
         """
         QtWidgets.QOpenGLWidget.__init__(self, parent)
-        self.update_mutex = QMutex()
+        self.event_mutex = QMutex()
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
         self.camera = Camera(cam_position, cam_tar, fov=fov, sensitivity=cam_sensitivity)
         self.mouse_last_pos = None  # used for mouse move event
@@ -453,6 +453,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self.update()
 
     def wheelEvent(self, ev):
+        self.event_mutex.lock()
         delta = ev.angleDelta().y()
         delta = 1 if delta > 0 else -1
         if ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier:  # 按下ctrl键
@@ -461,6 +462,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self.camera.zoom(delta)
         self.paintGL_outside()
         self.update()
+        self.event_mutex.unlock()
 
     def _clear_selected_items(self):
         for it in self.selected_items:
