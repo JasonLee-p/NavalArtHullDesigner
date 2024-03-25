@@ -42,3 +42,8 @@ class MessageBox(QDialog):
         self.main_layout.addWidget(EnsureButton(self))
         self.main_layout.addWidget(CancelButton(self))
         self.show()
+
+
+class LoadingWindow(Window):
+    def __init__(self):
+        ...

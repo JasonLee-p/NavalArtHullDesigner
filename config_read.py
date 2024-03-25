@@ -116,8 +116,9 @@ class ConfigHandler:
         if new_key:
             self.__config[key] = value
         else:
-            self._set_key__(self.__config, key, value)
-
+            succeed = self._set_key__(self.__config, key, value)
+            if not succeed:
+                raise KeyError(f"Config key '{key}' not found.")
         return value
 
     def add_prj(self, prj_name, prj_path):
@@ -127,8 +128,9 @@ class ConfigHandler:
     def _set_key__(self, dict_, key, value):
         if key in dict_:
             dict_[key] = value
+            return True
         else:
             for k, v in dict_.items():
                 if isinstance(v, dict):
                     return self._set_key__(v, key, value)
-        raise KeyError(f"配置键 {key} 不存在！")
+        return False

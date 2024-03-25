@@ -74,15 +74,17 @@ elif Theme == 'Dark' or Theme == 'Night':
         _structure, _layer, _elements, _user, _edit, _tip, _indicator, _folder
     )
 elif Theme == 'Custom':
+    # noinspection PyProtectedMember
+    from .theme_config_color._day_color import ThemeColor
     # noinspection PyUnboundLocalVariable
-    BG_COLOR0 = theme_details["Theme"]["GUITHeme"]["BG_COLOR0"]
-    BG_COLOR1 = theme_details["Theme"]["GUITHeme"]["BG_COLOR1"]
-    BG_COLOR2 = theme_details["Theme"]["GUITHeme"]["BG_COLOR2"]
-    BG_COLOR3 = theme_details["Theme"]["GUITHeme"]["BG_COLOR3"]
-    FG_COLOR0 = theme_details["Theme"]["GUITHeme"]["FG_COLOR0"]
-    FG_COLOR1 = theme_details["Theme"]["GUITHeme"]["FG_COLOR1"]
-    GRAY = theme_details["Theme"]["GUITHeme"]["GRAY"]
-    GLTheme = theme_details["Theme"]["GLTheme"]
+    BG_COLOR0 = ThemeColor(theme_details["Theme"]["GUITHeme"]["BG_COLOR0"])
+    BG_COLOR1 = ThemeColor(theme_details["Theme"]["GUITHeme"]["BG_COLOR1"])
+    BG_COLOR2 = ThemeColor(theme_details["Theme"]["GUITHeme"]["BG_COLOR2"])
+    BG_COLOR3 = ThemeColor(theme_details["Theme"]["GUITHeme"]["BG_COLOR3"])
+    FG_COLOR0 = ThemeColor(theme_details["Theme"]["GUITHeme"]["FG_COLOR0"])
+    FG_COLOR1 = ThemeColor(theme_details["Theme"]["GUITHeme"]["FG_COLOR1"])
+    GRAY = ThemeColor(theme_details["Theme"]["GUITHeme"]["GRAY"])
+    GLTheme = ThemeColor(theme_details["Theme"]["GLTheme"])
     # noinspection PyProtectedMember
     from .UI_design.ImgPng_night import (
         _close, _add, _choose, _minimize, _maximize, _normal, _ICO, _settings,

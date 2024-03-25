@@ -269,6 +269,9 @@ class VAO():
     def unbind(self):
         gl.glBindVertexArray(0)
 
+    def delete(self):
+        gl.glDeleteVertexArrays(1, [self._vao])
+
 
 class EBO():
 

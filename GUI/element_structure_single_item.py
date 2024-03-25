@@ -15,7 +15,7 @@ class NoneShow(Button):
 
 class ShowButton(Button):
 
-    def __init__(self, gl_widget, scroll_widget, item_handler, height=80):
+    def __init__(self, gl_widget, scroll_widget, item_handler, height=70):
         """
         预览元素的控件
         :param gl_widget:
@@ -32,14 +32,14 @@ class ShowButton(Button):
         self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
         self.setFixedHeight(height)
         self.layout_ = QGridLayout()
-        self.layout_.setContentsMargins(10, 5, 10, 5)
+        self.layout_.setContentsMargins(10, 8, 10, 6)
         self.layout_.setVerticalSpacing(4)
         self.setLayout(self.layout_)
         self.vis_btn = CircleSelectButton(None, [], tool_tip="设置是否显示",
                                           check_color=FG_COLOR1, hover_color=BG_COLOR3, color=BG_COLOR0, radius=8)
         self._font = YAHEI[9]
-        self.name_edit = TextEdit(self.item_handler.name, parent=None, font=YAHEI[10])
-        self.name_edit.setFixedHeight(30)
+        self.name_edit = TextEdit(self.item_handler.name, parent=None, font=YAHEI[10], bg=BG_COLOR1)
+        self.name_edit.setFixedHeight(27)
         if hasattr(self.item_handler, "init_visibility"):
             self.vis_btn.setChecked(self.item_handler.init_visibility)
         else:
@@ -65,7 +65,7 @@ class ShowButton(Button):
 
 
 class PosShow(ShowButton):
-    def __init__(self, gl_widget, scroll_widget, item_handler, height=76):
+    def __init__(self, gl_widget, scroll_widget, item_handler, height=70):
         """
         只需要预览位置，并且有名字的元素
         :param gl_widget:
@@ -82,10 +82,11 @@ class PosShow(ShowButton):
 
     def _setup_ui(self):
         # 设置自控件样式
-        self.pos_text.setFixedHeight(26)
-        self.posX_show.setFixedHeight(26)
-        self.posY_show.setFixedHeight(26)
-        self.posZ_show.setFixedHeight(26)
+        _h = 24
+        self.pos_text.setFixedHeight(_h)
+        self.posX_show.setFixedHeight(_h)
+        self.posY_show.setFixedHeight(_h)
+        self.posZ_show.setFixedHeight(_h)
         self.posX_show.setMinimumWidth(40)
         self.posY_show.setMinimumWidth(40)
         self.posZ_show.setMinimumWidth(40)
@@ -99,7 +100,7 @@ class PosShow(ShowButton):
 
 
 class PosRotShow(ShowButton):
-    def __init__(self, gl_widget, scroll_widget, item_handler, height=110):
+    def __init__(self, gl_widget, scroll_widget, item_handler, height=96):
         """
         预览位置和旋转角度的元素
         :param gl_widget:
@@ -120,17 +121,18 @@ class PosRotShow(ShowButton):
 
     def _setup_ui(self):
         # 设置自控件样式
-        self.pos_text.setFixedHeight(26)
-        self.rot_text.setFixedHeight(26)
-        self.posX_show.setFixedHeight(26)
-        self.posY_show.setFixedHeight(26)
-        self.posZ_show.setFixedHeight(26)
+        _h = 24
+        self.pos_text.setFixedHeight(_h)
+        self.rot_text.setFixedHeight(_h)
+        self.posX_show.setFixedHeight(_h)
+        self.posY_show.setFixedHeight(_h)
+        self.posZ_show.setFixedHeight(_h)
         self.posX_show.setMinimumWidth(40)
         self.posY_show.setMinimumWidth(40)
         self.posZ_show.setMinimumWidth(40)
-        self.rotX_show.setFixedHeight(26)
-        self.rotY_show.setFixedHeight(26)
-        self.rotZ_show.setFixedHeight(26)
+        self.rotX_show.setFixedHeight(_h)
+        self.rotY_show.setFixedHeight(_h)
+        self.rotZ_show.setFixedHeight(_h)
         self.rotX_show.setMinimumWidth(40)
         self.rotY_show.setMinimumWidth(40)
         self.rotZ_show.setMinimumWidth(40)

@@ -33,6 +33,18 @@ from .GLGraphicsItem import GLGraphicsItem, PickColorManager
 from .items.light import PointLight
 
 
+def _draw_item(item):
+    try:
+        item.drawItemTree()
+    except np_core_exc._ArrayMemoryError as _:  # noqa
+        QMessageBox().warning(None, "严重错误", "无法申请足够的内存，程序即将退出")
+        Log().error(traceback.format_exc(), "无法申请足够的内存，程序即将退出")
+        sys.exit(1)
+    except Exception as e:  # noqa
+        printExc()
+        print("Error while drawing item %s." % str(item))
+
+
 class GLViewWidget(QtWidgets.QOpenGLWidget):
     gl_initialized = pyqtSignal()
 
@@ -302,7 +314,6 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self.makeCurrent()
         self.paintGL()
         self.doneCurrent()
-        self.update()
 
     def __update_FPS(self):
         dt = time.time() - self.__last_time
@@ -320,16 +331,11 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
                     print("Error while drawing item %s in pick mode." % str(it))
         else:
             for it in self.items:  # 正常模式
-                try:
-                    it.drawItemTree()
-                except np_core_exc._ArrayMemoryError as _:  # noqa
-                    QMessageBox().warning(None, "严重错误", "无法申请足够的内存，程序即将退出")
-                    Log().error(traceback.format_exc(), "无法申请足够的内存，程序即将退出")
-                    sys.exit(1)
-                except Exception as e:  # noqa
-                    printExc()
-                    print("Error while drawing item %s." % str(it))
-
+                if it.selected():
+                    pass
+                _draw_item(it)
+            for it in self.selected_items:
+                _draw_item(it)
             # draw lights
             for light in self.lights:
                 light.paint(self.get_proj_view_matrix())
@@ -373,6 +379,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         if ev.buttons() == self.select_btn:
             self.select_start.setX(int(ev.localPos().x()))
             self.select_start.setY(int(ev.localPos().y()))
+        self.paintGL_outside()
         self.update()
 
     def mouseMoveEvent(self, ev):
@@ -410,6 +417,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self.select_end.setX(int(ev.localPos().x()))
             self.select_end.setY(int(ev.localPos().y()))
             self.select_box.setVisible(True)
+        self.paintGL_outside()
         self.update()
 
     def mouseReleaseEvent(self, ev):
@@ -423,11 +431,8 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             if not new_s_items:
                 if ctl_down:  # 如果按下ctrl键，不清空选中的物体
                     self.update()
-                    return
                 # 如果不按下ctrl键，清空选中的物体
                 self._clear_selected_items()
-                self.update()
-                return
             # 有选中的物体：
             # 如果不按下ctrl键，取两集合的交集的补集（即从选中的物体中去掉已经选中的物体）
             if not ctl_down:
@@ -444,6 +449,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
                         it.setSelected(True)
                         self.selected_items.append(it)
             self._after_selection()
+        self.paintGL_outside()
         self.update()
 
     def wheelEvent(self, ev):
@@ -453,6 +459,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self.camera.zoom(delta * 0.1)
         else:
             self.camera.zoom(delta)
+        self.paintGL_outside()
         self.update()
 
     def _clear_selected_items(self):

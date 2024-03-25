@@ -5,7 +5,6 @@ NavalArt 船体编辑器
 Author: @JasonLee
 Date: 2024-2-26
 """
-
 # 系统库
 import sys
 import traceback
@@ -45,6 +44,8 @@ class MainEditorHandler(list):
         if len(self) < 5:
             # 新建主编辑窗口
             self.append(MainEditor(GLWidgetGUI(), self.logger))
+            # 打开一个正在加载窗口
+            loading = LoadingWindow()
             # 绑定mainWindow的close信号到该类的close函数
             self[-1].closed.connect(lambda: self.close(self[-1]))
             if mode == "lastEdit":
@@ -69,7 +70,8 @@ class MainEditorHandler(list):
         global startWindow
         # 将窗口从数组删除
         self.remove(mainEditor)
-        # mainEditor.close()
+        del mainEditor
+        print(f"unref: {gc.collect()}")  # 手动垃圾回收
         # 保存配置
         self.configHandler.save_config()
         # # 如果没有窗口了，关闭程序

@@ -91,11 +91,11 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         # # 设置模板缓冲区为只读，关闭深度测试
         # glStencilFunc(GL_NOTEQUAL, 1, 0xFF)
         # glStencilMask(0x00)
-        # gl.glDisable(gl.GL_DEPTH_TEST)
+        gl.glDisable(gl.GL_DEPTH_TEST)
         gl.glDepthFunc(gl.GL_ALWAYS)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE)
 
-        # 绘制border
+        # 绘制高亮
         with self.selected_shader:
             self.selected_shader.set_uniform("view", self.view_matrix().glData, "mat4")
             self.selected_shader.set_uniform("proj", self.proj_matrix().glData, "mat4")
@@ -106,7 +106,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         # 恢复深度测试和模板缓冲区
         # glStencilMask(0xFF)
         # glDisable(GL_STENCIL_TEST)
-        # glEnable(GL_DEPTH_TEST)
+        gl.glEnable(gl.GL_DEPTH_TEST)
         gl.glDepthFunc(gl.GL_LEQUAL)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 

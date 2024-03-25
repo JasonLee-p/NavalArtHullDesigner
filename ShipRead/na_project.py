@@ -122,6 +122,13 @@ class SectionHandler(QObject):
         self.Pos += vec
         self.paintItem.moveTo(self.Pos.x(), self.Pos.y(), self.Pos.z())
 
+    def setRot(self, rot: List[float]):
+        self.Rot = rot
+        self.paintItem.setEuler(rot[0], rot[1], rot[2])
+
+    def setScl(self, scl: QVector3D):
+        self.paintItem.scale(scl.x(), scl.y(), scl.z())
+
     @classmethod
     def get_by_id(cls, id_):
         if isinstance(id_, str):
@@ -160,10 +167,10 @@ class SubSectionHandler(QObject):
         self.hullProject = self._parent.hullProject
         self._main_handler = self.hullProject.main_handler
         self._gl_widget = self._main_handler.gl_widget
-        self._parent.paintItem.addChildItem(self.paintItem)
         # 绘制对象添加到主绘制窗口
         self._gl_widget.addItem(self.paintItem)
         self.paintItem.addLight(self._gl_widget.light)
+        self._parent.paintItem.addChildItem(self.paintItem)
         # 赋值一个唯一的id
         self._custom_id = str(id(self))
 
@@ -520,11 +527,12 @@ class Model(SectionHandler):
     idMap = {}
     deleted_s = pyqtSignal()
 
-    def __init__(self, prj, name, pos: QVector3D, rot: List[float], file_path):
+    def __init__(self, prj, name, pos: QVector3D, rot: List[float], scl: List[float], file_path):
         self.hullProject = prj
         self.name = name
         self.Pos = pos
         self.Rot = rot
+        self.Scl = scl
         self.file_path = file_path
         modelRenderConfig = configHandler.get_config("ModelRenderSetting")
         modelItem = GLModelItem(file_path, lights=[],
@@ -533,6 +541,9 @@ class Model(SectionHandler):
                                 drawLine=modelRenderConfig["ModelDrawLine"],
                                 lineWidth=modelRenderConfig["ModelLineWith"],
                                 lineColor=modelRenderConfig["ModelLineColor"])
+        modelItem.translate(self.Pos.x(), self.Pos.y(), self.Pos.z())
+        modelItem.setEuler(*self.Rot)
+
         super().__init__(modelItem, showButton_type='PosShow')
 
     def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
@@ -565,6 +576,7 @@ class Model(SectionHandler):
             "name": f"{self.name}",
             "pos": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
             "rot": self.Rot,
+            "scl": self.Scl,
             "file_path": self.file_path
         }
 
@@ -904,7 +916,7 @@ class NaPrjReader:
         for section_group in data:
             hull_section_group = HullSectionGroup(self.hullProject, section_group['name'])
             hull_section_group.setPos(QVector3D(*section_group['center']))
-            hull_section_group.Rot = section_group['rot']
+            hull_section_group.setRot(section_group['rot'])
             hull_section_group.Col = QColor(section_group['col'])
             hull_section_group.__sections = self.load_hull_section(section_group['sections'], hull_section_group)
             self.hullProject.add_hullSectionGroup(hull_section_group)
@@ -934,7 +946,7 @@ class NaPrjReader:
         for section_group in data:
             armor_section_group = ArmorSectionGroup(self.hullProject, section_group['name'])
             armor_section_group.setPos(QVector3D(*section_group['center']))
-            armor_section_group.Rot = section_group['rot']
+            armor_section_group.setRot(section_group['rot'])
             armor_section_group.Col = QColor(section_group['col'])
             armor_section_group.__sections = self.load_armor_section(section_group['sections'], armor_section_group)
             self.hullProject.add_armorSectionGroup(armor_section_group)
@@ -971,7 +983,7 @@ class NaPrjReader:
         for ladder in data:
             ladder_ = Ladder(self.hullProject, ladder['name'], ladder['shape'])
             ladder_.setPos(QVector3D(*ladder['pos']))
-            ladder_.Rot = ladder['rot']
+            ladder_.setRot(ladder['rot'])
             ladder_.Col = QColor(ladder['col'])
             ladder_.length = ladder['length']
             ladder_.width = ladder['width']
@@ -989,7 +1001,10 @@ class NaPrjReader:
             m_p = model['file_path']
             if m_p.startswith("resources/"):  # 说明是内置模型，需要转换为绝对路径
                 m_p = os.path.join(CURRENT_PATH, m_p)
-            model_ = Model(self.hullProject, model['name'], QVector3D(*model['pos']), model['rot'], m_p)
+            try:
+                model_ = Model(self.hullProject, model['name'], QVector3D(*model['pos']), model['rot'], model['scl'], m_p)
+            except KeyError:
+                raise KeyError(f"模型 {model['name']} 的数据不完整")
             self.hullProject.add_model(model_)
 
     def check_checkCode(self, data: dict):

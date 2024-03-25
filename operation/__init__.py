@@ -4,6 +4,4 @@
 """
 
 from .basic_op import OperationStack
-from .hullSectionGroup_op import *
-from .armorSectionGroup_op import *
-from .lineEdit_op import *
+from .modelMatrix_op import MoveOperation, MoveToOperation, RotateOperation

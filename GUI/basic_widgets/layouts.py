@@ -629,7 +629,7 @@ class MultiDirTabMainFrame(QFrame):
                     return tw
             if tw.geometry().contains(pos - tw.parent().mapToGlobal(QPoint(0, 0))):
                 return tw
-            elif btw.geometry().contains(pos - btw._parent().mapToGlobal(QPoint(0, 0))):
+            elif btw.geometry().contains(pos - btw.parent().mapToGlobal(QPoint(0, 0))):
                 return tw
         return None
 
@@ -854,6 +854,7 @@ class Window(QWidget):
         self.title_label = TextLabel(None, self.title, YAHEI[11], self.fg)
         # 其他可能用到的控件
         self.status_label = TextLabel(None, "", YAHEI[9], self.fg, align=Qt.AlignLeft | Qt.AlignVCenter)
+        self.memory_widget = RatioDisplayWidget(0, 2048, "存储:", "M")
         # 自定义顶栏
         self.customized_top_widget = QWidget(self.top_widget)
         # 顶部拖动区域事件和窗口缩放事件

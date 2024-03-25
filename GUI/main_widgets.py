@@ -2,6 +2,7 @@
 """
 主要窗口
 """
+import gc
 import os
 
 import numpy as np
@@ -88,8 +89,6 @@ class ElementStructureTab(MutiDirectionTab):
         self._hullSectionGroup_tab = QWidget()
         self._armorSectionGroup_tab = QWidget()
         self._bridge_tab = QWidget()
-        self._railing_tab = QWidget()  # 栏杆
-        self._handrail_tab = QWidget()  # 栏板
         self._ladder_tab = QWidget()  # 梯子
         self._model_tab = QWidget()  # 外部模型
 
@@ -104,15 +103,11 @@ class ElementStructureTab(MutiDirectionTab):
         self.tab_widget.addTab(self._hullSectionGroup_tab, "船体截面组")
         self.tab_widget.addTab(self._armorSectionGroup_tab, "装甲截面组")
         self.tab_widget.addTab(self._bridge_tab, "舰桥")
-        self.tab_widget.addTab(self._railing_tab, "栏杆")
-        self.tab_widget.addTab(self._handrail_tab, "栏板")
         self.tab_widget.addTab(self._ladder_tab, "梯子")
         self.tab_widget.addTab(self._model_tab, "外部模型")
         self.hullSectionGroup_tab = HullSectionGroupESW(self.main_editor, self._hullSectionGroup_tab)
         self.armorSectionGroup_tab = ArmorSectionGroupESW(self.main_editor, self._armorSectionGroup_tab)
         self.bridge_tab = BridgeESW(self.main_editor, self._bridge_tab)
-        self.railing_tab = RailingESW(self.main_editor, self._railing_tab)
-        self.handrail_tab = HandrailESW(self.main_editor, self._handrail_tab)
         self.ladder_tab = LadderESW(self.main_editor, self._ladder_tab)
         self.model_tab = ModelESW(self.main_editor, self._model_tab)
         # 总布局
@@ -130,12 +125,6 @@ class ElementStructureTab(MutiDirectionTab):
     def add_bridge(self, bridge):
         self.bridge_tab.add_item(bridge)
 
-    def add_railing(self, railing):
-        self.railing_tab.add_item(railing)
-
-    def add_handrail(self, handrail):
-        self.handrail_tab.add_item(handrail)
-
     def add_ladder(self, ladder):
         self.ladder_tab.add_item(ladder)
 
@@ -151,12 +140,6 @@ class ElementStructureTab(MutiDirectionTab):
     def del_bridge(self, bridge):
         self.bridge_tab.del_item(bridge)
 
-    def del_railing(self, railing):
-        self.railing_tab.del_item(railing)
-
-    def del_handrail(self, handrail):
-        self.handrail_tab.del_item(handrail)
-
     def del_ladder(self, ladder):
         self.ladder_tab.del_item(ladder)
 
@@ -168,24 +151,27 @@ class ElementEditTab(MutiDirectionTab):
     elementType_updated = pyqtSignal(str)
 
     def __init__(self, parent):
+        """
+        元素编辑窗口
+        :param parent:
+        """
         super().__init__(parent, CONST.RIGHT, "元素编辑", EDIT_IMAGE)
         self.element_mutex = QMutex()  # 互斥锁，用于保证只有一个元素被编辑
         self.element_locker = QMutexLocker(self.element_mutex)
         self.set_layout(QVBoxLayout())
         self.elementType_label = TextLabel(self, "无选中物体", YAHEI[9], FG_COLOR1, Qt.AlignLeft)
+        self.elementName_label = TextLabel(self, "", YAHEI[9], FG_COLOR0, Qt.AlignCenter)
         self.edit_hullSectionGroup_widget = EditHullSectionGroupWidget()
         self.edit_armorSectionGroup_widget = EditArmorSectionGroupWidget()
         self.edit_bridge_widget = EditBridgeWidget()
-        self.edit_railing_widget = EditRailingWidget()
-        self.edit_handrail_widget = EditHandrailWidget()
         self.edit_ladder_widget = EditLadderWidget()
+        self.edit_model_widget = EditModelWidget()
         self.edit_widgets = {
             self.edit_hullSectionGroup_widget: "船体截面组",
             self.edit_armorSectionGroup_widget: "装甲截面组",
             self.edit_bridge_widget: "舰桥",
-            self.edit_railing_widget: "栏杆",
-            self.edit_handrail_widget: "栏板",
-            self.edit_ladder_widget: "梯子"
+            self.edit_ladder_widget: "梯子",
+            self.edit_model_widget: "外部模型"
         }
         self.current_edit_widget: Union[None, QWidget] = None
 
@@ -198,21 +184,28 @@ class ElementEditTab(MutiDirectionTab):
         self.layout().setContentsMargins(5, 5, 5, 0)
         self.layout().setSpacing(5)
         # 布局
-        self.main_layout.addWidget(self.elementType_label)
+        top_widget = QWidget()
+        top_widget.setLayout(QHBoxLayout())
+        top_widget.layout().addWidget(self.elementType_label)
+        top_widget.layout().addWidget(self.elementName_label, stretch=1)
+        top_widget.layout().setSpacing(0)
+        top_widget.layout().setContentsMargins(0, 0, 0, 0)
+        self.main_layout.addWidget(top_widget)
         self.main_layout.addWidget(HorSpliter(self))
         for ew in self.edit_widgets:
             self.main_layout.addWidget(ew)
             ew.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
             ew.hide()
         self.main_layout.setAlignment(Qt.AlignTop)
-        # TODO:
-        # self.set_editing_widget("船体截面组")
 
-    def set_editing_widget(self,
-                           element_type: Literal["船体截面组", "装甲截面组", "舰桥", "栏杆", "栏板", "梯子"] = None,
-                           edit_widget: Union[
-                            None, EditHullSectionGroupWidget, EditArmorSectionGroupWidget,
-                            EditBridgeWidget, EditRailingWidget, EditHandrailWidget, EditLadderWidget] = None):
+    def set_editing_item_name(self, _name):
+        self.elementName_label.setText(_name)
+
+    def set_editing_widget(
+            self,
+            element_type: Literal["船体截面组", "装甲截面组", "舰桥", "栏杆", "栏板", "梯子"] = None,
+            edit_widget: Union[None, EditTabWidget] = None
+    ):
         """
         设置当前编辑的元素，两个参数最好只能填写一个
         :param element_type: "船体截面组", "装甲截面组", "舰桥", "栏杆", "栏板", "梯子"
@@ -256,25 +249,26 @@ class ElementEditTab(MutiDirectionTab):
 
     def clear_editing_widget(self):
         self.elementType_label.setText("无选中物体")
+        self.elementName_label.setText("")
         for ew in self.edit_widgets:
             ew.hide()
         self.current_edit_widget = None
         self.elementType_updated.emit("无选中物体")
 
     def edit_hullSectionGroup(self, hull_section_group):
-        ...
+        self.edit_hullSectionGroup_widget.updateSectionHandler(hull_section_group)
 
     def edit_armorSectionGroup(self, armor_section_group):
-        ...
+        self.edit_armorSectionGroup_widget.updateSectionHandler(armor_section_group)
 
     def edit_ladder(self, ladder):
-        ...
+        self.edit_ladder_widget.updateSectionHandler(ladder)
 
     def edit_bridge(self, bridge):
-        ...
+        self.edit_bridge_widget.updateSectionHandler(bridge)
 
     def edit_model(self, model):
-        ...
+        self.edit_model_widget.updateSectionHandler(model)
 
 
 class SettingTab(MutiDirectionTab):
@@ -413,10 +407,10 @@ class GLWidgetGUI(GLViewWidget):
         # self.addItem(self.sphere_l)
 
         # 动画
-        self.frame_rate = 60
-        self.animation_timer = QTimer(self)
-        self.animation_timer.timeout.connect(self.animation)
-        self.animation_timer.start(1000 // self.frame_rate)  # 设置定时器，以便每隔一段时间调用onTimeout函数
+        # self.frame_rate = 30
+        # self.animation_timer = QTimer(self)
+        # self.animation_timer.timeout.connect(self.animation)
+        # self.animation_timer.start(1000 // self.frame_rate)  # 设置定时器，以便每隔一段时间调用onTimeout函数
 
     def animation(self):
         # self.light.rotate(0, 1, 0.4, 1)
@@ -424,7 +418,7 @@ class GLWidgetGUI(GLViewWidget):
         # self.light2.rotate(0.2, 1., 0., 1.5)
         # self.light3.rotate(0, 0.5, 0.5, 0.5)
         # self.paintGL_outside()
-        self.update()
+        ...
 
     def __init_GUI(self):
         self.__init_fps_label()
@@ -528,7 +522,7 @@ class GLWidgetGUI(GLViewWidget):
                 item.handler.setSelected(False)
             else:
                 item.setSelected(False)
-        self.after_selection.emit()
+        self._after_selection()
 
     def _clear_selected_items(self):
         self.clear_selected_items.emit()
@@ -541,10 +535,16 @@ class GLWidgetGUI(GLViewWidget):
         # self.animation_timer.stop()
         # self.animation_timer.deleteLater()
         for it in self.items:
-            # it.release()
-            ...
+            del it
         self.items = []
-        self.lights = set()
+        for light_ in self.lights:
+            del light_
+        print(f"unref: {gc.collect()}")  # 手动垃圾回收
+        self.lights = []
+
+    def __del__(self):
+        self.clearResources()
+        self.deleteLater()
 
 
 def sin_texture(t):
@@ -632,7 +632,13 @@ class MainEditorGUI(Window):
         pass
 
     def __init__(self, gl_widget, logger):
+        """
+        编辑器的主要控件及其绑定和布局
+        :param gl_widget:
+        :param logger:
+        """
         self.gl_widget: GLWidgetGUI = gl_widget
+        gl_widget.main_editor = self
         self.configHandler = configHandler
         self.gl_widget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.logger = logger
@@ -835,11 +841,28 @@ class MainEditorGUI(Window):
             }}
         """)
         # 控件
-        self.bottom_widget.setContentsMargins(10, 0, 10, 0)
-        self.bottom_layout.addWidget(self.status_label, Qt.AlignLeft | Qt.AlignVCenter)
+        self.bottom_widget.setContentsMargins(15, 0, 15, 0)
+        self.bottom_layout.addWidget(
+            self.status_label, alignment=Qt.AlignLeft | Qt.AlignVCenter, stretch=1)
+        self.bottom_layout.addWidget(self.memory_widget, Qt.AlignRight | Qt.AlignVCenter)
+        self.status_label.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.memory_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding)
+        self.memory_widget.setFixedWidth(150)
 
-    def resetTheme(self, theme_data):
-        ...
+    def setLeftTabWidth(self, width):
+        sizes = self.main_widget.ver_spliter.sizes()
+        sizes[0] = width
+        self.main_widget.ver_spliter.setSizes(sizes)
+
+    def setRightTabWidth(self, width):
+        sizes = self.main_widget.ver_spliter.sizes()
+        sizes[-1] = width
+        self.main_widget.ver_spliter.setSizes(sizes)
+
+    def setBottomTabHeight(self, height):
+        sizes = self.main_widget.hor_spliter.sizes()
+        sizes[-1] = height
+        self.main_widget.hor_spliter.setSizes(sizes)
 
     def show_status(self, message, color):
         self.status_label.setText(message)
@@ -849,5 +872,9 @@ class MainEditorGUI(Window):
         closed = super().close()
         if closed is False:
             return closed
-        self.gl_widget.clearResources()
+        del self.gl_widget
         MainEditorGUI.all.remove(self)
+        self.__del__()
+
+    def __del__(self):
+        self.deleteLater()

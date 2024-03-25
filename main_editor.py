@@ -4,16 +4,39 @@
 """
 import webbrowser
 from typing import Union
+import psutil
 
-from GUI import MainEditorGUI
+from GUI import MainEditorGUI, EditTabWidget
 from PyQt5.QtWidgets import QFileDialog
 from ShipRead.na_project import *
 from funcs_utils import not_implemented
 from main_logger import Log, StatusBarHandler
+from operation import OperationStack
 from path_vars import DESKTOP_PATH
 
 
+class MemoryThread(QThread):
+    memory_updated_s = pyqtSignal(int)
+
+    def __init__(self):
+        super().__init__()
+        self.process = psutil.Process()
+
+    def run(self):
+        while True:
+            memory_bytes = self.process.memory_info().rss
+            memory_mb = memory_bytes // (1024 * 1024)
+            self.memory_updated_s.emit(memory_mb)
+            self.sleep(2)
+
+
 class MainEditor(MainEditorGUI):
+
+    def undo(self):
+        self.operationStack.undo()
+
+    def redo(self):
+        self.operationStack.redo()
 
     def open_prj(self, path):
         # 打开path路径的工程文件
@@ -30,7 +53,10 @@ class MainEditor(MainEditorGUI):
     def select_prj_toOpen(self):
         prjs = self.configHandler.get_config("Projects")
         # 从配置文件读取曾经打开过的所有文件
-        if not prjs:  # 如果没有历史记录，打开文件夹选择窗口
+        if prjs != {}:
+            # 打开预览窗口，选择一个工程文件
+            ...  # TODO
+        else:  # 如果没有历史记录，打开文件夹选择窗口
             file_dialog = QFileDialog()
             file_dialog.setFileMode(QFileDialog.ExistingFiles)
             file_dialog.setNameFilter("NA Hull Editor工程文件 (*.naprj)")
@@ -89,23 +115,42 @@ class MainEditor(MainEditorGUI):
         pass
 
     def __init__(self, gl_widget, logger):
-        self.SHORTCUTS = {
+        """
+        编辑器中所有事件，操作的主控制器
+        :param gl_widget:
+        :param logger:
+        """
+
+        # 管理所有操作
+        self.operationStack = OperationStack(self)
+        super().__init__(gl_widget, logger)
+        # 创建内存监控线程
+        self.memoryThread = MemoryThread()
+        self.memoryThread.start()
+        self._bind_signal()
+        # 快捷方式绑定
+        self._bind_shortcut({
             "Ctrl+S": self.save_prj,
             "Ctrl+Shift+S": self.save_as_prj,
-        }
-        gl_widget.main_editor = self
-        super().__init__(gl_widget, logger)
-        self._bind_signal()
-        self._bind_shortcut()
+            "Ctrl+Z": self.undo,
+            "Ctrl+Shift+Z": self.redo,
+        })
+        # 子成员对自己的引用
+        EditTabWidget.main_editor = self
+        EditTabWidget.gl_widget = gl_widget
+        EditTabWidget.operationStack = self.operationStack
 
     def _bind_signal(self):
+        # 内存监控线程
+        self.memoryThread.memory_updated_s.connect(self.memory_widget.set_values)
+        # 选择船体元素后，显示编辑器
         self.gl_widget.clear_selected_items.connect(self.edit_tab.clear_editing_widget)
         self.gl_widget.after_selection.connect(
             lambda: self.show_editor(self.gl_widget.selected_items_handler()))
 
-    def _bind_shortcut(self):
+    def _bind_shortcut(self, shortcuts: dict):
         # 绑定快捷键
-        for key, func in self.SHORTCUTS.items():
+        for key, func in shortcuts.items():
             action = QAction(self)
             action.setShortcut(QKeySequence(key))
             action.triggered.connect(func)
@@ -159,14 +204,19 @@ class MainEditor(MainEditorGUI):
 
     def show_editor(self, item):
         if isinstance(item, list):
-            if not item:
+            if len(item) == 0:
                 self.edit_tab.clear_editing_widget()
+                # self.setRightTabWidth(40)
+                return
             if len(item) == 1:
                 item = item[0]
             else:
-                # TODO: 多选
-                ...
+                # TODO: 多选的情况
+                return
+        # 单选的情况
+        self.setRightTabWidth(336)
         self.main_widget.right_tab_frame.change_tab(self.edit_tab)
+        self.edit_tab.set_editing_item_name(item.name)
         if isinstance(item, HullSectionGroup):
             self.edit_tab.set_editing_widget("船体截面组")
             self.edit_tab.edit_hullSectionGroup(item)
@@ -182,3 +232,7 @@ class MainEditor(MainEditorGUI):
         elif isinstance(item, Model):
             self.edit_tab.set_editing_widget("外部模型")
             self.edit_tab.edit_model(item)
+
+    def __del__(self):
+        print("MainEditor对象已销毁")
+        super().__del__()

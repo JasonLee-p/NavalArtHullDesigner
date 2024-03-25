@@ -1,8 +1,8 @@
 {
-  "check_code": "95f265b7147f6ea4c977ce80b8df3dd49edfb19f",
+  "check_code": "89f05433366fb072c49e3890636ee49e5f4daa2b",
   "project_name": "SampleProject",
   "author": "JasonLee",
-  "edit_time": "2024-3-25 4:40:10",
+  "edit_time": "2024-3-26 2:44:21",
   "hull_section_group": [
     {
       "name": "\u4e3b\u4f53",
@@ -125,7 +125,7 @@
   ],
   "model": [
     {
-      "name": "BB-63 USS Missouri",
+      "name": "Missouri",
       "pos": [
         0.0,
         0.0,
@@ -135,6 +135,11 @@
         0,
         0,
         0
+      ],
+      "scl": [
+        1,
+        1,
+        1
       ],
       "file_path": "E:\\JasonLee\\python_projects\\NavalArtPluginNew\\resources\/models\/BB-63.obj"
     }

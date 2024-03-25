@@ -201,3 +201,7 @@ class GLModelItem(GLGraphicsItem, LightMixin):
         """设置绘制顺序, order为mesh的索引列表"""
         assert max(order) < len(self.meshes) and min(order) >= 0
         self._order = order
+
+    def __del__(self):
+        for m in self.meshes:
+            m.__del__()

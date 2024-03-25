@@ -19,6 +19,40 @@ class ThemeColor:
             # 是一个颜色名，例如：'red'
             return QColor(self.color).getRgb()[:3]
 
+    def __add__(self, other):
+        if isinstance(other, int):
+            r, g, b = self.rgb
+            r = min(255, r + other)
+            g = min(255, g + other)
+            b = min(255, b + other)
+            return ThemeColor(f'#{r:02x}{g:02x}{b:02x}')
+        elif isinstance(other, ThemeColor):
+            r1, g1, b1 = self.rgb
+            r2, g2, b2 = other.rgb
+            r = min(255, r1 + r2)
+            g = min(255, g1 + g2)
+            b = min(255, b1 + b2)
+            return ThemeColor(f'#{r:02x}{g:02x}{b:02x}')
+        else:
+            raise ValueError('unsupported type')
+
+    def __sub__(self, other):
+        if isinstance(other, int):
+            r, g, b = self.rgb
+            r = max(0, r - other)
+            g = max(0, g - other)
+            b = max(0, b - other)
+            return ThemeColor(f'#{r:02x}{g:02x}{b:02x}')
+        elif isinstance(other, ThemeColor):
+            r1, g1, b1 = self.rgb
+            r2, g2, b2 = other.rgb
+            r = max(0, r1 - r2)
+            g = max(0, g1 - g2)
+            b = max(0, b1 - b2)
+            return ThemeColor(f'#{r:02x}{g:02x}{b:02x}')
+        else:
+            raise ValueError('unsupported type')
+
 
 THEME: str = 'day'
 BG_COLOR0 = ThemeColor('#fffff0')

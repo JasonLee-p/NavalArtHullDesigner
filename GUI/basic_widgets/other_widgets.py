@@ -7,7 +7,8 @@ from typing import Union, Tuple, Type
 from ..basic_data import *
 
 from PyQt5.QtCore import *
-from PyQt5.QtWidgets import QSlider, QSplitter, QScrollArea, QFrame, QLabel, QLineEdit, QProgressBar
+from PyQt5.QtWidgets import QSlider, QSplitter, QScrollArea, QFrame, QLabel, QLineEdit, QProgressBar, QWidget, \
+    QHBoxLayout, QSizePolicy
 from PyQt5.QtGui import *
 
 
@@ -514,3 +515,55 @@ class ScrollArea(QScrollArea):
             self.horizontalScrollBar().event(event)
         else:
             self.verticalScrollBar().event(event)
+
+
+class RatioDisplayWidget(QWidget):
+    def __init__(self, current_value, max_value, label_text='', unit='M'):
+        super().__init__(None)
+
+        self.current_value = current_value
+        self.max_value = max_value
+        self.unit = unit
+        self.label = TextLabel(None, label_text, YAHEI[9], FG_COLOR0 - 50)
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, max_value)
+        self.progress_bar.setValue(current_value)
+        self.progress_bar.setFormat(f"{current_value}/{max_value}{self.unit}")
+        self.__init_ui()
+
+    def __init_ui(self):
+        layout = QHBoxLayout()
+        layout.setAlignment(Qt.AlignCenter)
+        self.setLayout(layout)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+        layout.addWidget(self.label, alignment=Qt.AlignLeft | Qt.AlignVCenter)
+        layout.addWidget(self.progress_bar, alignment=Qt.AlignRight | Qt.AlignVCenter)
+        self.progress_bar.setFont(YAHEI[9])
+        self.progress_bar.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding))
+        self.setStyleSheet_(FG_COLOR0 - 50)
+
+    def setStyleSheet_(self, color):
+        self.progress_bar.setStyleSheet(f"""
+            QProgressBar{{
+                border: 1px solid {BG_COLOR0};
+                border-radius: 0px;
+                text-align: center;
+                background-color: {BG_COLOR0};
+                color: {color};
+            }}
+            QProgressBar::chunk{{
+                background-color: {BG_COLOR3 - 20};
+                border-radius: 0px;
+                color: {color};
+            }}
+        """)
+
+    def set_values(self, current_value: int):
+        if current_value > self.max_value and not self.current_value > self.max_value:
+            self.setStyleSheet_(FG_COLOR1)
+        elif current_value <= self.max_value < self.current_value:
+            self.setStyleSheet(FG_COLOR0 - 50)
+        self.current_value = current_value
+        self.progress_bar.setValue(current_value)
+        self.progress_bar.setFormat(f"{current_value}/{self.max_value}{self.unit}")

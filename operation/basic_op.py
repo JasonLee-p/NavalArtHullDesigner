@@ -38,14 +38,14 @@ class Operation:
 class OperationStack:
     operationMutex = QMutex()
 
-    def __init__(self, gl_widget, max_length: int = 10000):
+    def __init__(self, main_editor, max_length: int = 10000):
         """
         在编辑器对象中初始化，而不是在操作对象中初始化
         管理操作，以撤回和重做
-        :param gl_widget: 父三维窗口
+        :param main_editor: 父三维窗口
         :param max_length: 栈的最大长度，从配置文件中读取
         """
-        self.gl_widget = gl_widget
+        self.main_editor = main_editor
         # 初始化一个定长的状态栈
         self.max_length = max_length if max_length > 0 else 10000
         self.stateStack: List[Union[Operation, None]] = [None] * self.max_length

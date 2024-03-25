@@ -69,13 +69,13 @@ class Material:
 
     def load_textures(self):
         """在 initializeGL() 中调用 """
-        for type, path in self.texture_paths.items():
+        for type_, path in self.texture_paths.items():
             if isinstance(path, list):
                 path = path[0]
-            if type in TextureType.keys():
-                type = TextureType[type]
+            if type_ in TextureType.keys():
+                type_ = TextureType[type_]
             self.textures.append(
-                Texture2D(self.directory / path, tex_type=type)
+                Texture2D(self.directory / path, tex_type=type_)
             )
 
     def set_uniform(self, shader: Shader, name: str):
@@ -202,6 +202,7 @@ class Mesh:
                         )
         # assimp.Process_CalcTangentSpace 计算法线空间
         scene = assimp.ImportFile(str(path), post_process)
+        # scene = _assimp.load(str(path))
         if not scene:
             raise ValueError("ERROR:: Assimp model failed to load, {}".format(path))
 
@@ -230,8 +231,13 @@ class Mesh:
             face_num += len(m.indices)
 
         print(f"Took {round(time() - start_time, 3)}s to load {path} (faces: {face_num})")
+        del scene
         return meshes
 
+    def __del__(self):
+        self.vao.delete()
+        self.vbo.delete()
+        self.ebo.delete()
 
 
 def cone(radius, height, slices=12):

@@ -7,6 +7,11 @@ from .basic_widgets import *
 
 class ESW(QObject):
     def __init__(self, main_editor, tab_widget):
+        """
+        Element Structure Widget
+        :param main_editor:
+        :param tab_widget:
+        """
         super().__init__()
         self._items = []
         self.title = ""
@@ -88,22 +93,6 @@ class BridgeESW(ESW):
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget)
         self.title = "舰桥："
-        self._setup_ui()
-        self._bind_signal()
-
-
-class RailingESW(ESW):
-    def __init__(self, main_editor, tab_widget):
-        super().__init__(main_editor, tab_widget)
-        self.title = "栏杆："
-        self._setup_ui()
-        self._bind_signal()
-
-
-class HandrailESW(ESW):
-    def __init__(self, main_editor, tab_widget):
-        super().__init__(main_editor, tab_widget)
-        self.title = "栏板："
         self._setup_ui()
         self._bind_signal()
 
