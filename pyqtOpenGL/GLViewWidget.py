@@ -42,6 +42,7 @@ def _draw_item(item):
         sys.exit(1)
     except Exception as e:  # noqa
         printExc()
+        Log().error(traceback.format_exc(), "Error while drawing item %s." % str(item))
         print("Error while drawing item %s." % str(item))
 
 

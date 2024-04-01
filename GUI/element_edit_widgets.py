@@ -74,16 +74,26 @@ class EditTabWidget(QWidget):
         self.sub_elements_layout.setSpacing(2)
 
     def _bind_signals(self):
-        self.posX_edit.value_changed.connect(lambda x: self.pos_changed_s.emit([x, self._current_item.Pos.y(), self._current_item.Pos.z()]))
-        self.posY_edit.value_changed.connect(lambda y: self.pos_changed_s.emit([self._current_item.Pos.x(), y, self._current_item.Pos.z()]))
-        self.posZ_edit.value_changed.connect(lambda z: self.pos_changed_s.emit([self._current_item.Pos.x(), self._current_item.Pos.y(), z]))
-        self.rotX_edit.value_changed.connect(lambda x: self.rot_changed_s.emit([x, self._current_item.Rot[1], self._current_item.Rot[2]]))
-        self.rotY_edit.value_changed.connect(lambda y: self.rot_changed_s.emit([self._current_item.Rot[0], y, self._current_item.Rot[2]]))
-        self.rotZ_edit.value_changed.connect(lambda z: self.rot_changed_s.emit([self._current_item.Rot[0], self._current_item.Rot[1], z]))
+        self.posX_edit.value_changed.connect(
+            lambda x: self.setPosX(x, [self.posX_edit, self.posY_edit, self.posZ_edit]))
+        self.posY_edit.value_changed.connect(
+            lambda y: self.setPosY(y, [self.posX_edit, self.posY_edit, self.posZ_edit]))
+        self.posZ_edit.value_changed.connect(
+            lambda z: self.setPosZ(z, [self.posX_edit, self.posY_edit, self.posZ_edit]))
+        self.rotX_edit.value_changed.connect(
+            lambda x: self.setRotX(x, [self.rotX_edit, self.rotY_edit, self.rotZ_edit]))
+        self.rotY_edit.value_changed.connect(
+            lambda y: self.setRotY(y, [self.rotX_edit, self.rotY_edit, self.rotZ_edit]))
+        self.rotZ_edit.value_changed.connect(
+            lambda z: self.setRotZ(z, [self.rotX_edit, self.rotY_edit, self.rotZ_edit]))
+
 
     @abstractmethod
     def updateSectionHandler(self, item):
         self._current_item = item
+        self.posX_edit.setValue(item.Pos.x())
+        self.posY_edit.setValue(item.Pos.y())
+        self.posZ_edit.setValue(item.Pos.z())
 
     def setPosX(self, x, edits):
         op = MoveToOperation(self._current_item, QVector3D(x, self._current_item.Pos.y(), self._current_item.Pos.z()), edits)
@@ -143,16 +153,9 @@ class EditHullSectionGroupWidget(EditTabWidget):
         self.front_addSection_bt.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
         self.back_addSection_bt.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
 
-    def __init_basic_info_ui(self):
+    def _init_basic_info_ui(self):
+        super()._init_basic_info_ui()
         _font = QFont(YAHEI[9])
-        self.basic_info_layout.addWidget(ColoredTextLabel(None, "中心位置", _font, bg=BG_COLOR1), 0, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
-        self.basic_info_layout.addWidget(self.posX_edit, 0, 1)
-        self.basic_info_layout.addWidget(self.posY_edit, 0, 2)
-        self.basic_info_layout.addWidget(self.posZ_edit, 0, 3)
-        self.basic_info_layout.addWidget(ColoredTextLabel(None, "旋转角度", _font, bg=BG_COLOR1), 1, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
-        self.basic_info_layout.addWidget(self.rotX_edit, 1, 1)
-        self.basic_info_layout.addWidget(self.rotY_edit, 1, 2)
-        self.basic_info_layout.addWidget(self.rotZ_edit, 1, 3)
         self.basic_info_layout.addWidget(ColoredTextLabel(None, "船体大小", _font, bg=BG_COLOR1), 2, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
         self.basic_info_layout.addWidget(self.sizeX_show, 2, 1)
         self.basic_info_layout.addWidget(self.sizeY_show, 2, 2)
@@ -182,7 +185,10 @@ class EditHullSectionGroupWidget(EditTabWidget):
         ...
 
     def updateSectionHandler(self, item):
-        ...
+        super().updateSectionHandler(item)
+        self.rotX_edit.setValue(item.Rot[0])
+        self.rotY_edit.setValue(item.Rot[1])
+        self.rotZ_edit.setValue(item.Rot[2])
 
 
 class EditArmorSectionGroupWidget(EditTabWidget):
@@ -192,7 +198,10 @@ class EditArmorSectionGroupWidget(EditTabWidget):
         self._bind_signals()
 
     def updateSectionHandler(self, item):
-        ...
+        super().updateSectionHandler(item)
+        self.rotX_edit.setValue(item.Rot[0])
+        self.rotY_edit.setValue(item.Rot[1])
+        self.rotZ_edit.setValue(item.Rot[2])
 
 
 class EditBridgeWidget(EditTabWidget):
@@ -202,7 +211,7 @@ class EditBridgeWidget(EditTabWidget):
         self._bind_signals()
 
     def updateSectionHandler(self, item):
-        ...
+        super().updateSectionHandler(item)
 
 
 class EditLadderWidget(EditTabWidget):
@@ -212,7 +221,10 @@ class EditLadderWidget(EditTabWidget):
         self._bind_signals()
 
     def updateSectionHandler(self, item):
-        ...
+        super().updateSectionHandler(item)
+        self.rotX_edit.setValue(item.Rot[0])
+        self.rotY_edit.setValue(item.Rot[1])
+        self.rotZ_edit.setValue(item.Rot[2])
 
 
 class EditModelWidget(EditTabWidget):
@@ -223,19 +235,9 @@ class EditModelWidget(EditTabWidget):
 
     def updateSectionHandler(self, item):
         super().updateSectionHandler(item)
-        self.posX_edit.setValue(item.Pos.x())
-        self.posY_edit.setValue(item.Pos.y())
-        self.posZ_edit.setValue(item.Pos.z())
         self.rotX_edit.setValue(item.Rot[0])
         self.rotY_edit.setValue(item.Rot[1])
         self.rotZ_edit.setValue(item.Rot[2])
 
     def _bind_signals(self):
         super()._bind_signals()
-        self.posX_edit.value_changed.connect(lambda x: self.setPosX(x, [self.posX_edit, self.posY_edit, self.posZ_edit]))
-        self.posY_edit.value_changed.connect(lambda y: self.setPosY(y, [self.posX_edit, self.posY_edit, self.posZ_edit]))
-        self.posZ_edit.value_changed.connect(lambda z: self.setPosZ(z, [self.posX_edit, self.posY_edit, self.posZ_edit]))
-        self.rotX_edit.value_changed.connect(lambda x: self.setRotX(x, [self.rotX_edit, self.rotY_edit, self.rotZ_edit]))
-        self.rotY_edit.value_changed.connect(lambda y: self.setRotY(y, [self.rotX_edit, self.rotY_edit, self.rotZ_edit]))
-        self.rotZ_edit.value_changed.connect(lambda z: self.setRotZ(z, [self.rotX_edit, self.rotY_edit, self.rotZ_edit]))
-

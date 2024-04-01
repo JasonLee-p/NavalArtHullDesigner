@@ -4,616 +4,14 @@
 """
 import os
 import time
-from typing import Union, List, Literal
 from hashlib import sha1
 
-import numpy as np
-import ujson
-from GUI import configHandler
 from GUI.element_structure_widgets import *
 from PyQt5.QtGui import QVector3D, QColor
 from PyQt5.QtWidgets import QMessageBox
+from ShipPaint import *
+from ShipRead.sectionHandler import *
 from path_vars import CURRENT_PATH
-from pyqtOpenGL import GLModelItem, GLMeshItem, sphere, cube, EditItemMaterial
-
-
-class SectionHandler(QObject):
-    SPHERE_VER, SHPERE_IDX, SPHERE_UV, SPHERE_NORM = sphere(2, 16, 16, calc_uv_norm=True)
-    CUBE_VER, CUBE_NORM, CUBE_TEX = cube(1, 1, 1)
-
-    @classmethod
-    def update_sphere(cls, radius, rows, cols):
-        cls.SPHERE_VER, cls.SHPERE_IDX, cls.SPHERE_UV, cls.SPHERE_NORM = sphere(radius, rows, cols, calc_uv_norm=True)
-
-    def __init__(self, paint_item=None, showButton_type: Literal['PosShow', 'PosRotShow'] = 'PosRotShow'):
-        """
-        初始化绘制对象，连接到主绘制窗口
-        """
-        self._showButton = None
-        super().__init__(None)
-        if not hasattr(self, "Pos"):
-            self.Pos = QVector3D(0, 0, 0)
-        # 初始化绘制对象
-        if paint_item is None:
-            random_color = (np.random.randint(100, 255), np.random.randint(0, 255), np.random.randint(0, 255))
-            self.paintItem = GLMeshItem(
-                vertexes=self.SPHERE_VER, indices=self.SHPERE_IDX, normals=self.SPHERE_NORM,
-                lights=[],
-                material=EditItemMaterial(color=random_color),
-                glOptions='translucent',
-                selectable=True
-            ).translate(self.Pos.x(), self.Pos.y(), self.Pos.z())
-        else:
-            self.paintItem = paint_item
-        self.paintItem.set_selected_s.connect(self.set_showButton_checked)
-        self.paintItem.handler = self
-        # 获取主绘制窗口，使其能够连接到主窗口及其下属控件
-        if not hasattr(self, "hullProject"):
-            if hasattr(self, "_parent"):
-                self.hullProject = self._parent.hullProject
-            else:
-                raise AttributeError("No hullProject attribute or parent attribute")
-        self._main_handler = self.hullProject.main_handler
-        self._gl_widget = self._main_handler.gl_widget
-        self._structure_tab = self._main_handler.structure_tab
-        # 初始化左侧结构树窗口
-        self._hsg_tab = self._structure_tab.hullSectionGroup_tab
-        self._asg_tab = self._structure_tab.armorSectionGroup_tab
-        self._bridge_tab = self._structure_tab.bridge_tab
-        self._ladder_tab = self._structure_tab.ladder_tab
-        self._model_tab = self._structure_tab.model_tab
-        self._hsg_bt_scroll_widget = self._hsg_tab.scroll_widget
-        self._asg_bt_scroll_widget = self._asg_tab.scroll_widget
-        self._bridge_bt_scroll_widget = self._bridge_tab.scroll_widget
-        self._ladder_bt_scroll_widget = self._ladder_tab.scroll_widget
-        self._model_bt_scroll_widget = self._model_tab.scroll_widget
-        # 绘制对象添加到主绘制窗口
-        self._gl_widget.addItem(self.paintItem)
-        self.paintItem.addLight(self._gl_widget.light)
-        # 初始化showButton
-        self._init_showButton(showButton_type)
-        # 赋值一个唯一的id
-        self._custom_id = str(id(self))
-        # noinspection PyUnresolvedReferences
-        while self._custom_id in self.idMap:
-            self._custom_id = str(id(self))
-        # noinspection PyUnresolvedReferences
-        self.idMap[self._custom_id] = self
-
-    def getId(self):
-        return self._custom_id
-
-    @abstractmethod
-    def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
-        if type_ == 'PosShow':
-            self._showButton = PosShow(self.hullProject.gl_widget, self._model_bt_scroll_widget, self)
-        elif type_ == 'PosRotShow':
-            self._showButton = PosRotShow(self.hullProject.gl_widget, self._model_bt_scroll_widget, self)
-        else:
-            raise ValueError(f"Unknown type: {type_}")
-
-    def addLight(self, lights: list):
-        self.paintItem.addLight(lights)
-
-    def setVisable(self, visable: bool):
-        self.paintItem.setVisible(visable, recursive=True)
-
-    def setSelected(self, selected: bool, set_button=True):
-        """
-        设置选中状态
-        :param selected:
-        :param set_button: 是否设置按钮状态
-        :return:
-        """
-        self.paintItem.setSelected(selected)
-        self.set_showButton_checked(selected) if set_button else None
-
-    def set_showButton_checked(self, selected: bool):
-        self._showButton.setChecked(selected)
-
-    def selected(self):
-        return self.paintItem.selected()
-
-    def setPos(self, pos: QVector3D):
-        self.Pos = pos
-        self.paintItem.moveTo(pos.x(), pos.y(), pos.z())
-
-    def setPosX(self, x: float):
-        self.Pos.setX(x)
-        self.paintItem.moveTo(x, self.Pos.y(), self.Pos.z())
-
-    def setPosY(self, y: float):
-        self.Pos.setY(y)
-        self.paintItem.moveTo(self.Pos.x(), y, self.Pos.z())
-
-    def setPosZ(self, z: float):
-        self.Pos.setZ(z)
-        self.paintItem.moveTo(self.Pos.x(), self.Pos.y(), z)
-
-    def addPos(self, vec: QVector3D):
-        self.Pos += vec
-        self.paintItem.moveTo(self.Pos.x(), self.Pos.y(), self.Pos.z())
-
-    def setRot(self, rot: List[float]):
-        self.Rot = rot
-        self.paintItem.setEuler(rot[0], rot[1], rot[2])
-
-    def setRotX(self, x: float):
-        self.Rot[0] = x
-        self.paintItem.setEuler(x, self.Rot[1], self.Rot[2])
-
-    def setRotY(self, y: float):
-        self.Rot[1] = y
-        self.paintItem.setEuler(self.Rot[0], y, self.Rot[2])
-
-    def setRotZ(self, z: float):
-        self.Rot[2] = z
-        self.paintItem.setEuler(self.Rot[0], self.Rot[1], z)
-
-    def setScl(self, scl: QVector3D):
-        self.paintItem.scale(scl.x(), scl.y(), scl.z())
-
-    @classmethod
-    def get_by_id(cls, id_):
-        if isinstance(id_, str):
-            # noinspection PyUnresolvedReferences
-            return cls.idMap.get(id_)
-        else:
-            return None
-
-    def delete(self):
-        Model.idMap.pop(self.getId())
-        # noinspection PyUnresolvedReferences
-        self.deleted_s.emit()
-        self._showButton.deleteLater()
-        self.deleteLater()
-        self._gl_widget.removeItem(self.paintItem)
-
-
-class SubSectionHandler(QObject):
-    def __init__(self, paint_item=None):
-        super().__init__(None)
-        if paint_item is None:
-            self.paintItem = GLMeshItem(
-                vertexes=SectionHandler.SPHERE_VER, indices=SectionHandler.SHPERE_IDX,
-                normals=SectionHandler.SPHERE_NORM,
-                lights=[],
-                material=EditItemMaterial(color=(128, 128, 128)),
-                glOptions='translucent',
-                selectable=True
-            )
-            if hasattr(self, "Pos"):
-                self.paintItem.translate(self.Pos.x(), self.Pos.y(), self.Pos.z())
-        else:
-            self.paintItem = paint_item
-        self.paintItem.handler = self
-        # 获取主绘制窗口，使其能够连接到主窗口及其下属控件
-        self.hullProject = self._parent.hullProject
-        self._main_handler = self.hullProject.main_handler
-        self._gl_widget = self._main_handler.gl_widget
-        # 绘制对象添加到主绘制窗口
-        self._gl_widget.addItem(self.paintItem)
-        self.paintItem.addLight(self._gl_widget.light)
-        self._parent.paintItem.addChildItem(self.paintItem)
-        # 赋值一个唯一的id
-        self._custom_id = str(id(self))
-
-    def getId(self):
-        return self._custom_id
-
-
-class SectionNodeXY(SubSectionHandler):
-    """
-    xy节点，用于记录船体或装甲截面的节点
-    """
-    idMap = {}
-    deleted_s = pyqtSignal()
-
-    def __init__(self, parent):
-        self._parent = parent
-        self.Col = QColor(128, 128, 129)  # 颜色
-        self.x = None
-        self.y = None
-        paint_item = None
-        super().__init__(paint_item)
-
-    @property
-    def vector(self):
-        return QVector3D(self.x, self.y, self._parent.z)
-
-
-class SectionNodeXZ(SubSectionHandler):
-    """
-    xz节点，用于记录舰桥的节点
-    """
-    idMap = {}
-    deleted_s = pyqtSignal()
-
-    def __init__(self, parent):
-        self._parent = parent
-        self.Col = QColor(128, 128, 129)  # 颜色
-        self.x = None
-        self.z = None
-        paint_item = None
-        super().__init__(paint_item)
-
-    @property
-    def vector(self):
-        return QVector3D(self.x, self._parent.y, self.z)
-
-
-class Bridge(SectionHandler):
-    """
-    舰桥
-    """
-    idMap = {}
-    deleted_s = pyqtSignal()
-
-    def __init__(self, prj, name, rail_only):
-        self.hullProject = prj
-        self.name = name
-        self.rail_only = rail_only  # 是否只有栏杆
-        self.Pos: QVector3D = QVector3D(0, 0, 0)
-        self.Col = QColor(128, 128, 129)  # 颜色
-        self.armor = None
-        self.nodes: List[SectionNodeXZ] = []
-        self.rail: Union[Railing, Handrail, None] = None
-        # 绘制对象（不包括栏杆栏板）
-        paint_item = None
-        super().__init__(paint_item)
-
-    def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
-        super()._init_showButton(type_)
-        self._bridge_bt_scroll_widget.layout().addWidget(self._showButton)
-
-    def set_showButton_checked(self, selected: bool):
-        super().set_showButton_checked(selected)
-        # 设置左侧结构树当前的tab
-        self._structure_tab.setCurrentTab(self._bridge_tab.widget)
-
-    def to_dict(self):
-        return {
-            "name": f"{self.name}",
-            "pos": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
-            "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
-            "armor": self.armor,
-            "nodes": [[node.x, node.z] for node in self.nodes],
-            "rail": self.rail.to_dict() if self.rail else None,
-            "rail_only": self.rail_only
-        }
-
-
-class HullSection(SubSectionHandler):
-    """
-    船体截面
-    """
-    idMap = {}
-    deleted_s = pyqtSignal()
-
-    def __init__(self, prj, parent):
-        self.hullProject = prj
-        self._parent = parent
-        self.z = None
-        self.nodes: List[SectionNodeXY] = []
-        self.armor = None
-        self.draw_obj = None
-        paint_item = None
-        super().__init__(paint_item)
-
-    def to_dict(self):
-        return {
-            "z": self.z,
-            "nodes": [[node.x, node.y] for node in self.nodes],
-            "col": [f"#{node.Col.red():02x}{node.Col.green():02x}{node.Col.blue():02x}" for node in self.nodes],
-            "armor": self.armor
-        }
-
-
-class ArmorSection(SubSectionHandler):
-    """
-    装甲截面
-    """
-    idMap = {}
-    deleted_s = pyqtSignal()
-
-    def __init__(self, prj, parent):
-        self.hullProject = prj
-        self._parent = parent
-        self.z = None
-        self.nodes: List[SectionNodeXY] = []
-        self.armor = None
-        self.draw_obj = None
-        paint_item = None
-        super().__init__(paint_item)
-
-    def to_dict(self):
-        return {
-            "z": self.z,
-            "nodes": [[node.x, node.y] for node in self.nodes],
-            "armor": self.armor
-        }
-
-
-class HullSectionGroup(SectionHandler):
-    """
-    船体截面组
-    不进行整体绘制（因为要分截面进行选中操作），绘制交给截面对象
-    """
-    idMap = {}
-    deleted_s = pyqtSignal()
-
-    def __init__(self, prj, name):
-        self.hullProject = prj
-        self.name = name
-        self.Pos: QVector3D = QVector3D(0, 0, 0)
-        self.Rot: List[float] = [0, 0, 0]
-        self.Col: QColor = QColor(128, 128, 128)  # 颜色
-        self.topCur = 0.0  # 上层曲率
-        self.botCur = 1.0  # 下层曲率
-        # 截面组
-        self.__sections: List[HullSection] = []
-        # 栏杆
-        self.rail: Union[Railing, Handrail, None] = None
-        paint_item = None
-        super().__init__(paint_item)
-
-    def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
-        super()._init_showButton(type_)
-        self._hsg_bt_scroll_widget.layout().addWidget(self._showButton)
-
-    def set_showButton_checked(self, selected: bool):
-        super().set_showButton_checked(selected)
-        # 设置左侧结构树当前的tab
-        self._structure_tab.setCurrentTab(self._hsg_tab.widget)
-
-    def get_sections(self):
-        return self.__sections
-
-    @property
-    def draw_objs(self):
-        return [section.draw_obj for section in self.__sections]
-
-    def add_section(self, section: HullSection):
-        self.__sections.append(section)
-
-    def del_section(self, section: HullSection):
-        if section in self.__sections:
-            self.__sections.remove(section)
-        else:
-            color_print(f"[WARNING] {section} not in {self.__sections}", "red")
-
-    def to_dict(self):
-        if isinstance(self.Rot, QVector3D):
-            self.Rot = [self.Rot.x(), self.Rot.y(), self.Rot.z()]
-            print(f"[WARNING] {self} Rot is QVector3D, change to list")
-        return {
-            "name": f"{self.name}",
-            "center": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
-            "rot": self.Rot,
-            "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
-            "armor": 0,
-            "sections": [section.to_dict() for section in self.__sections],
-            "rail": self.rail.to_dict() if self.rail else None
-        }
-
-
-class ArmorSectionGroup(SectionHandler):
-    """
-    装甲截面组
-    """
-    idMap = {}
-    deleted_s = pyqtSignal()
-
-    def __init__(self, prj, name):
-        self.hullProject = prj
-        self.name = name
-        self.Pos: QVector3D = QVector3D(0, 0, 0)
-        self.Rot: List[float] = [0, 0, 0]
-        self.Col: QColor = QColor(128, 128, 128)  # 颜色
-        self.topCur = 0.0  # 上层曲率
-        self.botCur = 1.0  # 下层曲率
-        # 装甲分区
-        self.__sections: List[HullSection] = []
-        paint_item = None
-        super().__init__(paint_item)
-
-    def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
-        super()._init_showButton(type_)
-        self._asg_bt_scroll_widget.layout().addWidget(self._showButton)
-
-    def set_showButton_checked(self, selected: bool):
-        super().set_showButton_checked(selected)
-        # 设置左侧结构树当前的tab
-        self._structure_tab.setCurrentTab(self._asg_tab.widget)
-
-    @property
-    def draw_objs(self):
-        return [section.draw_obj for section in self.__sections]
-
-    def add_section(self, section: HullSection):
-        self.__sections.append(section)
-
-    def del_section(self, section: HullSection):
-        if section in self.__sections:
-            self.__sections.remove(section)
-        else:
-            color_print(f"[WARNING] {section} not in {self.__sections}", "red")
-
-    def to_dict(self):
-        if isinstance(self.Rot, QVector3D):
-            self.Rot = [self.Rot.x(), self.Rot.y(), self.Rot.z()]
-            print(f"[WARNING] {self} Rot is QVector3D, change to list")
-        return {
-            "name": f"{self.name}",
-            "center": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
-            "rot": self.Rot,
-            "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
-            "armor": 0,
-            "sections": [section.to_dict() for section in self.__sections]
-        }
-
-
-class Railing(SubSectionHandler):
-    """
-    栏杆
-    """
-    idMap = {}
-    deleted_s = pyqtSignal()
-
-    def __init__(self, prj, parent: Union[Bridge, HullSectionGroup]):
-        self.hullProject = prj
-        self.height = 1.2  # 栏杆高度
-        self.interval = 1.0  # 栏杆间隔
-        self.thickness = 0.1  # 栏杆厚度
-        self._parent = parent
-        self.Col: QColor = QColor(128, 128, 128)  # 颜色
-        paint_item = None
-        super().__init__(paint_item)
-
-    def to_dict(self):
-        return {
-            "height": self.height,
-            "interval": self.interval,
-            "thickness": self.thickness,
-            "type": "railing",
-            "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}"
-        }
-
-
-class Handrail(SubSectionHandler):
-    """
-    栏板
-    """
-    idMap = {}
-    deleted_s = pyqtSignal()
-
-    def __init__(self, prj, parent: Union[Bridge, HullSectionGroup]):
-        self.hullProject = prj
-        self.height = 1.2  # 栏板高度
-        self.thickness = 0.1  # 栏板厚度
-        self._parent = parent
-        self.Col: QColor = QColor(128, 128, 128)
-        paint_item = None
-        super().__init__(paint_item)
-
-    def to_dict(self):
-        return {
-            "height": self.height,
-            "thickness": self.thickness,
-            "type": "handrail",
-            "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}"
-        }
-
-
-class Ladder(SectionHandler):
-    """
-    直梯
-    """
-    idMap = {}
-    deleted_s = pyqtSignal()
-
-    def __init__(self, prj, name, shape: Literal["cylinder", "box"]):
-        self.hullProject = prj
-        self.name = name
-        self.Pos: QVector3D = QVector3D(0, 0, 0)
-        self.Rot: List[float] = [0, 0, 0]
-        self.Col: QColor = QColor(128, 128, 129)  # 颜色
-        self.length = 3  # 梯子整体长度
-        self.width = 0.5  # 梯子整体宽度
-        self.interval = 0.5  # 梯子间隔
-        # 梯子材料属性
-        self.shape = shape  # 梯子材料形状
-        self.material_width = 0.1
-        paint_item = None
-        super().__init__(paint_item)
-
-    def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
-        super()._init_showButton(type_)
-        self._ladder_bt_scroll_widget.layout().addWidget(self._showButton)
-
-    def set_showButton_checked(self, selected: bool):
-        super().set_showButton_checked(selected)
-        # 设置左侧结构树当前的tab
-        self._structure_tab.setCurrentTab(self._ladder_tab.widget)
-
-    def to_dict(self):
-        if isinstance(self.Rot, QVector3D):
-            self.Rot = [self.Rot.x(), self.Rot.y(), self.Rot.z()]
-            print(f"[WARNING] {self} Rot is QVector3D, change to list")
-        return {
-            "name": f"{self.name}",
-            "pos": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
-            "rot": self.Rot,
-            "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
-            "length": self.length,
-            "width": self.width,
-            "interval": self.interval,
-            "shape": self.shape,
-            "material_width": self.material_width
-        }
-
-
-class Model(SectionHandler):
-    """
-    模型
-    """
-    idMap = {}
-    deleted_s = pyqtSignal()
-
-    def __init__(self, prj, name, pos: QVector3D, rot: List[float], scl: List[float], file_path):
-        self.hullProject = prj
-        self.name = name
-        self.Pos = pos
-        self.Rot = rot
-        self.Scl = scl
-        self.file_path = file_path
-        modelRenderConfig = configHandler.get_config("ModelRenderSetting")
-        modelItem = GLModelItem(file_path, lights=[],
-                                selectable=True,
-                                glOptions="translucent",
-                                drawLine=modelRenderConfig["ModelDrawLine"],
-                                lineWidth=modelRenderConfig["ModelLineWith"],
-                                lineColor=modelRenderConfig["ModelLineColor"])
-
-        super().__init__(modelItem, showButton_type='PosShow')
-        self.setPos(pos)
-        self.setRot(rot)
-
-    def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
-        super()._init_showButton(type_)
-        self._model_bt_scroll_widget.layout().addWidget(self._showButton)
-
-    def set_showButton_checked(self, selected: bool):
-        super().set_showButton_checked(selected)
-        # 设置左侧结构树当前的tab
-        self._structure_tab.setCurrentTab(self._model_tab.widget)
-
-    def setDrawLine(self, drawLine: bool):
-        self.paintItem.setDrawLine(drawLine)
-
-    def delete(self):
-        """
-        所有的删除操作都应该调用这个方法，即使是在控件中删除
-        :return:
-        """
-        # noinspection PyProtectedMember
-        self._model_tab._items.pop(self)
-        super().delete()
-
-    def to_dict(self):
-        if isinstance(self.Rot, QVector3D):
-            self.Rot = [self.Rot.x(), self.Rot.y(), self.Rot.z()]
-            print(f"[WARNING] {self} Rot is QVector3D, change to list")
-        if isinstance(self.Scl, QVector3D):
-            self.Scl = [self.Scl.x(), self.Scl.y(), self.Scl.z()]
-            print(f"[WARNING] {self} Scl is QVector3D, change to list")
-        return {
-            "name": f"{self.name}",
-            "pos": [self.Pos.x(), self.Pos.y(), self.Pos.z()],
-            "rot": self.Rot,
-            "scl": self.Scl,
-            "file_path": str(self.file_path)
-        }
 
 
 class ShipProject(QObject):
@@ -736,7 +134,7 @@ class ShipProject(QObject):
     del_ladder_s = pyqtSignal(str)  # 删除梯子的信号，传出梯子id
     del_model_s = pyqtSignal(str)  # 删除模型的信号，传出模型id
 
-    def __init__(self, main_handler, gl_widget: 'GLWidgetGUI', path: str):
+    def __init__(self, main_handler, gl_widget: 'GLWidgetGUI', path: str):  # noqa
         """
 
         :param main_handler: 主处理器
@@ -814,7 +212,7 @@ class ShipProject(QObject):
         file_dialog.setViewMode(QFileDialog.Detail)
         find_path = configHandler.get_config("FindModelFolder")
         file_dialog.setDirectory(find_path)
-        file_dialog.fileSelected.connect(lambda p: self.add_model_byPath(p))
+        file_dialog.fileSelected.connect(lambda p: self.add_model_byPath(p))  # noqa
         file_dialog.exec_()
 
     def add_hullSectionGroup(self, prjsection: HullSectionGroup):
@@ -843,8 +241,8 @@ class ShipProject(QObject):
     def add_model_byPath(self, path: str):
         name = os.path.basename(path)
         name = name[:name.rfind(".")]
-        model = Model(self, name, QVector3D(0, 0, 0), [0, 0, 0], path)
-        self.add_model(model)
+        model_ = Model(self, name, QVector3D(0, 0, 0), [0, 0, 0], [1, 1, 1], path)
+        self.add_model(model_)
 
     def del_section(self, prjsection: Union[HullSectionGroup, ArmorSectionGroup, Bridge, Ladder, Railing, Handrail]):
         if isinstance(prjsection, HullSectionGroup):
@@ -881,9 +279,9 @@ class ShipProject(QObject):
             "edit_time": f"{year}-{month}-{day} {hour}:{minute}:{second}",
             "hull_section_group": [hs_group.to_dict() for hs_group in self.__hull_section_group],
             "armor_section_group": [as_group.to_dict() for as_group in self.__armor_section_group],
-            "bridge": [bridge.to_dict() for bridge in self.__bridge],
-            "ladder": [ladder.to_dict() for ladder in self.__ladder],
-            "model": [model.to_dict() for model in self.__model]
+            "bridge": [bridge_.to_dict() for bridge_ in self.__bridge],
+            "ladder": [ladder_.to_dict() for ladder_ in self.__ladder],
+            "model": [model_.to_dict() for model_ in self.__model]
         }
 
     def save(self):
@@ -898,11 +296,11 @@ class ShipProject(QObject):
         try:
             with open(self.path, 'w', encoding='utf-8') as f:
                 ujson.dump(dict_data, f, indent=2)
-        except TypeError as e:
-            QMessageBox.warning(None, "严重错误", f"数据转换时出现错误，无法保存！{e}", QMessageBox.Ok)
+        except TypeError as e_:
+            QMessageBox.warning(None, "严重错误", f"数据转换时出现错误，无法正常保存！请联系作者修复尝试图纸{e_}",
+                                QMessageBox.Ok)
             with open(self.path, 'w', encoding='utf-8') as f:
                 f.write(str(dict_data))
-
 
 
 class NaPrjReader:
@@ -954,63 +352,48 @@ class NaPrjReader:
 
     def load_hull_section_group(self, data):
         for section_group in data:
-            hull_section_group = HullSectionGroup(self.hullProject, section_group['name'])
-            hull_section_group.setPos(QVector3D(*section_group['center']))
-            hull_section_group.setRot(section_group['rot'])
-            hull_section_group.Col = QColor(section_group['col'])
-            hull_section_group.__sections = self.load_hull_section(section_group['sections'], hull_section_group)
+            hull_section_group = HullSectionGroup(
+                self.hullProject, section_group['name'],
+                QVector3D(*section_group['center']), section_group['rot'], QColor(section_group['col']),
+                self.load_hull_section(section_group['sections']))
             self.hullProject.add_hullSectionGroup(hull_section_group)
             if "rail" in section_group:
                 self.load_rail(section_group['rail'], hull_section_group)
 
-    def load_hull_section(self, data, parent):
+    def load_hull_section(self, data):
         sections = []
         for section in data:
-            hull_section = HullSection(self.hullProject, parent)
-            hull_section.z = section['z']
-            hull_section.nodes = self.load_section_node(section['nodes'], hull_section, section['col'])
+            hull_section = HullSection(self.hullProject, section['z'], section['nodes'], section['col'])
             sections.append(hull_section)
         return sections
 
-    def load_section_node(self, data, parent, col_list):
-        nodes = []
-        for node in data:
-            section_node = SectionNodeXY(parent)
-            section_node.x, section_node.y = node
-            if col_list:
-                section_node.Col = QColor(col_list[data.index(node)])
-            nodes.append(section_node)
-        return nodes
-
     def load_armor_section_group(self, data):
         for section_group in data:
-            armor_section_group = ArmorSectionGroup(self.hullProject, section_group['name'])
-            armor_section_group.setPos(QVector3D(*section_group['center']))
-            armor_section_group.setRot(section_group['rot'])
-            armor_section_group.Col = QColor(section_group['col'])
-            armor_section_group.__sections = self.load_armor_section(section_group['sections'], armor_section_group)
+            armor_section_group = ArmorSectionGroup(
+                self.hullProject, section_group['name'],
+                QVector3D(*section_group['center']), section_group['rot'], QColor(section_group['col']),
+                self.load_armor_section(section_group['sections']))
             self.hullProject.add_armorSectionGroup(armor_section_group)
 
-    def load_armor_section(self, data, parent):
+    def load_armor_section(self, data):
         sections = []
         for section in data:
-            armor_section = ArmorSection(self.hullProject, parent)
-            armor_section.z = section['z']
-            armor_section.nodes = self.load_section_node(section['nodes'], armor_section, None)
+            armor_section = ArmorSection(self.hullProject, section['z'], section['nodes'])
             sections.append(armor_section)
         return sections
 
     def load_bridge(self, data):
-        for bridge in data:
-            bridge_ = Bridge(self.hullProject, bridge['name'], bridge['rail_only'])
-            bridge_.setPos(QVector3D(*bridge['pos']))
-            bridge_.Col = QColor(bridge['col'])
-            bridge_.armor = bridge['armor']
-            bridge_.nodes = self.load_bridge_node(bridge['nodes'], bridge_)
-            self.hullProject.add_bridge(bridge_)
-            if "rail" in bridge:
-                self.load_rail(bridge['rail'], bridge_)
+        for bridge_ in data:
+            bridge_handler = Bridge(self.hullProject, bridge_['name'], bridge_['rail_only'])
+            bridge_handler.setPos(QVector3D(*bridge_['pos']))
+            bridge_handler.Col = QColor(bridge_['col'])
+            bridge_handler.armor = bridge_['armor']
+            bridge_handler.nodes = self.load_bridge_node(bridge_['nodes'], bridge_handler)
+            self.hullProject.add_bridge(bridge_handler)
+            if "rail" in bridge_:
+                self.load_rail(bridge_['rail'], bridge_handler)
 
+    # noinspection PyMethodMayBeStatic
     def load_bridge_node(self, data, parent):
         nodes = []
         for node in data:
@@ -1020,16 +403,16 @@ class NaPrjReader:
         return nodes
 
     def load_ladder(self, data):
-        for ladder in data:
-            ladder_ = Ladder(self.hullProject, ladder['name'], ladder['shape'])
-            ladder_.setPos(QVector3D(*ladder['pos']))
-            ladder_.setRot(ladder['rot'])
-            ladder_.Col = QColor(ladder['col'])
-            ladder_.length = ladder['length']
-            ladder_.width = ladder['width']
-            ladder_.interval = ladder['interval']
-            ladder_.material_width = ladder['material_width']
-            self.hullProject.add_ladder(ladder_)
+        for ladder_ in data:
+            ladder_handler = Ladder(self.hullProject, ladder_['name'], ladder_['shape'])
+            ladder_handler.setPos(QVector3D(*ladder_['pos']))
+            ladder_handler.setRot(ladder_['rot'])
+            ladder_handler.Col = QColor(ladder_['col'])
+            ladder_handler.length = ladder_['length']
+            ladder_handler.width = ladder_['width']
+            ladder_handler.interval = ladder_['interval']
+            ladder_handler.material_width = ladder_['material_width']
+            self.hullProject.add_ladder(ladder_handler)
 
     def load_model(self, data):
         """
@@ -1037,16 +420,16 @@ class NaPrjReader:
         :param data:
         :return:
         """
-        for model in data:
-            m_p = model['file_path']
+        for model_ in data:
+            m_p = model_['file_path']
             if m_p.startswith("resources/"):  # 说明是内置模型，需要转换为绝对路径
                 m_p = os.path.join(CURRENT_PATH, m_p)
             try:
-                model_ = Model(self.hullProject, model['name'], QVector3D(*model['pos']), model['rot'], model['scl'],
-                               m_p)
+                model_handler = Model(self.hullProject, model_['name'], QVector3D(*model_['pos']), model_['rot'], model_['scl'],
+                                      m_p)
             except KeyError:
-                raise KeyError(f"模型 {model['name']} 的数据不完整")
-            self.hullProject.add_model(model_)
+                raise KeyError(f"模型 {model_['name']} 的数据不完整")
+            self.hullProject.add_model(model_handler)
 
     def check_checkCode(self, data: dict):
         data.pop("check_code")

@@ -165,6 +165,13 @@ class GLGraphicsItem(QtCore.QObject):
                 item.__parent.__children.remove(item)
             item.__parent = self
 
+    def removeChildItem(self, item: 'GLGraphicsItem'):
+        if item in self.__children:
+            self.__children.remove(item)
+            item.__parent = None
+            item.setView(None)
+            item.setSelected(False)
+
     def parentItem(self):
         """Return item's parent in the scenegraph hierarchy."""
         return self.__parent
@@ -264,8 +271,11 @@ class GLGraphicsItem(QtCore.QObject):
             return self.__parent.pickColor(parent=parent)
         return self._pickColor
 
-    def setView(self, v):
+    def setView(self, v, children=False):
         self.__view = v
+        if children:
+            for child in self.__children:
+                child.setView(v)
 
     def view(self):
         return self.__view
@@ -352,7 +362,7 @@ class GLGraphicsItem(QtCore.QObject):
             if self.view() is None:
                 self.setView(self.__parent.view())
                 # register lights to view
-                if hasattr(self, 'lights'):
+                if hasattr(self, 'lights') and self.__view is not None:
                     self.__view.lights |= set(self.lights)
             self.initializeGL()
             self.__initialized = True

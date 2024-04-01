@@ -44,8 +44,6 @@ class MainEditorHandler(list):
         if len(self) < 5:
             # 新建主编辑窗口
             self.append(MainEditor(GLWidgetGUI(), self.logger))
-            # 打开一个正在加载窗口
-            loading = LoadingWindow()
             # 绑定mainWindow的close信号到该类的close函数
             self[-1].closed.connect(lambda: self.close(self[-1]))
             if mode == "lastEdit":
@@ -58,6 +56,22 @@ class MainEditorHandler(list):
                 self[-1].setting()
             elif mode == "help":
                 self[-1].help()
+            # 删除开始界面
+            startWindow.close()
+            self.statusBarHandler.message.connect(lambda message, color: self[-1].show_status(message, color))
+            return self[-1]
+        else:
+            QMessageBox().warning(None, "警告", "编辑窗口数量已达上限（5）", QMessageBox.Ok)
+            return None
+
+    def open(self, path: str):
+        global startWindow
+        if len(self) < 5:
+            # 新建主编辑窗口
+            self.append(MainEditor(GLWidgetGUI(), self.logger))
+            # 绑定mainWindow的close信号到该类的close函数
+            self[-1].closed.connect(lambda: self.close(self[-1]))
+            self[-1].open_prj(path)
             # 删除开始界面
             startWindow.close()
             self.statusBarHandler.message.connect(lambda message, color: self[-1].show_status(message, color))
@@ -135,6 +149,8 @@ def linkSignal(startwindow: StartWindow):
 if __name__ == '__main__':
     Log()  # 初始化日志
     try:
+        # 读取命令行参数
+        opened_file_path = sys.argv[1] if len(sys.argv) > 1 else None
         # 设置QApp
         QApp = QApplication(sys.argv)
         QApp.setWindowIcon(QIcon(QPixmap(ICO_IMAGE)))
@@ -142,23 +158,18 @@ if __name__ == '__main__':
         QApp.setApplicationVersion(VERSION)
         QApp.setOrganizationName("JasonLee")
         QApp.setAttribute(Qt.AA_DisableHighDpiScaling)
-        # # 在父控件中设置OpenGL格式
-        # format_ = QSurfaceFormat()
-        # format_.setVersion(3, 3)  # 设置OpenGL版本
-        # format_.setProfile(QSurfaceFormat.CoreProfile)  # 使用核心配置
-        # format_.setDepthBufferSize(24)  # 设置深度缓冲区大小等其他选项
-        # QSurfaceFormat.setDefaultFormat(format_)
-        if TESTING:
-            gl_widget = GLWidgetGUI()
-            gl_widget.show()
-        else:
-            # 打开欢迎界面
-            startWindow = StartWindow()
-            startWindow.show()
-            # 初始化编辑界面集合
+        # 打开欢迎界面
+        startWindow = StartWindow()
+        mainEditors: MainEditorHandler = MainEditorHandler(Log())
+        linkSignal(startWindow)
+        if opened_file_path:
+            startWindow.hide()
             mainEditors: MainEditorHandler = MainEditorHandler(Log())
-            # 链接信号
-            linkSignal(startWindow)
+            # 打开文件
+            mainEditor = mainEditors.new("openPrjByPath", opened_file_path)
+        else:
+            startWindow.show()
+
         # 结束程序
         sys.exit(QApp.exec_())
     except Exception as e:

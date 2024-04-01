@@ -46,4 +46,8 @@ class MessageBox(QDialog):
 
 class LoadingWindow(Window):
     def __init__(self):
+        super().__init__(None, "加载中...", BYTES_ICO, size=(300, 150))
+        self.show()
+
+    def init_center_widget(self):
         ...

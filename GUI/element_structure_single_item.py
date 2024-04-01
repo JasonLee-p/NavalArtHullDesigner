@@ -1,6 +1,8 @@
 """
 定义了单个元素的显示控件
 """
+import numpy as np
+
 from .basic_widgets import *
 
 
@@ -98,6 +100,25 @@ class PosShow(ShowButton):
         self.layout_.addWidget(self.posY_show, 1, 2)
         self.layout_.addWidget(self.posZ_show, 1, 3)
 
+    def setPos(self, pos):
+        if isinstance(pos, np.ndarray):
+            self.posX_show.setText(str(round(pos[0], 4)))
+            self.posY_show.setText(str(round(pos[1], 4)))
+            self.posZ_show.setText(str(round(pos[2], 4)))
+        elif isinstance(pos, QVector3D):
+            self.posX_show.setText(str(round(pos.x(), 4)))
+            self.posY_show.setText(str(round(pos.y(), 4)))
+            self.posZ_show.setText(str(round(pos.z(), 4)))
+
+    def setPosX(self, x):
+        self.posX_show.setText(str(x))
+
+    def setPosY(self, y):
+        self.posY_show.setText(str(y))
+
+    def setPosZ(self, z):
+        self.posZ_show.setText(str(z))
+
 
 class PosRotShow(ShowButton):
     def __init__(self, gl_widget, scroll_widget, item_handler, height=96):
@@ -148,3 +169,40 @@ class PosRotShow(ShowButton):
         self.layout_.addWidget(self.rotY_show, 2, 2)
         self.layout_.addWidget(self.rotZ_show, 2, 3)
 
+    def setPos(self, pos):
+        if isinstance(pos, np.ndarray):
+            self.posX_show.setText(str(round(pos[0], 4)))
+            self.posY_show.setText(str(round(pos[1], 4)))
+            self.posZ_show.setText(str(round(pos[2], 4)))
+        elif isinstance(pos, QVector3D):
+            self.posX_show.setText(str(round(pos.x(), 4)))
+            self.posY_show.setText(str(round(pos.y(), 4)))
+            self.posZ_show.setText(str(round(pos.z(), 4)))
+
+    def setPosX(self, x):
+        self.posX_show.setText(str(x))
+
+    def setPosY(self, y):
+        self.posY_show.setText(str(y))
+
+    def setPosZ(self, z):
+        self.posZ_show.setText(str(z))
+
+    def setRot(self, rot):
+        if isinstance(rot, np.ndarray):
+            self.rotX_show.setText(str(round(rot[0], 2)))
+            self.rotY_show.setText(str(round(rot[1], 2)))
+            self.rotZ_show.setText(str(round(rot[2], 2)))
+        elif isinstance(rot, QVector3D):
+            self.rotX_show.setText(str(round(rot.x(), 2)))
+            self.rotY_show.setText(str(round(rot.y(), 2)))
+            self.rotZ_show.setText(str(round(rot.z(), 2)))
+
+    def setRotX(self, x):
+        self.rotX_show.setText(str(x))
+
+    def setRotY(self, y):
+        self.rotY_show.setText(str(y))
+
+    def setRotZ(self, z):
+        self.rotZ_show.setText(str(z))
