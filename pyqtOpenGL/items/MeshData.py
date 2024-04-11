@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Literal, Optional
 from pathlib import Path
 import OpenGL.GL as gl
 import assimp_py as assimp
@@ -16,7 +16,7 @@ from ..transform3d import Vector3
 from ..functions import dispatchmethod
 
 __all__ = [
-    "Mesh", "Material", "EditItemMaterial", "direction_matrixs", "vertex_normal",
+    "Mesh", "Material", "EditItemMaterial", "direction_matrixs", "vertex_normal_smooth",
     "sphere", "cylinder", "cube", "cone", "plane"
 ]
 
@@ -134,7 +134,7 @@ class Mesh:
 
         if self._indices is not None:
             if calc_normals and normals is None:
-                self._normals = vertex_normal(self._vertexes, self._indices)
+                self._normals = vertex_normal_smooth(self._vertexes, self._indices)
             else:
                 self._normals = np.array(normals, dtype=np.float32)
         else:
@@ -162,6 +162,7 @@ class Mesh:
         )
         self.vbo.setAttrPointer([0, 1, 2], attr_id=[0, 1, 2])
         self.ebo = EBO(self._indices)
+        self._vertexes_size = int(self._vertexes.size / 3)
         self._material.load_textures()
 
     def paint(self, shader):
@@ -174,7 +175,7 @@ class Mesh:
         if self._indices is not None:
             gl.glDrawElements(gl.GL_TRIANGLES, self._indices.size, gl.GL_UNSIGNED_INT, c_void_p(0))
         else:
-            gl.glDrawArrays(gl.GL_TRIANGLES, 0, int(self._vertexes.size / 3))
+            gl.glDrawArrays(gl.GL_TRIANGLES, 0, self._vertexes_size)
 
     def setMaterial(self, material=None):
         if isinstance(material, dict):
@@ -234,6 +235,44 @@ class Mesh:
         del scene
         return meshes
 
+    def update_vertex(self, vertex_index, vertex: np.ndarray):
+        """
+
+        :param vertex_index: 顶点索引
+        :param vertex: 顶点坐标
+        :return:
+        """
+        if isinstance(vertex_index, np.ndarray):  # 批量更新
+            if len(vertex_index) != len(vertex):
+                raise ValueError("vertex_index and vertex must have the same length")
+            for i, v in zip(vertex_index, vertex):
+                self._vertexes[i] = v
+        elif isinstance(vertex_index, int):  # 单个更新
+            self._vertexes[vertex_index] = vertex
+        # 更新法线
+        self._normals = vertex_normal_smooth(self._vertexes, self._indices)
+        # 更新缓冲区
+        self.vbo.updateData([0], [self._vertexes, self._normals, self._texcoords])
+
+    def update_vertexes(self, vertexes: np.ndarray):
+        if vertexes.shape != self._vertexes.shape:
+            raise ValueError("vertexes shape must be the same as the original vertexes")
+        self._vertexes = np.array(vertexes, dtype=np.float32)
+        self._normals = vertex_normal_smooth(self._vertexes, self._indices)  # 更新法线
+        self.vbo.updateData([0], [self._vertexes, self._normals, self._texcoords])
+
+    def update_vertex_size(self, vertexes: np.ndarray, indices: np.ndarray):
+        """
+        更新数组的大小
+        :param vertexes:
+        :param indices:
+        :return:
+        """
+        self._vertexes = np.array(vertexes, dtype=np.float32)
+        self._indices = np.array(indices, dtype=np.uint32)
+        self._normals = vertex_normal_smooth(self._vertexes, self._indices)
+        self.vbo.updateData([0, 1], [self._vertexes, self._normals, self._texcoords])
+
     def __del__(self):
         self.vao.delete()
         self.vbo.delete()
@@ -258,6 +297,339 @@ def cone(radius, height, slices=12):
         indices[i * 6 + 5] = (i + 1) % slices
         indices[i * 6 + 4] = slices + 1
     return vertices, indices.reshape(-1, 3)
+
+
+class SymetryCylinderMesh:
+    def __init__(self, direction: Literal['x', 'y', 'z'] = 'z'):
+        """
+        左右对称的柱体网格
+        :param direction: 延伸方向
+        """
+        self.topPos = 0.0
+        self.bottomPos = 0.0
+        self.direction = direction
+        self.topPoints: Optional[np.ndarray] = None  # 二维点集，全部为左侧点，右侧点通过变换得到
+        self.bottomPoints: Optional[np.ndarray] = None  # 二维点集，全部为左侧点，右侧点通过变换得到
+
+        # 顶面和底面的顶点数组
+        self.vertexes: Optional[np.ndarray] = None
+        self.normals: Optional[np.ndarray] = None
+
+        # 点集生成过程的中间变量
+        self.rightTopPoints: Optional[np.ndarray] = None  # 二维点集，右侧点
+        self.rightBottomPoints: Optional[np.ndarray] = None  # 二维点集，右侧点
+        self._topPoints: Optional[np.ndarray] = None  # 二维点集，所有的顶面点，从六点钟方向开始逆时针排列
+        self._bottomPoints: Optional[np.ndarray] = None  # 二维点集，所有的底面点，从六点钟方向开始逆时针排列
+        self.top_vert: Optional[np.ndarray] = None  # 顶面的顶点数组
+        self.bottom_vert: Optional[np.ndarray] = None  # 底面的顶点数组
+        self.side_vert: Optional[np.ndarray] = None  # 侧面的顶点数组
+
+    def getVertexes(self):
+        return self.vertexes
+
+    def initPoints(self, topPoints: np.ndarray, bottomPoints: np.ndarray, topPos, bottomPos):
+        """
+
+        :param topPoints: 二维点集，全部为左侧点，从小到大。右侧点通过变换得到
+        :param bottomPoints: 二维点集，全部为左侧点，从小到大。右侧点通过变换得到
+        :param topPos: 顶面在延伸方向上的局部坐标
+        :param bottomPos: 底面在延伸方向上的局部坐标
+        :return:
+        """
+        if topPoints.shape != bottomPoints.shape:
+            raise ValueError("topPoints and bottomPoints must have the same shape")
+        if topPos < bottomPos:
+            topPos, bottomPos = bottomPos, topPos
+        elif abs(topPos - bottomPos) < 1e-6:
+            raise ValueError("topPos and bottomPos must be different")
+        self.topPoints = topPoints
+        self.bottomPoints = bottomPoints
+        self.topPos = topPos
+        self.bottomPos = bottomPos
+
+    def initVertexes(self):
+        """
+        返回不使用索引数组的顶点数组
+        :return:
+        """
+        if self.topPoints is None or self.bottomPoints is None:
+            raise ValueError("topPoints and bottomPoints must be initialized")
+        vertexLen = self.topPoints.shape[0] * 2 - 2
+        FI, LI, UI = self.getDirIndex()
+        # 右侧点
+        vertexLen = self.updateRightPoints(vertexLen)
+        # 拼接左右点，结果为从六点钟方向开始逆时针排列的点
+        self._topPoints = np.concatenate((self.topPoints, self.rightTopPoints), axis=0)
+        self._bottomPoints = np.concatenate((self.bottomPoints, self.rightBottomPoints), axis=0)
+        # 顶面和底面的点
+        self.top_vert = np.zeros((vertexLen * 3, 3), dtype=np.float32)
+        self.bottom_vert = np.zeros((vertexLen * 3, 3), dtype=np.float32)
+        self._updateTopBottom(FI, LI, UI)
+        self._updateSide(vertexLen, FI, LI, UI)
+        self.vertexes = np.concatenate((self.top_vert, self.bottom_vert, self.side_vert), axis=0)
+        self.normals = vertex_normal_faceNormal(self.vertexes)
+
+    def updateRightPoints(self, vertexLen):
+        self.rightTopPoints = self.topPoints.copy()
+        self.rightTopPoints[:, 0] = -self.rightTopPoints[:, 0]
+        self.rightBottomPoints = self.bottomPoints.copy()
+        self.rightBottomPoints[:, 0] = -self.rightBottomPoints[:, 0]
+        # 逆向右侧点
+        self.rightTopPoints = self.rightTopPoints[::-1]
+        self.rightBottomPoints = self.rightBottomPoints[::-1]
+        # 当点集的首位或末尾的x值为0时，清除右侧的点，避免重复。此举会让左右侧点数不一致。但结果的顺序不变
+        if self.topPoints[0][0] == 0:
+            self.rightTopPoints = self.rightTopPoints[:-1]
+            vertexLen -= 1
+        if self.topPoints[-1][0] == 0:
+            self.rightTopPoints = self.rightTopPoints[1:]
+            vertexLen -= 1
+        if self.bottomPoints[0][0] == 0:
+            self.rightBottomPoints = self.rightBottomPoints[:-1]
+            vertexLen -= 1
+        if self.bottomPoints[-1][0] == 0:
+            self.rightBottomPoints = self.rightBottomPoints[1:]
+            vertexLen -= 1
+        return vertexLen
+
+    def getDirIndex(self):
+        FI = 0  # 前后方向索引
+        LI = 1  # 左右方向索引
+        UI = 2  # 上下方向索引
+        if self.direction == 'y':
+            FI = 1
+            LI = 0
+            UI = 2
+        elif self.direction == 'z':
+            FI = 2
+            LI = 0
+            UI = 1
+        return FI, LI, UI
+
+    def _updateTopBottom(self, FI, LI, UI):
+        # 顶面和底面
+        for i in range(len(self._topPoints) - 2):
+            p0 = self._topPoints[i]
+            p1 = self._topPoints[i + 1]
+            p2 = self._topPoints[i + 2]
+            self.top_vert[i * 3][FI] = self.topPos
+            self.top_vert[i * 3][LI] = p0[0]
+            self.top_vert[i * 3][UI] = p0[1]
+            self.top_vert[i * 3 + 1][FI] = self.topPos
+            self.top_vert[i * 3 + 1][LI] = p1[0]
+            self.top_vert[i * 3 + 1][UI] = p1[1]
+            self.top_vert[i * 3 + 2][FI] = self.topPos
+            self.top_vert[i * 3 + 2][LI] = p2[0]
+            self.top_vert[i * 3 + 2][UI] = p2[1]
+            p0 = self._bottomPoints[i]
+            p1 = self._bottomPoints[i + 1]
+            p2 = self._bottomPoints[i + 2]
+            self.bottom_vert[i * 3][FI] = self.bottomPos
+            self.bottom_vert[i * 3][LI] = p0[0]
+            self.bottom_vert[i * 3][UI] = p0[1]
+            self.bottom_vert[i * 3 + 1][FI] = self.bottomPos
+            self.bottom_vert[i * 3 + 1][LI] = p1[0]
+            self.bottom_vert[i * 3 + 1][UI] = p1[1]
+            self.bottom_vert[i * 3 + 2][FI] = self.bottomPos
+            self.bottom_vert[i * 3 + 2][LI] = p2[0]
+            self.bottom_vert[i * 3 + 2][UI] = p2[1]
+
+    def _updateSide(self, vertexLen, FI, LI, UI):
+        # 侧面
+        if self.side_vert.shape[0] != vertexLen * 6:
+            self.side_vert = np.zeros((vertexLen * 6, 3), dtype=np.float32)
+        for i in range(len(self._topPoints)):
+            tp0 = self._topPoints[i]
+            tp1 = self._topPoints[(i + 1) % len(self._topPoints)]
+            bp0 = self._bottomPoints[i]
+            bp1 = self._bottomPoints[(i + 1) % len(self._bottomPoints)]
+            # 第一个三角
+            self.side_vert[i * 6][FI] = self.topPos
+            self.side_vert[i * 6][LI] = tp0[0]
+            self.side_vert[i * 6][UI] = tp0[1]
+            self.side_vert[i * 6 + 1][FI] = self.bottomPos
+            self.side_vert[i * 6 + 1][LI] = bp0[0]
+            self.side_vert[i * 6 + 1][UI] = bp0[1]
+            self.side_vert[i * 6 + 2][FI] = self.bottomPos
+            self.side_vert[i * 6 + 2][LI] = bp1[0]
+            self.side_vert[i * 6 + 2][UI] = bp1[1]
+            # 第二个三角
+            self.side_vert[i * 6 + 3][FI] = self.topPos
+            self.side_vert[i * 6 + 3][LI] = tp0[0]
+            self.side_vert[i * 6 + 3][UI] = tp0[1]
+            self.side_vert[i * 6 + 4][FI] = self.bottomPos
+            self.side_vert[i * 6 + 4][LI] = bp1[0]
+            self.side_vert[i * 6 + 4][UI] = bp1[1]
+            self.side_vert[i * 6 + 5][FI] = self.topPos
+            self.side_vert[i * 6 + 5][LI] = tp1[0]
+            self.side_vert[i * 6 + 5][UI] = tp1[1]
+
+    def addPoint(self, point: tuple, side: Literal['top', 'bottom']):
+        """
+        添加一个点
+        :param point: 点坐标
+        :param side: 添加到顶面还是底面
+        :return:
+        """
+        if self.topPoints is None or self.bottomPoints is None:
+            raise ValueError("topPoints and bottomPoints must be initialized")
+        # 将点根据y坐标排序放入点集
+        if side == 'top':
+            # 在顶面点集中插入点
+            self.topPoints = np.append(self.topPoints, np.array(point).reshape(1, 2), axis=0)  # 扩容
+            idx = np.searchsorted(self.topPoints[:, 1], point[1])  # 二分查找
+            self.topPoints = np.insert(self.topPoints, idx, point, axis=0)
+            # 在底面点集中用线性插值插入y相同的点
+            self.bottomPoints = np.append(self.bottomPoints, np.array(point).reshape(1, 2), axis=0)
+            self.bottomPoints = np.insert(self.bottomPoints, idx, point, axis=0)
+            # 拟合底面点集
+            self.bottomPoints = self._fitX(self.topPoints, self.bottomPoints, idx)
+        elif side == 'bottom':
+            # 在底面点集中插入点
+            self.bottomPoints = np.append(self.bottomPoints, np.array(point).reshape(1, 2), axis=0)
+            idx = np.searchsorted(self.bottomPoints[:, 1], point[1])
+            self.bottomPoints = np.insert(self.bottomPoints, idx, point, axis=0)
+            # 在顶面点集中用线性插值插入y相同的点
+            self.topPoints = np.append(self.topPoints, np.array(point).reshape(1, 2), axis=0)
+            self.topPoints = np.insert(self.topPoints, idx, point, axis=0)
+            # 拟合顶面点集
+            self.topPoints = self._fitX(self.bottomPoints, self.topPoints, idx)
+        vertexLen = self.topPoints.shape[0] * 2 - 2
+        # 更新点集
+        vertexLen = self.updateRightPoints(vertexLen)
+        FI, LI, UI = self.getDirIndex()
+        # 拼接左右点，结果为从六点钟方向开始逆时针排列的点
+        self._topPoints = np.concatenate((self.topPoints, self.rightTopPoints), axis=0)
+        self._bottomPoints = np.concatenate((self.bottomPoints, self.rightBottomPoints), axis=0)
+        # 顶面和底面的点
+        self.top_vert = np.zeros((vertexLen * 3, 3), dtype=np.float32)
+        self.bottom_vert = np.zeros((vertexLen * 3, 3), dtype=np.float32)
+        self._updateTopBottom(FI, LI, UI)
+        # 侧面
+        self._updateSide(vertexLen, FI, LI, UI)
+        self.vertexes = np.concatenate((self.top_vert, self.bottom_vert, self.side_vert), axis=0)
+        self.normals = vertex_normal_faceNormal(self.vertexes)
+
+    def updateTopPoint(self, idx, point: tuple, updateBottom=True):
+        """
+        更新顶面点
+        :param idx: 索引
+        :param point: 新的点坐标
+        :param updateBottom: 当新点坐标的y值与底面相应索引的y值相同时，是否更新底面点
+        :return:
+        """
+        if self.topPoints is None or self.bottomPoints is None:
+            raise ValueError("topPoints and bottomPoints must be initialized")
+        updateBottom = False if abs(self.bottomPoints[idx][1] - point[1]) < 1e-6 else updateBottom
+        self.topPoints[idx] = point
+        # 更新对称点
+        right_idx = idx
+        for i in range(idx - 1, idx + 2):
+            if abs(self.topPoints[i][1] - point[1]) < 1e-6:
+                right_idx = i
+                self.rightTopPoints[i][0] = -point[0]
+                self.rightTopPoints[i][1] = point[1]
+                break
+        # 更新顶面点
+        self._topPoints[idx] = point  # 左
+        self._topPoints[len(self.topPoints) + right_idx] = (-point[0], point[1])  # 右
+        # 更新顶点数组
+        FI, LI, UI = self.getDirIndex()
+        self._updateTopVertex(idx, point, FI, LI, UI)
+        if updateBottom:
+            self.bottomPoints[idx][1] = point[1]
+            self.rightBottomPoints[right_idx][1] = point[1]
+            # 更新底面点
+            self._bottomPoints[idx][1] = point[1]  # 左
+            self._bottomPoints[len(self.bottomPoints) + right_idx][1] = point[1]  # 右
+            self._updateBottomVertex(idx, point, FI, LI, UI)
+        self._updateNormal(idx, point, FI, LI, UI)
+
+    def updateBottomPoint(self, idx, point: tuple, updateTop=True):
+        """
+        更新底面点
+        :param idx: 索引
+        :param point: 新的点坐标
+        :param updateTop: 当新点坐标的y值与顶面相应索引的y值相同时，是否更新顶面点
+        :return:
+        """
+        if self.topPoints is None or self.bottomPoints is None:
+            raise ValueError("topPoints and bottomPoints must be initialized")
+        updateTop = False if abs(self.topPoints[idx][1] - point[1]) < 1e-6 else updateTop
+        self.bottomPoints[idx] = point
+        # 更新对称点
+        right_idx = idx
+        for i in range(idx - 1, idx + 2):
+            if abs(self.bottomPoints[i][1] - point[1]) < 1e-6:
+                right_idx = i
+                self.rightBottomPoints[i][0] = -point[0]
+                self.rightBottomPoints[i][1] = point[1]
+                break
+        # 更新底面点
+        self._bottomPoints[idx] = point  # 左
+        self._bottomPoints[len(self.bottomPoints) + right_idx] = (-point[0], point[1])  # 右
+        # 更新底面点数组
+        FI, LI, UI = self.getDirIndex()
+        self._updateBottomVertex(idx, point, FI, LI, UI)
+        if updateTop:
+            self.topPoints[idx][1] = point[1]
+            self.rightTopPoints[right_idx][1] = point[1]
+            # 更新顶面点
+            self._topPoints[idx][1] = point[1]
+            self._topPoints[len(self.topPoints) + right_idx][1] = point[1]
+            self._updateTopVertex(idx, point, FI, LI, UI)
+        self._updateNormal(idx, point, FI, LI, UI)
+
+    def _updateTopVertex(self, idx, point, FI, LI, UI):
+        ...
+        # # 更新顶面
+        # if idx == 0:
+        #     p0 = self._topPoints[0]
+        #     p1 = self._topPoints[1]
+        #     self.top_vert[0][FI] = self.topPos
+        #     self.top_vert[0][LI] = p0[0]
+        #     self.top_vert[0][UI] = p0[1]
+        #     self.top_vert[1][FI] = self.topPos
+        #     self.top_vert[1][LI] = p1[0]
+        #     self.top_vert[1][UI] = p1[1]
+        # elif idx == len(self._topPoints) - 1:
+        #     p0 = self._topPoints[-2]
+        #     p1 = self._topPoints[-1]
+        #     self.top_vert[-2][FI] = self.topPos
+        #     self.top_vert[-2][LI] = p0[0]
+        #     self.top_vert[-2][UI] = p0[1]
+        #     self.top_vert[-1][FI] = self.topPos
+        #     self.top_vert[-1][LI] = p1[0]
+        #     self.top_vert[-1][UI] = p1[1]
+        # else:
+        #     p0 = self._topPoints[idx - 1]
+        #     p1 = self._topPoints[idx]
+        #     p2 = self._topPoints[idx + 1]
+        #     self.top_vert[idx * 3][FI] = self.topPos
+        #     self.top_vert[idx * 3][LI] = p0[0]
+        #     self.top_vert[idx * 3][UI] = p0[1]
+        #     self.top_vert[idx * 3 + 1][FI] = self.topPos
+        #     self.top_vert[idx * 3 + 1][LI] = p1[0]
+        #     self.top_vert[idx * 3 + 1][UI] = p1[1]
+        #     self.top_vert[idx * 3 + 2][FI] = self.topPos
+        #     self.top_vert[idx * 3 + 2][LI] = p2[0]
+        #     self.top_vert[idx * 3 + 2][UI] = p2[1]
+
+    def _updateBottomVertex(self, idx, point, FI, LI, UI):
+        ...
+
+    def _updateNormal(self, idx, point, FI, LI, UI):
+        ...
+
+    def _fitX(self, srcPoints, dstPoints, idx):
+        """
+        拟合点集
+        :param srcPoints: 拟合的源点集
+        :param dstPoints: 拟合的目标点集
+        :param idx: 需要拟合的索引
+        :return:
+        """
+        return dstPoints
 
 
 def direction_matrixs(starts, ends):
@@ -313,7 +685,7 @@ def sphere(radius=1.0, rows=12, cols=12, calc_uv_norm=False):
     """
         Return a MeshData instance with vertexes and faces computed
         for a spherical surface.
-        """
+    """
     if rows > 2048:
         raise RuntimeWarning("rows > 2048, may cause memory error")
     if cols > 2048:
@@ -460,6 +832,12 @@ def cube(x, y, z):
 
 
 def plane(x, y):
+    """
+    返回一个平面的顶点坐标和法向量
+    :param x:
+    :param y:
+    :return:
+    """
     vertices = np.array([
         # 顶点坐标             # 法向量       # 纹理坐标
         -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
@@ -482,8 +860,8 @@ def face_normal(v1, v2, v3):
     return np.cross(a, b)
 
 
-def vertex_normal(vert, ind):
-    """计算每个顶点的法向量"""
+def vertex_normal_smooth(vert, ind):
+    """计算每个顶点的法向量，显示会平滑一些"""
     nv = len(vert)  # 顶点的个数
     nf = len(ind)  # 面的个数
     norm = np.zeros((nv, 3), np.float32)  # 初始化每个顶点的法向量为零向量
@@ -495,6 +873,34 @@ def vertex_normal(vert, ind):
     norm_len[norm_len < 1e-5] = 1  # 处理零向量
     norm = norm / norm_len  # 归一化每个顶点的法向量
     return norm
+
+
+def vertex_normal_faceNormal(vert):
+    """生成面法向量"""
+    nv = len(vert)  # 顶点的个数
+    norm = np.zeros((nv, 3), np.float32)  # 初始化每个顶点的法向量为零向量
+    for i in range(0, nv, 3):  # 遍历每个面
+        v1, v2, v3 = vert[i:i + 3]  # 获取面的三个顶点
+        fn = face_normal(v1, v2, v3)  # 计算面的法向量
+        fn /= np.linalg.norm(fn)  # 归一化
+        norm[i:i + 3] = fn  # 将面的法向量赋值给对应的顶点
+    return norm
+
+
+def vertex_normal_certain_index(org_normals, verts, face_index):
+    """
+    只更新指定索引的某单个顶点的法向量
+    :param org_normals: 原始法向量集
+    :param verts: 更新的顶点坐标：([x, y, z], [x, y, z], [x, y, z])
+    :param face_index: 新顶点的索引
+    :return:
+    """
+    vert_i = 3 * face_index
+    v1, v2, v3 = verts
+    fn = face_normal(v1, v2, v3)
+    fn /= np.linalg.norm(fn)  # 归一化
+    org_normals[vert_i:vert_i + 3] = fn  # 将面的法向量赋值给对应的顶点
+    return org_normals
 
 
 def surface(zmap, xy_size):

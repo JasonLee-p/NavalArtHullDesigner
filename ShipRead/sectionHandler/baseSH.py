@@ -98,6 +98,11 @@ class SectionHandler(QObject):
         return self.paintItem is not None
 
     def setPaintItem(self, paintItem: Literal["default", GLGraphicsItem]):
+        """
+
+        :param paintItem: 无需手动添加lights
+        :return:
+        """
         if self.hasPaintItem():
             self._gl_widget.removeItem(self.paintItem)
             self.paintItem.set_selected_s.disconnect(self.set_showButton_checked)
@@ -108,18 +113,19 @@ class SectionHandler(QObject):
             paintItem = GLMeshItem(
                 vertexes=SectionHandler.SPHERE_VER, indices=SectionHandler.SHPERE_IDX,
                 normals=SectionHandler.SPHERE_NORM,
-                lights=[],
+                lights=[SectionHandler._gl_widget.light],
                 # 随机颜色
                 material=EditItemMaterial(color=np.random.randint(128, 255, 3).tolist()),
                 glOptions='translucent',
                 selectable=True
             ).translate(self.Pos.x(), self.Pos.y(), self.Pos.z())
+        else:
+            paintItem.addLight([SectionHandler._gl_widget.light])
         self.paintItem = paintItem
         # 绑定handler
         self.paintItem.set_selected_s.connect(self.set_showButton_checked)
         self.paintItem.handler = self
         SectionHandler._gl_widget.addItem(self.paintItem)
-        self.addLight(SectionHandler._gl_widget.light)
         self.setSelected(False, set_button=True)
 
     def getId(self):
@@ -232,6 +238,8 @@ class SubSectionHandler(QObject):
     def __init__(self):
         if not hasattr(self, "_parent"):
             self._parent: Union[SectionHandler, SubSectionHandler, None] = None
+        elif self._parent is not None:
+            self.init_parent(self._parent)
         self.paintItem: Union[GLGraphicsItem, None] = None
         super().__init__(None)
         # 赋值一个唯一的id
@@ -250,12 +258,15 @@ class SubSectionHandler(QObject):
         return self.paintItem is not None
 
     def init_parent(self, parent):
-        if parent is not None:
-            self._parent = parent
-        else:
-            raise AttributeError("No parent attribute")
+        self._parent = parent
         # 获取主绘制窗口，使其能够连接到主窗口及其下属控件
         SubSectionHandler.init_widgets(self._parent)
+
+    def init_paintItem_as_child(self):
+        if hasattr(self._parent, "paintItem"):
+            self._parent.paintItem.addChildItem(self.paintItem)
+        else:
+            raise AttributeError(f"{self} has no parent paintItem")
 
     def setPaintItem(self, paintItem: Literal["default", GLGraphicsItem]):
         if self.hasPaintItem():
@@ -265,18 +276,22 @@ class SubSectionHandler(QObject):
             print(f"[INFO] {self} remove paintItem")
         if paintItem == "default":
             paintItem = GLMeshItem(
-                vertexes=SectionHandler.SPHERE_VER, indices=SectionHandler.SHPERE_IDX,
-                normals=SectionHandler.SPHERE_NORM,
-                lights=[],
+                vertexes=SectionHandler.CUBE_VER, indices=SectionHandler.CUBE_NORM,
+                normals=SectionHandler.CUBE_NORM,
+                lights=[SubSectionHandler._gl_widget.light],
                 material=EditItemMaterial(color=(128, 128, 128)),
                 glOptions='translucent',
                 selectable=True
             )
+        else:
+            paintItem.addLight([SubSectionHandler._gl_widget.light])
         self.paintItem = paintItem
         # 绑定handler
         self.paintItem.handler = self
-        self._parent.paintItem.addChildItem(self.paintItem)
-        self.addLight(SubSectionHandler._gl_widget.light)
+        if hasattr(self._parent, "paintItem"):
+            self._parent.paintItem.addChildItem(self.paintItem)
+        else:
+            print(f"[WARNING] {self} has no parent paintItem")
         self.setSelected(False)
 
     def addLight(self, lights: list):

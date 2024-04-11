@@ -30,18 +30,12 @@ class HullSection(SubSectionHandler):
             node.init_parent(self)
 
     def load_nodes(self, node_datas, colors):
-        self.nodes = []
         for node_data, color in zip(node_datas, colors):
             node = SectionNodeXY()
             node.x, node.y = node_data
             node.Col = QColor(color)
             self.nodes.append(node)
         self.nodes.sort(key=lambda x: x.y)
-
-    def set_parentGroup(self, parent):
-        self._parent = parent
-        self.paintItem.sectionGroup = parent
-        self._parent.paintItem.addChildItem(self.paintItem)
 
     def to_dict(self):
         return {
@@ -66,21 +60,27 @@ class HullSectionGroup(SectionHandler):
         self.Pos: QVector3D = pos
         self.Rot: List[float] = rot
         self.Col: QColor = col
-        self.topCur = 0.0  # 上层曲率
+        self.topCur = 1.0  # 上层曲率
         self.botCur = 1.0  # 下层曲率
         # 截面组
         self.__sections: List[HullSection] = sections
         self.__sections.sort(key=lambda x: x.z)
         self._frontSection: HullSection = self.__sections[-1]
         self._backSection: HullSection = self.__sections[0]
+        for i in range(len(self.__sections) - 1):
+            self.__sections[i]._frontSection = self.__sections[i + 1]
+            self.__sections[i + 1]._backSection = self.__sections[i]
         # 栏杆
         self.rail: Union[Railing, Handrail, None] = None
-
         super().__init__()
         paint_item = HullSectionGroupItem(self.hullProject, self.__sections)
         self.setPaintItem(paint_item)
         self.setPos(pos)
         self.setRot(rot)
+        for section in self.__sections:
+            section.init_parent(self)
+            section.init_paintItem_as_child()
+            section.setPaintItem(HullSectionItem(section, section.z, section.nodes))
 
     def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
         super()._init_showButton(type_)

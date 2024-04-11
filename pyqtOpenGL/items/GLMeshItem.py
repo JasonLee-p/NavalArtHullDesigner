@@ -4,7 +4,7 @@ import numpy as np
 from .shader import Shader
 from ..GLGraphicsItem import GLGraphicsItem
 from ..transform3d import Matrix4x4, Vector3
-from .MeshData import vertex_normal, Mesh
+from .MeshData import vertex_normal_smooth, Mesh
 from .light import LightMixin, light_fragment_shader
 
 __all__ = ['GLMeshItem']
@@ -14,7 +14,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
 
     def __init__(
             self,
-            vertexes=None,
+            vertexes,
             indices=None,
             normals=None,
             texcoords=None,
@@ -29,6 +29,8 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
             selectedColor=(0.1, 0.9, 1.0, 0.3)
     ):
         super().__init__(parentItem=parentItem, selectable=selectable, selectedColor=selectedColor)
+        if vertexes is None:
+            raise ValueError("vertexes is required")
         if lights is None:
             lights = list()
         self.setGLOptions(glOptions)
@@ -46,6 +48,17 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         self.pick_shader = Shader(mesh_vertex_shader, self.pick_fragment_shader)
         self.selected_shader = Shader(mesh_vertex_shader, self.selected_fragment_shader)
         self._mesh.initializeGL()
+
+    def updateVertexes(self, vertexes: np.ndarray):
+        self._mesh.update_vertexes(vertexes)
+
+    def updateVertex(self, index, vertex):
+        """
+        :param index: 被更新的顶点索引
+        :param vertex: 新的顶点坐标
+        :return:
+        """
+        self._mesh.update_vertex(index, vertex)
 
     def paint(self, model_matrix=Matrix4x4()):
         if not self.selected():

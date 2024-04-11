@@ -4,7 +4,7 @@ from .shader import Shader
 from .BufferObject import VBO, EBO, VAO
 from ..GLGraphicsItem import GLGraphicsItem
 from ..transform3d import Matrix4x4, Vector3
-from .MeshData import cone, direction_matrixs, vertex_normal
+from .MeshData import cone, direction_matrixs, vertex_normal_smooth
 from .light import LightMixin
 
 __all__ = ['GLInstancedMeshItem']
@@ -34,7 +34,7 @@ class GLInstancedMeshItem(GLGraphicsItem, LightMixin):
         self._pos = None
         self._calcNormals = calcNormals
         if self._calcNormals and self._normals is None and self._indices is not None:
-            self._normals = vertex_normal(self._vertices, self._indices)
+            self._normals = vertex_normal_smooth(self._vertices, self._indices)
 
         self.setData(pos, color, size, opacity)
         self.addLight(lights)
