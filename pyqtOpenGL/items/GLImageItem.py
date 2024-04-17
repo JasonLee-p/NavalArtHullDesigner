@@ -72,19 +72,19 @@ class GLImageItem(GLGraphicsItem):
             if width_height is not None:
                 self.width_height = width_height
 
-            l, b = self.left_bottom
-            l = l * 2 - 1
+            left, b = self.left_bottom
+            left = left * 2 - 1
             b = b * 2 - 1
             w, h = self.width_height
             w, h = w * 2, h * 2
 
             self.vertices[:, :2] = np.array([
-                [l, b],
-                [l + w, b],
-                [l + w, b + h],
-                [l + w, b + h],
-                [l, b + h],
-                [l, b]
+                [left, b],
+                [left + w, b],
+                [left + w, b + h],
+                [left + w, b + h],
+                [left, b + h],
+                [left, b]
             ])
 
         self.update()

@@ -733,12 +733,12 @@ def cylinder(radius=None, length=1.0, rows=12, cols=12, offset=False):
     verts1 = verts[:(rows + 1) * cols, :].reshape(rows + 1, cols, 3)
     if isinstance(radius, int):
         radius = [radius, radius]  # convert to list
-    ## compute vertexes
+    # compute vertexes
     th = np.linspace(2 * np.pi, (2 * np.pi) / cols, cols).reshape(1, cols)
     r = np.linspace(radius[0], radius[1], num=rows + 1, endpoint=True).reshape(rows + 1, 1)  # radius as a function of z
     verts1[..., 2] = np.linspace(0, length, num=rows + 1, endpoint=True).reshape(rows + 1, 1)  # z
     if offset:
-        th = th + ((np.pi / cols) * np.arange(rows + 1).reshape(rows + 1, 1))  ## rotate each row by 1/2 column
+        th = th + ((np.pi / cols) * np.arange(rows + 1).reshape(rows + 1, 1))  # rotate each row by 1/2 column
     verts1[..., 0] = r * np.cos(th)  # x = r cos(th)
     verts1[..., 1] = r * np.sin(th)  # y = r sin(th)
     verts1 = verts1.reshape((rows + 1) * cols, 3)  # just reshape: no redundant vertices...
@@ -748,7 +748,7 @@ def cylinder(radius=None, length=1.0, rows=12, cols=12, offset=False):
     verts[-2] = [0, 0, 0]  # zero at bottom
     verts[-1] = [0, 0, length]  # length at top
 
-    ## compute faces
+    # compute faces
     num_side_faces = rows * cols * 2
     num_cap_faces = cols
     faces = np.empty((num_side_faces + num_cap_faces * 2, 3), dtype=np.uint32)

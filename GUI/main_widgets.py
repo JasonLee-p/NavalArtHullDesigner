@@ -4,6 +4,7 @@
 """
 import gc
 import os
+from typing import Optional
 
 from GUI.element_structure_widgets import *
 from ShipRead.na_project import ShipProject
@@ -72,6 +73,7 @@ class PrjInfoTab(MutiDirectionTab):
         # 布局
         self.main_layout.addWidget(TextLabel(self, "基础信息", YAHEI[9], FG_COLOR0, Qt.AlignLeft | Qt.AlignTop))
         self.main_layout.setAlignment(Qt.AlignTop)
+        # noinspection PyTypeChecker
         self.main_layout.addWidget(HorSpliter(self))
         self.main_layout.addWidget(self.shipInfo_widget)
 
@@ -188,9 +190,11 @@ class ElementEditTab(MutiDirectionTab):
         top_widget.layout().setSpacing(0)
         top_widget.layout().setContentsMargins(0, 0, 0, 0)
         self.main_layout.addWidget(top_widget)
+        # noinspection PyTypeChecker
         self.main_layout.addWidget(HorSpliter(self))
         for ew in self.edit_widgets:
             self.main_layout.addWidget(ew)
+            # noinspection PyUnresolvedReferences
             ew.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
             ew.hide()
         self.main_layout.setAlignment(Qt.AlignTop)
@@ -198,10 +202,11 @@ class ElementEditTab(MutiDirectionTab):
     def set_editing_item_name(self, _name):
         self.elementName_label.setText(_name)
 
+    # noinspection PyTypeChecker
     def set_editing_widget(
             self,
             element_type: Literal["船体截面组", "装甲截面组", "舰桥", "栏杆", "栏板", "梯子"] = None,
-            edit_widget: Union[None, EditTabWidget] = None
+            edit_widget: Optional[EditTabWidget] = None
     ):
         """
         设置当前编辑的元素，两个参数最好只能填写一个
@@ -216,6 +221,7 @@ class ElementEditTab(MutiDirectionTab):
                 self.elementType_label.setText(element_type)
                 for ew, et in self.edit_widgets.items():
                     if et == element_type:
+                        # noinspection PyUnresolvedReferences
                         ew.show()
                         self.current_edit_widget = ew
                     else:
@@ -225,6 +231,7 @@ class ElementEditTab(MutiDirectionTab):
                 self.elementType_label.setText(self.edit_widgets[edit_widget])
                 for ew in self.edit_widgets:
                     if ew == edit_widget:
+                        # noinspection PyUnresolvedReferences
                         ew.show()
                         self.current_edit_widget = ew
                     else:
@@ -238,6 +245,7 @@ class ElementEditTab(MutiDirectionTab):
                 self.elementType_label.setText(element_type)
                 for ew in self.edit_widgets:
                     if ew == edit_widget:
+                        # noinspection PyUnresolvedReferences
                         ew.show()
                         self.current_edit_widget = ew
                     else:
@@ -532,11 +540,11 @@ class GLWidgetGUI(GLViewWidget):
     def clearResources(self):
         # self.animation_timer.stop()
         # self.animation_timer.deleteLater()
-        for it in self.items:
-            del it
+        for _ in self.items:
+            del _
         self.items = []
-        for light_ in self.lights:
-            del light_
+        for _ in self.lights:
+            del _
         print(f"unref: {gc.collect()}")  # 手动垃圾回收
         self.lights = []
 
@@ -578,7 +586,7 @@ class MainEditorGUI(Window):
         打开文件选择窗口，然后打开工程
         :return:
         """
-        file_dialog = QFileDialog()
+        file_dialog = QFileDialog(None)
         file_dialog.setFileMode(QFileDialog.ExistingFiles)
         file_dialog.setNameFilter("NA Hull Editor工程文件 (*.naprj)")
         file_dialog.setViewMode(QFileDialog.Detail)
@@ -591,6 +599,7 @@ class MainEditorGUI(Window):
         else:
             last_prj_path = DESKTOP_PATH
         file_dialog.setDirectory(last_prj_path)
+        # noinspection PyUnresolvedReferences
         file_dialog.fileSelected.connect(lambda path: self.open_prj(path) if path else None)
         file_dialog.exec()
 
@@ -656,6 +665,7 @@ class MainEditorGUI(Window):
         self.__init_tab_widgets()
         super().__init__(None, title='NavalArt Hull Editor', ico_bites=BYTES_ICO, size=(1000, 618), resizable=True,
                          show_maximize=True, bd_radius=0)
+        # noinspection PyUnresolvedReferences
         self.setWindowTitle('NavalArt Hull Editor')
         # 顶部控件
         self.menuButtons = []
@@ -691,6 +701,7 @@ class MainEditorGUI(Window):
         for menu_name, sub_menus in self.menu_map.items():
             menu_bt = Button(self.customized_top_widget, menu_name, 0, BG_COLOR1, 0, font=YAHEI[10],
                              bg=(BG_COLOR1, BG_COLOR3, GRAY, BG_COLOR3), size=None, padding=(8, 11, 8, 11))
+            # noinspection PyUnresolvedReferences
             menu_bt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
             menu_bt.setText(menu_name)
             menu = self.__init_sub_menu(menu_name, self.menu_map)
@@ -698,6 +709,7 @@ class MainEditorGUI(Window):
             self.menuButtons.append(menu_bt)
         # 按钮：
         self.currentPrj_button.setText("当前无项目")
+        # noinspection PyUnresolvedReferences
         self.currentPrj_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
         self.currentPrj_button.setFocusPolicy(Qt.NoFocus)
         self.currentPrj_button.setMenu(self.prj_menu)
@@ -712,6 +724,7 @@ class MainEditorGUI(Window):
 
     def __init_sub_menu(self, menu_name, menu_map):
         menu = QMenu()
+        # noinspection PyUnresolvedReferences
         menu.setStyleSheet(
             f"QMenu{{background-color:{BG_COLOR1};color:{FG_COLOR0};border:1px solid {GRAY};}}"
             f"QMenu::item{{padding:5px 25px 5px 18px;}}"
@@ -727,10 +740,12 @@ class MainEditorGUI(Window):
                 sub_menu = menu.addMenu(sub_menu_name)
                 for sub_sub_menu_name in menu_map[menu_name][sub_menu_name]:
                     sub_sub_menu = QAction(sub_sub_menu_name, self)
+                    # noinspection PyUnresolvedReferences
                     sub_sub_menu.triggered.connect(menu_map[menu_name][sub_menu_name][sub_sub_menu_name])
                     sub_menu.addAction(sub_sub_menu)
             else:
                 sub_menu = QAction(sub_menu_name, self)
+                # noinspection PyUnresolvedReferences
                 sub_menu.triggered.connect(menu_map[menu_name][sub_menu_name])
                 menu.addAction(sub_menu)
             # else:
@@ -744,7 +759,9 @@ class MainEditorGUI(Window):
 
     def __init_prjMenu(self):
         menu = QMenu()
+        # noinspection PyUnresolvedReferences
         menu.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        # noinspection PyUnresolvedReferences
         menu.setStyleSheet(f"""
             QMenu{{
                 background-color: {BG_COLOR1};
@@ -781,6 +798,7 @@ class MainEditorGUI(Window):
         # open_text.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
         openButton.layout().addWidget(icon)
         openButton.layout().addWidget(open_text)
+        # noinspection PyUnresolvedReferences
         openButton.clicked.connect(self.select_file_to_open)
         # 菜单
         menu.setFixedWidth(self.prj_menu_maxSize[0])

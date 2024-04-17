@@ -600,8 +600,9 @@ class DragValue(QtWidgets.QLineEdit):
             if event.modifiers() == Qt.ShiftModifier:
                 scale = 0.02
             # value.setter
-            self.value = self._on_press_value + \
-                         int((event.pos().x() - self.drag_position.x()) * scale) * self.step
+            self.value = self._on_press_value + int(
+                (event.pos().x() - self.drag_position.x()) * scale
+            ) * self.step
         event.accept()
 
     def keyPressEvent(self, event):
