@@ -355,6 +355,7 @@ class NaPrjReader:
             hull_section_group = HullSectionGroup(
                 self.hullProject, section_group['name'],
                 QVector3D(*section_group['center']), section_group['rot'], QColor(section_group['col']),
+                round(float(section_group['top_cur']), 1), round(float(section_group['bot_cur']), 1),
                 self.load_hull_section(section_group['sections']))
             self.hullProject.add_hullSectionGroup(hull_section_group)
             if "rail" in section_group:

@@ -530,6 +530,7 @@ class GLWidgetGUI(GLViewWidget):
 
     def _after_selection(self):
         self.after_selection.emit()
+        super()._after_selection()
 
     def clearResources(self):
         # self.animation_timer.stop()

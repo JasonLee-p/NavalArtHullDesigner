@@ -49,9 +49,9 @@ class ShowButton(Button):
 
     def _bind_signal(self):
         self.textChanged = self.name_edit.textChanged
-        self.name_edit.textChanged.connect(self.nameTextChanged)
-        self.vis_btn.clicked.connect(self.visableClicked)
-        self.item_handler.deleted_s.connect(self.deleteLater)
+        self.name_edit.textChanged.connect(self.nameTextChanged, Qt.DirectConnection)
+        self.vis_btn.clicked.connect(self.visableClicked, Qt.DirectConnection)
+        self.item_handler.deleted_s.connect(self.deleteLater, Qt.DirectConnection)
 
     def nameTextChanged(self, text):
         if len(text) > 20:

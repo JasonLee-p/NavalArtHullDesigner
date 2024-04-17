@@ -400,8 +400,10 @@ class GLGraphicsItem(QtCore.QObject):
         v = self.view()
         if v is None:
             return
-
-        v.update()
+        if hasattr(v, 'paintGL_outside'):
+            v.paintGL_outside()
+        else:
+            v.update()
 
     def proj_view_matrix(self) -> Matrix4x4:
         return self.__view.get_proj_view_matrix()

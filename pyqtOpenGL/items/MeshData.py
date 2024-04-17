@@ -336,6 +336,14 @@ class SymetryCylinderMesh:
         :param bottomPos: 底面在延伸方向上的局部坐标
         :return:
         """
+        if not isinstance(topPoints, np.ndarray):
+            if topPoints is None:
+                raise ValueError("topPoints must be initialized")
+            raise ValueError("topPoints must be a numpy array")
+        if not isinstance(bottomPoints, np.ndarray):
+            if bottomPoints is None:
+                raise ValueError("bottomPoints must be initialized")
+            raise ValueError("bottomPoints must be a numpy array")
         if topPoints.shape != bottomPoints.shape:
             raise ValueError("topPoints and bottomPoints must have the same shape")
         if topPos < bottomPos:
@@ -354,10 +362,10 @@ class SymetryCylinderMesh:
         """
         if self.topPoints is None or self.bottomPoints is None:
             raise ValueError("topPoints and bottomPoints must be initialized")
-        vertexLen = self.topPoints.shape[0] * 2 - 2
+        vertexLen = self.topPoints.shape[0] * 2
         FI, LI, UI = self.getDirIndex()
         # 右侧点
-        vertexLen = self.updateRightPoints(vertexLen)
+        self.updateRightPoints()
         # 拼接左右点，结果为从六点钟方向开始逆时针排列的点
         self._topPoints = np.concatenate((self.topPoints, self.rightTopPoints), axis=0)
         self._bottomPoints = np.concatenate((self.bottomPoints, self.rightBottomPoints), axis=0)
@@ -365,11 +373,13 @@ class SymetryCylinderMesh:
         self.top_vert = np.zeros((vertexLen * 3, 3), dtype=np.float32)
         self.bottom_vert = np.zeros((vertexLen * 3, 3), dtype=np.float32)
         self._updateTopBottom(FI, LI, UI)
-        self._updateSide(vertexLen, FI, LI, UI)
+        self.side_vert = np.zeros((vertexLen * 6, 3), dtype=np.float32)
+        self._updateSide(FI, LI, UI)
         self.vertexes = np.concatenate((self.top_vert, self.bottom_vert, self.side_vert), axis=0)
         self.normals = vertex_normal_faceNormal(self.vertexes)
+        # self.normals = vertex_normal_smooth(self.vertexes, np.arange(vertexLen * 3).reshape(-1, 3))
 
-    def updateRightPoints(self, vertexLen):
+    def updateRightPoints(self):
         self.rightTopPoints = self.topPoints.copy()
         self.rightTopPoints[:, 0] = -self.rightTopPoints[:, 0]
         self.rightBottomPoints = self.bottomPoints.copy()
@@ -377,20 +387,6 @@ class SymetryCylinderMesh:
         # 逆向右侧点
         self.rightTopPoints = self.rightTopPoints[::-1]
         self.rightBottomPoints = self.rightBottomPoints[::-1]
-        # 当点集的首位或末尾的x值为0时，清除右侧的点，避免重复。此举会让左右侧点数不一致。但结果的顺序不变
-        if self.topPoints[0][0] == 0:
-            self.rightTopPoints = self.rightTopPoints[:-1]
-            vertexLen -= 1
-        if self.topPoints[-1][0] == 0:
-            self.rightTopPoints = self.rightTopPoints[1:]
-            vertexLen -= 1
-        if self.bottomPoints[0][0] == 0:
-            self.rightBottomPoints = self.rightBottomPoints[:-1]
-            vertexLen -= 1
-        if self.bottomPoints[-1][0] == 0:
-            self.rightBottomPoints = self.rightBottomPoints[1:]
-            vertexLen -= 1
-        return vertexLen
 
     def getDirIndex(self):
         FI = 0  # 前后方向索引
@@ -408,10 +404,9 @@ class SymetryCylinderMesh:
 
     def _updateTopBottom(self, FI, LI, UI):
         # 顶面和底面
-        for i in range(len(self._topPoints) - 2):
+        for i in range(len(self._topPoints) - 1):
             p0 = self._topPoints[i]
             p1 = self._topPoints[i + 1]
-            p2 = self._topPoints[i + 2]
             self.top_vert[i * 3][FI] = self.topPos
             self.top_vert[i * 3][LI] = p0[0]
             self.top_vert[i * 3][UI] = p0[1]
@@ -419,11 +414,10 @@ class SymetryCylinderMesh:
             self.top_vert[i * 3 + 1][LI] = p1[0]
             self.top_vert[i * 3 + 1][UI] = p1[1]
             self.top_vert[i * 3 + 2][FI] = self.topPos
-            self.top_vert[i * 3 + 2][LI] = p2[0]
-            self.top_vert[i * 3 + 2][UI] = p2[1]
+            self.top_vert[i * 3 + 2][LI] = self._topPoints[-1][0]
+            self.top_vert[i * 3 + 2][UI] = self._topPoints[-1][1]
             p0 = self._bottomPoints[i]
             p1 = self._bottomPoints[i + 1]
-            p2 = self._bottomPoints[i + 2]
             self.bottom_vert[i * 3][FI] = self.bottomPos
             self.bottom_vert[i * 3][LI] = p0[0]
             self.bottom_vert[i * 3][UI] = p0[1]
@@ -431,13 +425,13 @@ class SymetryCylinderMesh:
             self.bottom_vert[i * 3 + 1][LI] = p1[0]
             self.bottom_vert[i * 3 + 1][UI] = p1[1]
             self.bottom_vert[i * 3 + 2][FI] = self.bottomPos
-            self.bottom_vert[i * 3 + 2][LI] = p2[0]
-            self.bottom_vert[i * 3 + 2][UI] = p2[1]
+            self.bottom_vert[i * 3 + 2][LI] = self._bottomPoints[-1][0]
+            self.bottom_vert[i * 3 + 2][UI] = self._bottomPoints[-1][1]
 
-    def _updateSide(self, vertexLen, FI, LI, UI):
+    def _updateSide(self, FI, LI, UI):
         # 侧面
-        if self.side_vert.shape[0] != vertexLen * 6:
-            self.side_vert = np.zeros((vertexLen * 6, 3), dtype=np.float32)
+        if self.side_vert.shape[0] != len(self._topPoints) * 6:
+            self.side_vert = np.zeros((len(self._topPoints) * 6, 3), dtype=np.float32)
         for i in range(len(self._topPoints)):
             tp0 = self._topPoints[i]
             tp1 = self._topPoints[(i + 1) % len(self._topPoints)]
@@ -496,7 +490,7 @@ class SymetryCylinderMesh:
             self.topPoints = self._fitX(self.bottomPoints, self.topPoints, idx)
         vertexLen = self.topPoints.shape[0] * 2 - 2
         # 更新点集
-        vertexLen = self.updateRightPoints(vertexLen)
+        self.updateRightPoints()
         FI, LI, UI = self.getDirIndex()
         # 拼接左右点，结果为从六点钟方向开始逆时针排列的点
         self._topPoints = np.concatenate((self.topPoints, self.rightTopPoints), axis=0)
@@ -506,9 +500,10 @@ class SymetryCylinderMesh:
         self.bottom_vert = np.zeros((vertexLen * 3, 3), dtype=np.float32)
         self._updateTopBottom(FI, LI, UI)
         # 侧面
-        self._updateSide(vertexLen, FI, LI, UI)
+        self._updateSide(FI, LI, UI)
         self.vertexes = np.concatenate((self.top_vert, self.bottom_vert, self.side_vert), axis=0)
-        self.normals = vertex_normal_faceNormal(self.vertexes)
+        # self.normals = vertex_normal_faceNormal(self.vertexes)
+        self.normals = vertex_normal_smooth(self.vertexes, None)
 
     def updateTopPoint(self, idx, point: tuple, updateBottom=True):
         """
@@ -862,6 +857,8 @@ def face_normal(v1, v2, v3):
 
 def vertex_normal_smooth(vert, ind):
     """计算每个顶点的法向量，显示会平滑一些"""
+    if ind is None:
+        ind = np.arange(len(vert))
     nv = len(vert)  # 顶点的个数
     nf = len(ind)  # 面的个数
     norm = np.zeros((nv, 3), np.float32)  # 初始化每个顶点的法向量为零向量
@@ -882,8 +879,11 @@ def vertex_normal_faceNormal(vert):
     for i in range(0, nv, 3):  # 遍历每个面
         v1, v2, v3 = vert[i:i + 3]  # 获取面的三个顶点
         fn = face_normal(v1, v2, v3)  # 计算面的法向量
-        fn /= np.linalg.norm(fn)  # 归一化
         norm[i:i + 3] = fn  # 将面的法向量赋值给对应的顶点
+    # 处理零向量
+    norm_len = np.linalg.norm(norm, axis=1, keepdims=True)
+    norm_len[norm_len < 1e-5] = 1
+    norm = norm / norm_len
     return norm
 
 

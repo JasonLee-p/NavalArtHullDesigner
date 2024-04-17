@@ -1,7 +1,9 @@
 """
 船体截面组
 """
-from typing import List, Union, Literal
+from typing import List, Union, Literal, Optional
+
+import numpy as np
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QColor, QVector3D
 from ShipPaint import HullSectionItem, HullSectionGroupItem
@@ -23,6 +25,7 @@ class HullSection(SubSectionHandler):
         self._backSection = None
         self.z = z
         self.nodes: List[SectionNodeXY] = []
+        self.nodes_data: Optional[np.ndarray] = None
         self.load_nodes(node_datas, colors)
         self.armor = None
         super().__init__()
@@ -36,6 +39,9 @@ class HullSection(SubSectionHandler):
             node.Col = QColor(color)
             self.nodes.append(node)
         self.nodes.sort(key=lambda x: x.y)
+
+    def init_node_data(self):
+        self.nodes_data = np.array([[node.x, node.y] for node in self.nodes])
 
     def to_dict(self):
         return {
@@ -54,14 +60,14 @@ class HullSectionGroup(SectionHandler):
     idMap = {}
     deleted_s = pyqtSignal()
 
-    def __init__(self, prj, name, pos, rot, col, sections):
+    def __init__(self, prj, name, pos, rot, col, topCur, botCur, sections):
         self.hullProject = prj
         self.name = name
         self.Pos: QVector3D = pos
         self.Rot: List[float] = rot
         self.Col: QColor = col
-        self.topCur = 1.0  # 上层曲率
-        self.botCur = 1.0  # 下层曲率
+        self.topCur = topCur
+        self.botCur = botCur
         # 截面组
         self.__sections: List[HullSection] = sections
         self.__sections.sort(key=lambda x: x.z)
@@ -72,6 +78,8 @@ class HullSectionGroup(SectionHandler):
             self.__sections[i + 1]._backSection = self.__sections[i]
         # 栏杆
         self.rail: Union[Railing, Handrail, None] = None
+        for section in self.__sections:
+            section.init_node_data()
         super().__init__()
         paint_item = HullSectionGroupItem(self.hullProject, self.__sections)
         self.setPaintItem(paint_item)
@@ -125,6 +133,8 @@ class HullSectionGroup(SectionHandler):
             "rot": self.Rot,
             "col": f"#{self.Col.red():02x}{self.Col.green():02x}{self.Col.blue():02x}",
             "armor": 0,
+            "top_cur": self.topCur,
+            "bot_cur": self.botCur,
             "sections": [section.to_dict() for section in self.__sections],
             "rail": self.rail.to_dict() if self.rail else None
         }

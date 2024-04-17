@@ -80,16 +80,15 @@ class GLModelItem(GLGraphicsItem, LightMixin):
                 gl.glLineWidth(self.__lineWidth)
                 gl.glDepthFunc(gl.GL_LEQUAL)
                 gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE)
-            with self.shader:
-                self.shader.set_uniform("view", self.view_matrix().glData, "mat4")
-                self.shader.set_uniform("proj", self.proj_matrix().glData, "mat4")
-                self.shader.set_uniform("model", model_matrix.glData, "mat4")
-                self.shader.set_uniform("paintLine", self.__drawLine, "bool")
-                self.shader.set_uniform("lineColor", self.__lineColor, "vec4")
-                self.shader.set_uniform("ViewPos", self.view_pos(), "vec3")  # 计算光线夹角用
-                for i in self._order:
-                    self.meshes[i].paint(self.shader)
-            if self.__drawLine:
+                with self.shader:
+                    self.shader.set_uniform("view", self.view_matrix().glData, "mat4")
+                    self.shader.set_uniform("proj", self.proj_matrix().glData, "mat4")
+                    self.shader.set_uniform("model", model_matrix.glData, "mat4")
+                    self.shader.set_uniform("paintLine", self.__drawLine, "bool")
+                    self.shader.set_uniform("lineColor", self.__lineColor, "vec4")
+                    self.shader.set_uniform("ViewPos", self.view_pos(), "vec3")  # 计算光线夹角用
+                    for i in self._order:
+                        self.meshes[i].paint(self.shader)
                 gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
                 gl.glDepthFunc(gl.GL_LESS)
         else:

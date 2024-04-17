@@ -37,8 +37,8 @@ def _draw_item(item):
     try:
         item.drawItemTree()
     except np_core_exc._ArrayMemoryError as _:  # noqa
-        QMessageBox().warning(None, "严重错误", "无法申请足够的内存，程序即将退出")
-        Log().error(traceback.format_exc(), "无法申请足够的内存，程序即将退出")
+        QMessageBox().warning(None, "严重错误", "申请内存错误，程序即将退出")
+        Log().error(traceback.format_exc(), "申请内存错误，程序即将退出")
         sys.exit(1)
     except Exception as e:  # noqa
         printExc()
@@ -315,6 +315,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self.makeCurrent()
         self.paintGL()
         self.doneCurrent()
+        self.update()
 
     def __update_FPS(self):
         dt = time.time() - self.__last_time
@@ -380,8 +381,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         if ev.buttons() == self.select_btn:
             self.select_start.setX(int(ev.localPos().x()))
             self.select_start.setY(int(ev.localPos().y()))
-        self.paintGL_outside()
-        self.update()
+            self.paintGL_outside()
 
     def mouseMoveEvent(self, ev):
         ctrl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
@@ -409,17 +409,18 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
 
         if ev.buttons() == self.pan_btn:
             self.camera.pan(diff.x(), diff.y())
+            self.paintGL_outside()
         elif ev.buttons() == self.orbit_btn:
             if alt_down:
                 self.camera.orbit(diff.x(), diff.y())
             elif not alt_down:
                 self.camera.orbit(diff.x(), diff.y())
+            self.paintGL_outside()
         elif ev.buttons() == self.select_btn:
             self.select_end.setX(int(ev.localPos().x()))
             self.select_end.setY(int(ev.localPos().y()))
-            self.select_box.setVisible(True)
-        self.paintGL_outside()
-        self.update()
+            if not self.select_box.visible():
+                self.select_box.setVisible(True)
 
     def mouseReleaseEvent(self, ev):
         ctl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
@@ -451,7 +452,6 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
                         self.selected_items.append(it)
             self._after_selection()
         self.paintGL_outside()
-        self.update()
 
     def wheelEvent(self, ev):
         self.event_mutex.lock()
@@ -462,20 +462,20 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         else:
             self.camera.zoom(delta)
         self.paintGL_outside()
-        self.update()
         self.event_mutex.unlock()
 
     def _clear_selected_items(self):
         for it in self.selected_items:
             it.setSelected(False)
         self.selected_items.clear()
+        self.paintGL_outside()
 
     def _after_selection(self):
         """
         选中物体后的处理
         :return:
         """
-        pass
+        self.paintGL_outside()
 
     def readQImage(self):
         """

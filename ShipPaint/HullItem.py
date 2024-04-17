@@ -7,7 +7,7 @@ from typing import Union, Literal
 import numpy as np
 # from main_logger import Log
 from pyqtOpenGL import Matrix4x4, GLGraphicsItem, GLMeshItem, Mesh, Quaternion, vertex_normal_smooth
-from pyqtOpenGL.items.MeshData import face_normal, vertex_normal_faceNormal
+from pyqtOpenGL.items.MeshData import face_normal, vertex_normal_faceNormal, SymetryCylinderMesh, EditItemMaterial
 
 # 从正下方开始，逆时针排列（向z-方向看）
 SQUARE_POINTS = np.array([
@@ -70,7 +70,6 @@ def get_curve_points(direction: Literal['up', 'bot'], cur, bottom_width, top_wid
     # 对点的y坐标按y在0到1之间的比例，以height为基准进行缩放
     result_left[:, 1] = result_left[:, 1] * height
     result_right[:, 1] = result_right[:, 1] * height
-    # print(result_left, result_right)
     return result_left, result_right
 
 
@@ -145,11 +144,66 @@ class HullSectionItem(GLMeshItem):
         self._z = z
         self._nodes = nodes
         self._nodes.sort(key=lambda x: x.y)
-        _vertexes, _indices, _normals = self.get_mesh_data()
-        super().__init__(vertexes=_vertexes,
-                         indices=_indices,
-                         normals=_normals,
+        self.mesh_data = SymetryCylinderMesh("z")
+        if self._z > 0:
+            # 从前后两个截面的点集中获取点
+            front_nodes_data = np.concatenate((
+                self.getCurPoints('bot', self._nodes[0], self._nodes[1]),
+                self.handler.nodes_data[1: -1],
+                self.getCurPoints('up', self._nodes[-2], self._nodes[-1])
+            ))
+            back_section = self.handler._backSection
+            back_nodes_data = np.concatenate((
+                self.getCurPoints('bot', back_section.nodes[0], back_section.nodes[1]),
+                self.handler._backSection.nodes_data[1: -1],
+                self.getCurPoints('up', back_section.nodes[-2], back_section.nodes[-1])
+            ))
+            self.mesh_data.initPoints(front_nodes_data, back_nodes_data, self._z, back_section.z)
+        elif self._z < 0:
+            front_section = self.handler._frontSection
+            front_nodes_data = np.concatenate((
+                self.getCurPoints('bot', front_section.nodes[0], front_section.nodes[1]),
+                self.handler._frontSection.nodes_data[1: -1],
+                self.getCurPoints('up', front_section.nodes[-2], front_section.nodes[-1])
+            ))
+            back_nodes_data = np.concatenate((
+                self.getCurPoints('bot', self._nodes[0], self._nodes[1]),
+                self.handler.nodes_data[1: -1],
+                self.getCurPoints('up', self._nodes[-2], self._nodes[-1])
+            ))
+            self.mesh_data.initPoints(front_nodes_data, back_nodes_data, front_section.z, self._z)
+        self.mesh_data.initVertexes()
+        super().__init__(vertexes=self.mesh_data.vertexes,
+                         normals=self.mesh_data.normals,
+                         indices=np.array([i for i in range(len(self.mesh_data.vertexes))], dtype=np.uint32),
+                         material=EditItemMaterial(),
+                         # drawLine=True,
                          glOptions='translucent')
+
+    def getCurPoints(self, direction: Literal['up', 'bot'], p0: np.ndarray, p1: np.ndarray):
+        """
+        获取弧度点集（仅左侧）
+        :param direction: 方向，'up'为上，'bot'为下
+        :param p0: 第一个点（y小）
+        :param p1: 第二个点（y大）
+        """
+        if not isinstance(p0, np.ndarray):
+            p0 = np.array([p0.x, p0.y], dtype=np.float32)
+        if not isinstance(p1, np.ndarray):
+            p1 = np.array([p1.x, p1.y], dtype=np.float32)
+        if p1[1] < p0[1]:
+            p0, p1 = p1, p0
+        offset = (p0[1] + p1[1]) / 2
+        if direction == 'up':
+            result = CIRCLE_POINTS[6:13] + CUR_ADD_POINTS[6:13] * (1 - self.getTopCur())
+        elif direction == 'bot':
+            result = CIRCLE_POINTS[:7] + CUR_ADD_POINTS[:7] * (1 - self.getBotCur())
+        else:
+            raise ValueError("direction参数错误")
+        result[:, 0] = result[:, 0] * (p0[0] + (p1[0] - p0[0]) * (result[:, 1] + 1) / 2)
+        result[:, 1] = result[:, 1] * (p1[1] - p0[1]) / 2
+        result[:, 1] += offset
+        return result
 
     def getTopCur(self):
         """
@@ -258,7 +312,6 @@ class HullSectionItem(GLMeshItem):
         back_points[_HALF_INDEX + 1:_HALF_INDEX + 7] = back_up_right
         back_points[_HALF_INDEX * 2 - 6:] = back_down_right
         vertexes = np.vstack([front_points, back_points])
-        # print(len(front_points), len(back_points), len(vertexes))
         """计算索引"""
         indexes = _get_index(_HALF_INDEX)
         """计算法向量"""

@@ -80,7 +80,6 @@ class OperationStack:
             self.stateStack[self.current_index] = operation
             self.main_editor.show_statu_(f"{operation.name}\t{self.current_index + 1}", "process")
         self.main_editor.gl_widget.paintGL_outside()
-        self.main_editor.gl_widget.update()
         self.operationMutex.unlock()
 
     def undo(self):
@@ -97,7 +96,6 @@ class OperationStack:
             self.main_editor.show_statu_("Ctrl+Z 没有更多的历史记录", "warning")
             ...
         self.main_editor.gl_widget.paintGL_outside()
-        self.main_editor.gl_widget.update()
         self.operationMutex.unlock()
 
     def redo(self):
@@ -114,5 +112,4 @@ class OperationStack:
         else:
             self.main_editor.show_statu_("Ctrl+Shift+Z 没有更多的历史记录", "warning")
         self.main_editor.gl_widget.paintGL_outside()
-        self.main_editor.gl_widget.update()
         self.operationMutex.unlock()
