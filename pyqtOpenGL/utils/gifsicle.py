@@ -3,6 +3,7 @@ import subprocess
 import os
 from pathlib import Path
 from .video_utils import VideoReader
+
 try:
     import av
 except ImportError:
@@ -12,11 +13,11 @@ __all__ = ["optimize_gif", "video2gif"]
 
 
 def optimize_gif(
-    sources: Union[List[str], str, List[Path], Path],
-    destination: Optional[str] = None,
-    optimize: bool = False,
-    colors: int = 256,
-    options: Optional[List[str]] = None
+        sources: Union[List[str], str, List[Path], Path],
+        destination: Optional[str] = None,
+        optimize: bool = False,
+        colors: int = 256,
+        options: Optional[List[str]] = None
 ) -> None:
     """Apply gifsicle with given options to image at given paths.
 
@@ -79,7 +80,7 @@ def optimize_gif(
 
     try:
         subprocess.call(["gifsicle", *options, *sources, "--colors",
-                        str(colors), "--output", destination])
+                         str(colors), "--output", destination])
     except FileNotFoundError:
         raise FileNotFoundError((
             "The gifsicle library was not found on your system.\n"
@@ -91,23 +92,25 @@ def optimize_gif(
             "the gifsicle and pygifsicle documentation."
         ))
 
+
 def crop_img(img, rect):
     h, w = img.shape[:2]
     x = int(rect[0] * w)
     y = int(rect[1] * h)
     w = int(rect[2] * w)
     h = int(rect[3] * h)
-    return img[y:y+h, x:x+w]
+    return img[y:y + h, x:x + w]
+
 
 def video2gif(
-    video_path,
-    save_path=None,
-    speed = 1,
-    fps = 12,
-    shape_scale = 1,
-    img_shape = None,  # h, w
-    optimize_options = ['-O3'], # '--colors', '128',
-    crop_rect = (0, 0, 1, 1),  # x, y, w, h
+        video_path,
+        save_path=None,
+        speed=1,
+        fps=12,
+        shape_scale=1,
+        img_shape=None,  # h, w
+        optimize_options=['-O3'],  # '--colors', '128',
+        crop_rect=(0, 0, 1, 1),  # x, y, w, h
 ):
     video = VideoReader(video_path)
 
@@ -115,9 +118,9 @@ def video2gif(
     img = video.get_frame()[0]
     img = crop_img(img, crop_rect)
     if img_shape is None:
-        img_shape = (int(img.shape[0]*shape_scale), int(img.shape[1]*shape_scale))
+        img_shape = (int(img.shape[0] * shape_scale), int(img.shape[1] * shape_scale))
     else:
-        img_shape = (int(img_shape[0]*shape_scale), int(img_shape[1]*shape_scale))
+        img_shape = (int(img_shape[0] * shape_scale), int(img_shape[1] * shape_scale))
 
     # create gif container
     if save_path is None:
@@ -140,9 +143,9 @@ def video2gif(
         gif_container.mux(stream.encode(frame))
 
         percent = stamp / duration
-        done = int(percent*pbar_width) * '█'
-        todo = (pbar_width - int(percent*pbar_width)) * ' '
-        print(f'Converting to gif: |{done}{todo}| {percent*100:.2f}%', end='\r')
+        done = int(percent * pbar_width) * '█'
+        todo = (pbar_width - int(percent * pbar_width)) * ' '
+        print(f'Converting to gif: |{done}{todo}| {percent * 100:.2f}%', end='\r')
         cnt += 1
 
     print(f'Converting to gif: |{done}| {100:.2f}%, frames: {cnt:d}', end='\n')

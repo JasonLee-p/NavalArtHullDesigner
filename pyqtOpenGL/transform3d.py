@@ -61,7 +61,7 @@ class Quaternion(QQuaternion):
 
     @classmethod
     def fromEulerAngles(cls, pitch, yaw, roll):
-        "rotates around x, then y, then z"
+        """rotates around x, then y, then z"""
         return cls(QQuaternion.fromEulerAngles(pitch, yaw, roll))
 
     @classmethod

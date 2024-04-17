@@ -36,11 +36,12 @@ __all__ = [
 ]
 
 
-#-- 输入工具
+# -- 输入工具
 class QParamSlider(QWidget):
     """带参数显示的滑动条"""
     sigValueChanged = pyqtSignal()
-    def __init__(self, parent, key, value, start, stop, step, type: str="int"):
+
+    def __init__(self, parent, key, value, start, stop, step, type: str = "int"):
         """type:  int / float """
         super().__init__(parent)
         self.key = key
@@ -77,7 +78,7 @@ class QParamSlider(QWidget):
 
         self.slider = QtWidgets.QSlider(Qt.Horizontal, self)
         self.slider.setMinimumWidth(40)
-        self.slider.setRange(0, int((self.stop - self.start) / self.step) )
+        self.slider.setRange(0, int((self.stop - self.start) / self.step))
 
         self.spinbox = QtWidgets.QDoubleSpinBox(self)
         self.spinbox.setRange(self.start, self.stop)
@@ -92,7 +93,6 @@ class QParamSlider(QWidget):
         hbox.addWidget(self.slider, 5)
         hbox.addWidget(self.spinbox, 2)
 
-
     @property
     def value(self):
         if self.type == "int":
@@ -103,9 +103,11 @@ class QParamSlider(QWidget):
     def value(self, val):
         self.spinbox.setValue(val)
 
+
 class QPathSelector(QWidget):
     sigValueChanged = pyqtSignal()
-    def __init__(self, parent, name:str, default_path:str):
+
+    def __init__(self, parent, name: str, default_path: str):
         super().__init__(parent)
         self.setMaximumWidth(450)
         hbox = QtWidgets.QHBoxLayout(self)
@@ -146,9 +148,11 @@ class QPathSelector(QWidget):
         self.name_label.adjustSize()
         self.name_label.setFixedWidth(self.name_label.width())
 
+
 class QDirectorySelector(QWidget):
     sigValueChanged = pyqtSignal()
-    def __init__(self, parent, name:str, default_path:str):
+
+    def __init__(self, parent, name: str, default_path: str):
         super().__init__(parent)
         self.setMaximumWidth(450)
         hbox = QtWidgets.QHBoxLayout(self)
@@ -187,9 +191,11 @@ class QDirectorySelector(QWidget):
         self.name_label.adjustSize()
         self.name_label.setFixedWidth(self.name_label.width())
 
+
 class QTextEditor(QWidget):
     sigValueChanged = pyqtSignal()
-    def __init__(self, parent, name:str, default:str, editable=False):
+
+    def __init__(self, parent, name: str, default: str, editable=False):
         super().__init__(parent)
         self.setMaximumWidth(450)
         hbox = QtWidgets.QHBoxLayout(self)
@@ -216,9 +222,11 @@ class QTextEditor(QWidget):
         self.name_label.adjustSize()
         self.name_label.setFixedWidth(self.name_label.width())
 
+
 class QOptionSelector(QWidget):
     sigValueChanged = pyqtSignal()
-    def __init__(self, parent, name:str, items: typing.List[str]):
+
+    def __init__(self, parent, name: str, items: typing.List[str]):
         super().__init__(parent)
         self.setMaximumWidth(450)
         self.hbox = QtWidgets.QHBoxLayout(self)
@@ -250,12 +258,13 @@ class QOptionSelector(QWidget):
         self.name_label.adjustSize()
         self.name_label.setFixedWidth(self.name_label.width())
 
+
 class QStatusViewer(QWidget):
-    def __init__(self, parent, key:str, val:bool):
+    def __init__(self, parent, key: str, val: bool):
         super().__init__(parent)
         self.key = key
         self._val = val
-        self._color = QtGui.QColor(0,200,0) if val else QtGui.QColor(200,0,0)
+        self._color = QtGui.QColor(0, 200, 0) if val else QtGui.QColor(200, 0, 0)
         # 字体长度
         fm = QtGui.QFontMetrics(self.font())
         self.text_width = fm.width(self.key)
@@ -266,7 +275,7 @@ class QStatusViewer(QWidget):
         # painter.setFont(QtGui.QFont("Arial", 10))
         painter.setBrush(self._color)
         painter.drawText(0, 19, self.key)
-        painter.drawEllipse(QPoint(self.text_width+20, 12), 8, 8)
+        painter.drawEllipse(QPoint(self.text_width + 20, 12), 8, 8)
         return super().paintEvent(a0)
 
     @property
@@ -277,8 +286,9 @@ class QStatusViewer(QWidget):
     def value(self, val):
         if self._val != val:
             self._val = val
-            self._color = QtGui.QColor(0,200,0) if val else QtGui.QColor(200,0,0)
+            self._color = QtGui.QColor(0, 200, 0) if val else QtGui.QColor(200, 0, 0)
             self.update()
+
 
 class QCheckBox(QtWidgets.QCheckBox):
     def __init__(self, parent, key, val):
@@ -292,6 +302,7 @@ class QCheckBox(QtWidgets.QCheckBox):
     @value.setter
     def value(self, val):
         self.setChecked(val)
+
 
 class QPushButton(QtWidgets.QPushButton):
     def __init__(self, parent, key, val=False, checkable=False):
@@ -309,10 +320,12 @@ class QPushButton(QtWidgets.QPushButton):
     def value(self, val):
         self.setChecked(val)
 
+
 class QCheckList(QWidget):
     """互斥 check list"""
     sigValueChanged = pyqtSignal()
-    def __init__(self, parent, item_list:typing.List[str], id:int=0, type="h", exclusive=True):
+
+    def __init__(self, parent, item_list: typing.List[str], id: int = 0, type="h", exclusive=True):
         super().__init__(parent=parent)
         self.exclusive = exclusive
         if type == "v":
@@ -351,9 +364,11 @@ class QCheckList(QWidget):
     def checked_name(self):
         return self.box_group.checkedButton().text()
 
+
 class QTablePanel(QWidget):
     sigTableChanged = pyqtSignal(str)
-    def __init__(self, parent, table: dict, name: str=None, type="v"):
+
+    def __init__(self, parent, table: dict, name: str = None, type="v"):
         super().__init__(parent)
         if name is not None:
             self.setObjectName(name)
@@ -410,12 +425,13 @@ class QTablePanel(QWidget):
                 widget.sigValueChanged.connect(self.onTableChanged, 0)
                 self._table[key] = val[1]
             elif val[0] == "line":
-                line_type = 'v' if type=='h' else 'h'
+                line_type = 'v' if type == 'h' else 'h'
                 add_line(self.box, type=line_type)
                 continue
             elif val[0] == "spacer":
-                size = (1, val[1]) if type=='v' else (val[1], 1)
-                spacer1 = QtWidgets.QSpacerItem(size[0], size[1], QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+                size = (1, val[1]) if type == 'v' else (val[1], 1)
+                spacer1 = QtWidgets.QSpacerItem(size[0], size[1], QtWidgets.QSizePolicy.Minimum,
+                                                QtWidgets.QSizePolicy.Minimum)
                 self.box.addItem(spacer1)
                 continue
             widget.setObjectName(key)
@@ -472,12 +488,13 @@ class QTablePanel(QWidget):
     def widget(self, key):
         return self._widgets.get(key, None)
 
+
 # 使 yaml 可以序列化 QTablePanel
 yaml.add_representer(QTablePanel, lambda dumper, panel: dumper.represent_dict(dict(panel)))
 
 
 def QColormapPanel():
-    colormap_panel={
+    colormap_panel = {
         "channel": ["checklist", 0, ["B", "G", "R"]],
         "colormap": ["option", 0, ["coolwarm", "viridis", "plasma", "inferno", "cividis", "jet"]],
         "cm_scale": ["float", 40, 1, 250, 1],
@@ -485,9 +502,9 @@ def QColormapPanel():
     }
     colormap_panel = QTablePanel(None, colormap_panel, type="h")
     colormap_panel.widget("colormap").name_label.setText("cm")
-    colormap_panel.widget("colormap").hbox.setStretch(1,1)
+    colormap_panel.widget("colormap").hbox.setStretch(1, 1)
 
-    colormap_panel.setStretchs([1,1,3,3])
+    colormap_panel.setStretchs([1, 1, 3, 3])
     colormap_panel.box.setSpacing(10)
     colormap_panel.box.setContentsMargins(0, 0, 0, 0)
     colormap_panel.setMaximumWidth(900)
@@ -496,7 +513,7 @@ def QColormapPanel():
 
 
 def QGridMovepanel():
-    grid_move_panel={
+    grid_move_panel = {
         "grid1": ["checkbutton", 1],
         "grid2": ["checkbutton", 0],
         "grid1_z": ["int", 0, -255, 255, 1],
@@ -504,7 +521,7 @@ def QGridMovepanel():
     }
     grid_move_panel = QTablePanel(None, grid_move_panel, type="h")
     # colormap_panel.setContentsMargins(0, 0, 0, 0)
-    grid_move_panel.setStretchs([1,1,5,5])
+    grid_move_panel.setStretchs([1, 1, 5, 5])
     grid_move_panel.box.setSpacing(30)
     grid_move_panel.box.setContentsMargins(0, 0, 0, 0)
     grid_move_panel.setMaximumWidth(800)
@@ -518,6 +535,7 @@ class QImageViewWidget(QtWidgets.QLabel):
     sigMousePressed = pyqtSignal(tuple)
     sigMouseReleased = pyqtSignal(tuple)
     sigMousePressedMove = pyqtSignal(tuple)
+
     def __init__(self, parent=None, auto_scale=True, show_text=True):
         """auto_scale: 等比例缩放图片填充窗口"""
         super().__init__(parent)
@@ -534,17 +552,17 @@ class QImageViewWidget(QtWidgets.QLabel):
 
     def img_size(self):
         if self.q_img is None:
-            return (640, 480)
-        return (self.q_img.width(), self.q_img.height())
+            return 640, 480
+        return self.q_img.width(), self.q_img.height()
 
     def setData(self, img):
         img = img.astype(np.uint8)
-        if img.ndim==3 and img.shape[2]==3:  # 彩色图
+        if img.ndim == 3 and img.shape[2] == 3:  # 彩色图
             self.q_img = QtGui.QImage(img.data, img.shape[1], img.shape[0], img.size // img.shape[0],
-                                 QtGui.QImage.Format_BGR888)#.scaled(self.size(), Qt.KeepAspectRatio)
+                                      QtGui.QImage.Format_BGR888)  # .scaled(self.size(), Qt.KeepAspectRatio)
         else:
             self.q_img = QtGui.QImage(img.data, img.shape[1], img.shape[0], img.size // img.shape[0],
-                           QtGui.QImage.Format_Grayscale8)#.scaled(self.size(), Qt.KeepAspectRatio)
+                                      QtGui.QImage.Format_Grayscale8)  # .scaled(self.size(), Qt.KeepAspectRatio)
         self.update()
 
     def resizeEvent(self, a0: QResizeEvent) -> None:
@@ -585,9 +603,9 @@ class QImageViewWidget(QtWidgets.QLabel):
         # 将鼠标坐标变换为图片坐标
         win_size = self.size()
         img_size = q_img.size()
-        x = min(self.x_mouse, img_size.width()-1)
+        x = min(self.x_mouse, img_size.width() - 1)
         y = self.y_mouse + int((-win_size.height() + img_size.height() - 1) / 2)
-        y = min(max(y, 0), img_size.height()-1)
+        y = min(max(y, 0), img_size.height() - 1)
         if self.auto_scale:
             scale_rate = max(q_img.width() / self.q_img.width(), 1e-4)
             self.x_img = int(x / scale_rate)
@@ -603,14 +621,14 @@ class QImageViewWidget(QtWidgets.QLabel):
             # 绘制信息
             painter = QtGui.QPainter()
             painter.begin(q_img)
-            painter.setPen(QtGui.QColor(220,220,220))
+            painter.setPen(QtGui.QColor(220, 220, 220))
             painter.drawText(10, 20, f"Pos: ({self.x_img}, {self.y_img})")
             painter.drawText(10, 36, f"RGB: ")
-            painter.setPen(QtGui.QColor(255,0,0))
+            painter.setPen(QtGui.QColor(255, 0, 0))
             painter.drawText(45, 36, str(r))
-            painter.setPen(QtGui.QColor(0,255,0))
+            painter.setPen(QtGui.QColor(0, 255, 0))
             painter.drawText(75, 36, str(g))
-            painter.setPen(QtGui.QColor(0,100,255))
+            painter.setPen(QtGui.QColor(0, 100, 255))
             painter.drawText(105, 36, str(b))
             painter.end()
         self.setPixmap(QtGui.QPixmap.fromImage(q_img))
@@ -622,7 +640,8 @@ class QImageViewWidget(QtWidgets.QLabel):
         img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
         return img
 
-class VisualizeType():
+
+class VisualizeType:
     Image = 0
     Surface = 1
     PointCloud = 2
@@ -678,20 +697,20 @@ class VisualizeWidget(QtWidgets.QFrame):
             self.tab_widget.currentWidget().setData(img)
 
         elif self.tab_widget.currentIndex() in [VisualizeType.Surface, VisualizeType.PointCloud] and \
-            img is not None:
-            while (img.shape[0] > 800):
+                img is not None:
+            while img.shape[0] > 800:
                 img = cv2.pyrDown(img)
             self.tab_widget.currentWidget().setData(img, **self.color_map_panel.table)
 
         elif self.tab_widget.currentIndex() == VisualizeType.Quiver and start_pts is not None \
-            and stop_pts is not None:
+                and stop_pts is not None:
             self.tab_widget.currentWidget().setData(start_pts, stop_pts)
 
         elif self.tab_widget.currentIndex() == VisualizeType.SurfaceQuiver and img is not None and start_pts is not None \
-            and stop_pts is not None:
+                and stop_pts is not None:
             self.tab_widget.currentWidget().setData(img, start_pts, stop_pts, **self.color_map_panel.table)
 
-        elif self.tab_widget.currentIndex() == VisualizeType.gelslim :
+        elif self.tab_widget.currentIndex() == VisualizeType.gelslim:
             self.tab_widget.currentWidget().setData(img, start_pts, stop_pts)
 
     @pyqtSlot()
@@ -751,6 +770,7 @@ class QTableSlider(QWidget):
     字典格式 {key: [value, start, stop, step], }
     """
     sigTableChanged = pyqtSignal()
+
     def __init__(self, parent, table: dict):
         super().__init__(parent)
         self._table = dict()  # {key: value, }
@@ -776,6 +796,7 @@ class QTableSlider(QWidget):
 class QMenu(QWidget):
     """根据菜单列表创建一组菜单按钮"""
     sigMenuChanged = pyqtSignal(str)
+
     def __init__(self, parent, menu_list: list, type="v"):
         super().__init__(parent)
         self.menu_list = menu_list
@@ -786,15 +807,15 @@ class QMenu(QWidget):
         elif type == "h":
             self.box = QtWidgets.QHBoxLayout(self)
             spacer = QtWidgets.QSpacerItem(20, 0, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.box.setContentsMargins(0,0,0,0)
-        self.box.setSpacing(0) # 设置布局中的间隙为0
+        self.box.setContentsMargins(0, 0, 0, 0)
+        self.box.setSpacing(0)  # 设置布局中的间隙为0
         self.button_group = QtWidgets.QButtonGroup(self)  # 创建一个按钮组
-        self.button_group.setExclusive(True) # 设置按钮组为互斥的
+        self.button_group.setExclusive(True)  # 设置按钮组为互斥的
         # 定义按钮
         for menu_item in self.menu_list:
-            button = QtWidgets.QPushButton(menu_item) # 创建一个按钮，并设置文本
-            button.setCheckable (True) # 设置按钮为可选中的
-            self.box.addWidget(button) # 将按钮添加到布局中
+            button = QtWidgets.QPushButton(menu_item)  # 创建一个按钮，并设置文本
+            button.setCheckable(True)  # 设置按钮为可选中的
+            self.box.addWidget(button)  # 将按钮添加到布局中
             self.button_group.addButton(button)
         self.box.addItem(spacer)
         # 信号 / 槽
@@ -804,7 +825,7 @@ class QMenu(QWidget):
         self.sigMenuChanged.emit(button.text())
 
 
-def add_line(layout, type: str='h'):
+def add_line(layout, type: str = 'h'):
     line = QtWidgets.QFrame(layout._parent())
     if type == "h":
         line.setFrameShape(QtWidgets.QFrame.HLine)
@@ -815,12 +836,12 @@ def add_line(layout, type: str='h'):
 
 
 def create_layout(
-    parent,
-    type : str = "v",
-    widgets : list = None,
-    stretchs : list = None,
-    content_margins : tuple = (0, 0, 0, 0),
-    spacing : int = 0,
+        parent,
+        type: str = "v",
+        widgets: list = None,
+        stretchs: list = None,
+        content_margins: tuple = (0, 0, 0, 0),
+        spacing: int = 0,
 ):
     """创建布局"""
     widgets = widgets if widgets is not None else []
@@ -837,7 +858,7 @@ def create_layout(
     return layout
 
 
-class QTCV():
+class QTCV:
     def __init__(self):
         self.app_is_init = False
         self.Key = Qt.Key
@@ -859,7 +880,7 @@ class QTCV():
             self.init()
         if not name in self.win_list:
             self.win_list[name] = QImageViewWidget(None, auto_scale=auto_scale)
-            self.win_list[name].move(len(self.win_list)*100, len(self.win_list)*100)
+            self.win_list[name].move(len(self.win_list) * 100, len(self.win_list) * 100)
             self.win_list[name].resize(img.shape[1], img.shape[0])
             self.win_list[name].setWindowTitle(name)
             self.win_list[name].keyPressEvent = self.keyPressEvent
@@ -891,6 +912,7 @@ class QTCV():
     def destroyAllWindows(self):
         self.win_list = dict()
 
+
 qtcv = QTCV()
 
 
@@ -909,7 +931,7 @@ class QtThread(QThread):
         self.sigFinished.emit(res)
 
 
-class QSynchronizer():
+class QSynchronizer:
     def __init__(self):
         self.app = QtWidgets.QApplication.instance()
         if self.app is None:
@@ -924,17 +946,16 @@ class QSynchronizer():
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.on_timeout)
-        self.timer.start(int(period*1000))
+        self.timer.start(int(period * 1000))
         if not self.loop.isRunning():
             self.loop.exec()
 
     def on_timeout(self):
-        if self.condition() or time()-self.t_0 > self.timeout:
+        if self.condition() or time() - self.t_0 > self.timeout:
             self.loop.quit()
 
 
 if __name__ == '__main__':
-
     params = {
         "path": ["path", "a"],
         "str": ["str", ""],
@@ -948,7 +969,7 @@ if __name__ == '__main__':
         "Bool1": ["status", 1],
         "Status1": ["status", 0],
         "CheckList": ["checklist", 0, ["r", "g", "b"]],
-        "line1": ["line",]
+        "line1": ["line", ]
     }
     app = QApplication(sys.argv)
     mainwindow = QTablePanel(None, params, 'v')

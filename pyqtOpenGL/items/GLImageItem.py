@@ -6,6 +6,7 @@ from .texture import Texture2D
 import numpy as np
 import OpenGL.GL as gl
 from pathlib import Path
+
 BASE_DIR = Path(__file__).resolve().parent
 
 __all__ = ['GLImageItem']
@@ -15,12 +16,12 @@ class GLImageItem(GLGraphicsItem):
     """Display Image."""
 
     def __init__(
-        self,
-        img = None,
-        left_bottom = (0, 0),  # 左下角坐标 0 ~ 1
-        width_height = (1, 1),  # 宽高 0 ~ 1
-        glOptions = 'opaque',
-        parentItem = None
+            self,
+            img=None,
+            left_bottom=(0, 0),  # 左下角坐标 0 ~ 1
+            width_height=(1, 1),  # 宽高 0 ~ 1
+            glOptions='opaque',
+            parentItem=None
     ):
         super().__init__(parentItem=parentItem)
         self.setGLOptions(glOptions)
@@ -31,14 +32,14 @@ class GLImageItem(GLGraphicsItem):
         self.texture = None
         self.left_bottom = None
         self.width_height = None
-        self.vertices = np.array( [
+        self.vertices = np.array([
             # 顶点坐标             # texcoord 纹理坐标
-            -1, -1, 0,   0.0, 0.0,
-             1, -1, 0,   1.0, 0.0,
-             1,  1, 0,   1.0, 1.0,
-             1,  1, 0,   1.0, 1.0,
-            -1,  1, 0,   0.0, 1.0,
-            -1, -1, 0,   0.0, 0.0,
+            -1, -1, 0, 0.0, 0.0,
+            1, -1, 0, 1.0, 0.0,
+            1, 1, 0, 1.0, 1.0,
+            1, 1, 0, 1.0, 1.0,
+            -1, 1, 0, 0.0, 1.0,
+            -1, -1, 0, 0.0, 0.0,
         ], dtype=np.float32).reshape(-1, 5)
         self.setData(img=img, left_bottom=left_bottom, width_height=width_height)
 
@@ -46,7 +47,7 @@ class GLImageItem(GLGraphicsItem):
         self.shader = Shader(vertex_shader, fragment_shader)
         self.vao = VAO()
         self.vbo = VBO([self.vertices], [[3, 2]], usage=gl.GL_STATIC_DRAW)
-        self.vbo.setAttrPointer([0], attr_id=[[0,1]])
+        self.vbo.setAttrPointer([0], attr_id=[[0, 1]])
         self.texture = Texture2D(None, flip_y=True)
 
     def updateGL(self):

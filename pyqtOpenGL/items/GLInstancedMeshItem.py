@@ -13,18 +13,18 @@ __all__ = ['GLInstancedMeshItem']
 class GLInstancedMeshItem(GLGraphicsItem, LightMixin):
 
     def __init__(
-        self,
-        pos = None,  # nx3
-        vertexes = None,
-        indices = None,
-        normals = None,
-        lights = list(),
-        color = [1., 1., 1.],
-        size = 1.,
-        opacity = 1.,
-        glOptions = 'opaque',
-        calcNormals = True,
-        parentItem = None
+            self,
+            pos=None,  # nx3
+            vertexes=None,
+            indices=None,
+            normals=None,
+            lights=list(),
+            color=[1., 1., 1.],
+            size=1.,
+            opacity=1.,
+            glOptions='opaque',
+            calcNormals=True,
+            parentItem=None
     ):
         super().__init__(parentItem=parentItem)
         self.setGLOptions(glOptions)
@@ -47,7 +47,7 @@ class GLInstancedMeshItem(GLGraphicsItem, LightMixin):
         if pos is not None:
             self._pos = np.array(pos, dtype=np.float32).reshape(-1, 3)
             self._gl_update_flag = True
-            if self._color is not None and self._color.size!=self._pos.shape[0]*3 and self._color.size>=3:
+            if self._color is not None and self._color.size != self._pos.shape[0] * 3 and self._color.size >= 3:
                 self._color = np.tile(self._color.ravel()[:3], (max(self._pos.shape[0], 1), 1))
 
         if opacity is not None:
@@ -75,7 +75,7 @@ class GLInstancedMeshItem(GLGraphicsItem, LightMixin):
             self.ebo = EBO(self._indices)
 
         # pos
-        self.vbo_pos = VBO([self._pos, self._color], [3,3], usage=gl.GL_DYNAMIC_DRAW)
+        self.vbo_pos = VBO([self._pos, self._color], [3, 3], usage=gl.GL_DYNAMIC_DRAW)
         self.vbo_pos.setAttrPointer([0, 1], [2, 3], divisor=1)
 
     def updateGL(self):
@@ -99,7 +99,7 @@ class GLInstancedMeshItem(GLGraphicsItem, LightMixin):
         with self.shader:
             self.shader.set_uniform("view", self.proj_view_matrix().glData, "mat4")
             self.shader.set_uniform("model", model_matrix.glData, "mat4")
-            self.shader.set_uniform("ViewPos",self.view_pos(), "vec3")
+            self.shader.set_uniform("ViewPos", self.view_pos(), "vec3")
             self.shader.set_uniform("size", self._size, "float")
             self.shader.set_uniform("calcNormal", self._calcNormals, "bool")
             self.shader.set_uniform("opacity", self._opacity, "float")
@@ -150,7 +150,6 @@ void main() {
     gl_Position = view * vec4(FragPos, 1.0);
 }
 """
-
 
 fragment_shader = """
 #version 330 core

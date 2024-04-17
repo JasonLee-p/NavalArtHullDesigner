@@ -76,6 +76,7 @@ class ConfigHandler:
         self.load_config()
 
     def load_config(self):
+        # 到注册表寻找配置文件路径
         if os.path.exists(CONFIG_PATH):
             try:
                 with open(CONFIG_PATH, 'r', encoding='utf-8') as f:

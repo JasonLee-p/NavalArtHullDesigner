@@ -18,9 +18,9 @@ class VideoReader:
         self.index_base = self.time_base * self.average_rate  # cnt 约等于 index_base * frame.pts
         self.total_frames = self.stream.frames - 1  # 视频流总帧数
         self.duration = self.stream.duration * self.time_base  # 视频总时长 s
-        self.pts_cur = 0   # 当前 pts
+        self.pts_cur = 0  # 当前 pts
         self.pts_0 = max(0, int(skip_time / self.time_base))  # 跳过前 pts_0
-        if(self.pts_0):
+        if self.pts_0:
             self.jump(self.pts_0)
 
     @property
@@ -88,7 +88,7 @@ class VideoReader:
 
     def back_key(self):
         """回退到上一个关键帧"""
-        pts_goal = max(self.pts_0, int(self.pts_cur-10000))
+        pts_goal = max(self.pts_0, int(self.pts_cur - 10000))
         self.container.seek(pts_goal, stream=self.stream, backward=True)
         self._generator = self.container.decode(self.stream)
         iter1, self._generator = tee(self._generator)
@@ -124,17 +124,18 @@ class VideoReader:
         self.container.close()
 
 
-class VirableRateVideoWriter():
+class VirableRateVideoWriter:
     """ 可变帧率录制视频
     extended from https://github.com/PyAV-Org/PyAV/blob/main/examples/numpy/generate_video.py
     """
+
     def __init__(
-        self,
-        video_path,
-        img_shape = (1280, 960),  # w, h
-        auto_incr_stamp = True,
-        bit_rate = 2048000,
-        pix_fmt = 'yuv420p', # 'gray', 'yuv420p'
+            self,
+            video_path,
+            img_shape=(1280, 960),  # w, h
+            auto_incr_stamp=True,
+            bit_rate=2048000,
+            pix_fmt='yuv420p',  # 'gray', 'yuv420p'
     ):
         self.video_path = str(video_path)
         self.container = av.open(str(video_path), mode='w')
@@ -159,9 +160,9 @@ class VirableRateVideoWriter():
         if self.last_stamp >= stamp:
             if not self.auto_incr_stamp:
                 raise ValueError("stamp error")
-            else: # 将 init_stamp 前移
+            else:  # 将 init_stamp 前移
                 duration = self.last_stamp - self.init_stamp
-                self.init_stamp = stamp - 1/self.stream.average_rate - duration
+                self.init_stamp = stamp - 1 / self.stream.average_rate - duration
 
         self.last_stamp = stamp
         if self.stream.pix_fmt == 'gray':
@@ -181,5 +182,3 @@ class VirableRateVideoWriter():
 
     def __def__(self):
         self.release()
-
-

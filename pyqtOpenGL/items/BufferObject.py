@@ -203,7 +203,8 @@ class VBO:
 
     def setAttrPointer(self, block_id: List[int], attr_id: List[int] = None, divisor=0):
         """
-        :param id: 内存块的id，而不是属性索引
+        :param block_id:
+        :param attr_id:
         :param divisor: 属性的除数
         """
         self.bind()
@@ -249,7 +250,7 @@ class VBO:
                 gl.glEnableVertexAttribArray(a_id)
 
 
-class VAO():
+class VAO:
 
     def __init__(self):
         self._vao = gl.glGenVertexArrays(1)
@@ -273,7 +274,7 @@ class VAO():
         gl.glDeleteVertexArrays(1, [self._vao])
 
 
-class EBO():
+class EBO:
 
     def __init__(
             self,

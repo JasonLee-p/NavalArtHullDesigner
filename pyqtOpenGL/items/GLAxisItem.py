@@ -35,14 +35,14 @@ class GLAxisItem(GLGraphicsItem):
     ], dtype="f4")
 
     def __init__(
-        self,
-        size=Vector3(1.,1.,1.),
-        width=3,
-        tip_size=0.7,
-        antialias=True,
-        glOptions='opaque',
-        fix_to_corner=False,
-        parentItem=None
+            self,
+            size=Vector3(1., 1., 1.),
+            width=3,
+            tip_size=0.7,
+            antialias=True,
+            glOptions='opaque',
+            fix_to_corner=False,
+            parentItem=None
     ):
         super().__init__(parentItem=parentItem)
         self.__size = Vector3(size)
@@ -56,7 +56,7 @@ class GLAxisItem(GLGraphicsItem):
             self.setDepthValue(1000)  # make sure it is drawn last
 
         self.antialias = antialias
-        self.cone_vertices, self.cone_indices = cone(0.06*width*tip_size, 0.15*width*tip_size)
+        self.cone_vertices, self.cone_indices = cone(0.06 * width * tip_size, 0.15 * width * tip_size)
 
     def setSize(self, x=None, y=None, z=None):
         """
@@ -66,7 +66,7 @@ class GLAxisItem(GLGraphicsItem):
         x = x if x is not None else self.__size.x
         y = y if y is not None else self.__size.y
         z = z if z is not None else self.__size.z
-        self.__size = Vector3(x,y,z)
+        self.__size = Vector3(x, y, z)
         self.update()
 
     def size(self):
@@ -80,21 +80,21 @@ class GLAxisItem(GLGraphicsItem):
         self.vao_line = VAO()
 
         self.vbo1 = VBO(
-            data = [self.stPos, self.endPos, self.colors],
-            size = [3, 3, 3],
+            data=[self.stPos, self.endPos, self.colors],
+            size=[3, 3, 3],
         )
         self.vbo1.setAttrPointer([0, 1, 2])
 
         # cone
-        self.transforms = direction_matrixs(self.stPos.reshape(-1,3)*self.__size ,
-                                            self.endPos.reshape(-1,3)*self.__size )
+        self.transforms = direction_matrixs(self.stPos.reshape(-1, 3) * self.__size,
+                                            self.endPos.reshape(-1, 3) * self.__size)
         self.vao_cone = VAO()
 
         self.vbo2 = VBO(
             [self.cone_vertices, self.transforms],
-            [3, [4,4,4,4]],
+            [3, [4, 4, 4, 4]],
         )
-        self.vbo2.setAttrPointer([0, 1], divisor=[0, 1], attr_id=[0, [1,2,3,4]])
+        self.vbo2.setAttrPointer([0, 1], divisor=[0, 1], attr_id=[0, [1, 2, 3, 4]])
 
         self.vbo1.bind()
         self.vbo1.setAttrPointer(2, divisor=1, attr_id=5)

@@ -87,7 +87,6 @@ class EditTabWidget(QWidget):
         self.rotZ_edit.value_changed.connect(
             lambda z: self.setRotZ(z, [self.rotX_edit, self.rotY_edit, self.rotZ_edit]))
 
-
     @abstractmethod
     def updateSectionHandler(self, item):
         self._current_item = item
@@ -96,15 +95,18 @@ class EditTabWidget(QWidget):
         self.posZ_edit.setValue(item.Pos.z())
 
     def setPosX(self, x, edits):
-        op = MoveToOperation(self._current_item, QVector3D(x, self._current_item.Pos.y(), self._current_item.Pos.z()), edits)
+        op = MoveToOperation(self._current_item, QVector3D(x, self._current_item.Pos.y(), self._current_item.Pos.z()),
+                             edits)
         self.operationStack.execute(op)
 
     def setPosY(self, y, edits):
-        op = MoveToOperation(self._current_item, QVector3D(self._current_item.Pos.x(), y, self._current_item.Pos.z()), edits)
+        op = MoveToOperation(self._current_item, QVector3D(self._current_item.Pos.x(), y, self._current_item.Pos.z()),
+                             edits)
         self.operationStack.execute(op)
 
     def setPosZ(self, z, edits):
-        op = MoveToOperation(self._current_item, QVector3D(self._current_item.Pos.x(), self._current_item.Pos.y(), z), edits)
+        op = MoveToOperation(self._current_item, QVector3D(self._current_item.Pos.x(), self._current_item.Pos.y(), z),
+                             edits)
         self.operationStack.execute(op)
 
     def setRotX(self, x, edits):
@@ -133,8 +135,10 @@ class EditHullSectionGroupWidget(EditTabWidget):
 
         super().__init__()
         # TODO: 需要添加到结构层级控件中，由PrjHullSectionGroup进行管理以及信号传递
-        self.front_addSection_bt = Button(None, "向前添加截面", bg=(BG_COLOR0, BG_COLOR3, BG_COLOR2, BG_COLOR3), bd_radius=(12, 12, 0, 0), align=Qt.AlignLeft | Qt.AlignTop, size=None)
-        self.back_addSection_bt = Button(None, "向后添加截面", bg=(BG_COLOR0, BG_COLOR3, BG_COLOR2, BG_COLOR3), bd_radius=(0, 0, 12, 12), align=Qt.AlignLeft | Qt.AlignTop, size=None)
+        self.front_addSection_bt = Button(None, "向前添加截面", bg=(BG_COLOR0, BG_COLOR3, BG_COLOR2, BG_COLOR3),
+                                          bd_radius=(12, 12, 0, 0), align=Qt.AlignLeft | Qt.AlignTop, size=None)
+        self.back_addSection_bt = Button(None, "向后添加截面", bg=(BG_COLOR0, BG_COLOR3, BG_COLOR2, BG_COLOR3),
+                                         bd_radius=(0, 0, 12, 12), align=Qt.AlignLeft | Qt.AlignTop, size=None)
         self.hullSections_widget = QWidget()
         self.hullSections_layout = QVBoxLayout()
         self.hullSections_scroll = ScrollArea(
@@ -156,11 +160,13 @@ class EditHullSectionGroupWidget(EditTabWidget):
     def _init_basic_info_ui(self):
         super()._init_basic_info_ui()
         _font = QFont(YAHEI[9])
-        self.basic_info_layout.addWidget(ColoredTextLabel(None, "船体大小", _font, bg=BG_COLOR1), 2, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
+        self.basic_info_layout.addWidget(ColoredTextLabel(None, "船体大小", _font, bg=BG_COLOR1), 2, 0,
+                                         alignment=Qt.AlignLeft | Qt.AlignVCenter)
         self.basic_info_layout.addWidget(self.sizeX_show, 2, 1)
         self.basic_info_layout.addWidget(self.sizeY_show, 2, 2)
         self.basic_info_layout.addWidget(self.sizeZ_show, 2, 3)
-        self.basic_info_layout.addWidget(ColoredTextLabel(None, "截面数量", _font, bg=BG_COLOR1), 3, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
+        self.basic_info_layout.addWidget(ColoredTextLabel(None, "截面数量", _font, bg=BG_COLOR1), 3, 0,
+                                         alignment=Qt.AlignLeft | Qt.AlignVCenter)
         self.basic_info_layout.addWidget(self.section_num_show, 3, 1)
 
     def _init_sub_elements_ui(self):

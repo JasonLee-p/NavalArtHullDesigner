@@ -412,7 +412,8 @@ class EnsureButton(Button):
 
 
 class CircleSelectButton(Button):
-    def __init__(self, parent, relative_widgets: list, tool_tip, radius, color: str, hover_color:str, check_color: str):
+    def __init__(self, parent, relative_widgets: list, tool_tip, radius, color: str, hover_color: str,
+                 check_color: str):
         """
 
         :param parent:

@@ -68,7 +68,7 @@ class MoveOperation(Operation):
 
 
 class RotateOperation(Operation):
-    def __init__(self, setctionHandler, target_rot:list = None, edits=None):
+    def __init__(self, setctionHandler, target_rot: list = None, edits=None):
         """
         旋转操作
         :param setctionHandler: 被旋转的元素

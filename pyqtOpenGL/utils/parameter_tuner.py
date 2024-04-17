@@ -1,4 +1,5 @@
 import sys
+
 try:
     import cv2
 except:
@@ -21,12 +22,12 @@ from .QtTools import (QTablePanel,
                       create_layout)
 
 
-class InputType():
+class InputType:
     VIDEO = 'video'
     IMAGE = 'image'
 
 
-class InputSource():
+class InputSource:
     """输入源"""
 
     def __init__(self, source: Union[str, Path] = None, type: str = None):
@@ -111,7 +112,7 @@ class InputSource():
             self.img_curr, self.stamp_curr = img, stamp
 
     def back_frame(self):
-        "回退 n 帧"
+        """回退 n 帧"""
         if self.type != InputType.VIDEO:
             return
 

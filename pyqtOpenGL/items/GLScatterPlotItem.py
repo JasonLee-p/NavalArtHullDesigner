@@ -5,6 +5,7 @@ from .BufferObject import VAO, VBO
 import numpy as np
 import OpenGL.GL as gl
 from pathlib import Path
+
 BASE_DIR = Path(__file__).resolve().parent
 
 __all__ = ['GLScatterPlotItem']
@@ -14,13 +15,13 @@ class GLScatterPlotItem(GLGraphicsItem):
     """Draws points at a list of 3D positions."""
 
     def __init__(
-        self,
-        pos = None,
-        size = 1,
-        color = [1.0, 1.0, 1.0],
-        antialias = True,
-        glOptions = 'opaque',
-        parentItem = None
+            self,
+            pos=None,
+            size=1,
+            color=[1.0, 1.0, 1.0],
+            antialias=True,
+            glOptions='opaque',
+            parentItem=None
     ):
         super().__init__(parentItem=parentItem)
         self.antialias = antialias
@@ -43,7 +44,7 @@ class GLScatterPlotItem(GLGraphicsItem):
             return
 
         self.vao.bind()
-        self.vbo.updateData([0,1], [self._pos, self._color])
+        self.vbo.updateData([0, 1], [self._pos, self._color])
         self.vbo.setAttrPointer([0, 1], attr_id=[0, 1])
         self._gl_update_flag = False
 

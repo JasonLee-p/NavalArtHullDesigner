@@ -15,13 +15,13 @@ __all__ = ['GLColorSurfaceItem']
 class GLColorSurfaceItem(GLGraphicsItem):
 
     def __init__(
-        self,
-        zmap = None,
-        x_size = 10, # scale width to this size
-        color = (1, 1, 1),
-        opacity = 1.,
-        glOptions = 'translucent',
-        parentItem = None
+            self,
+            zmap=None,
+            x_size=10,  # scale width to this size
+            color=(1, 1, 1),
+            opacity=1.,
+            glOptions='translucent',
+            parentItem=None
     ):
         super().__init__(parentItem=parentItem)
         self.setGLOptions(glOptions)
@@ -81,7 +81,7 @@ class GLColorSurfaceItem(GLGraphicsItem):
     def initializeGL(self):
         self.shader = Shader(vertex_shader, fragment_shader)
         self.vao = VAO()
-        self.vbo = VBO([None, None], [3, 3], usage = gl.GL_DYNAMIC_DRAW)
+        self.vbo = VBO([None, None], [3, 3], usage=gl.GL_DYNAMIC_DRAW)
         self.ebo = EBO(None)
 
     def updateGL(self):
@@ -128,7 +128,6 @@ void main() {
     oColor = aColor;
 }
 """
-
 
 fragment_shader = """
 #version 330 core
