@@ -60,6 +60,7 @@ class HullSectionGroup(SectionHandler):
     idMap = {}
     deleted_s = pyqtSignal()
 
+    # noinspection PyProtectedMember
     def __init__(self, prj, name, pos, rot, col, topCur, botCur, sections):
         self.hullProject = prj
         self.name = name

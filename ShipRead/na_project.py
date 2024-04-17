@@ -207,7 +207,7 @@ class ShipProject(QObject):
         产生交互界面，根据用户需求产生相应对象
         :return: PrjSection
         """
-        file_dialog = QFileDialog()
+        file_dialog = QFileDialog(None)
         file_dialog.setFileMode(QFileDialog.ExistingFiles)
         file_dialog.setNameFilter("模型文件 (*.obj)")
         file_dialog.setViewMode(QFileDialog.Detail)

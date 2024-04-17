@@ -193,6 +193,7 @@ class GLModelItem(GLGraphicsItem, LightMixin):
         self.meshes[mesh_id].setMaterial(material)
 
     def getMaterial(self, mesh_id):
+        # noinspection PyProtectedMember
         return self.meshes[mesh_id]._material
 
     def setPaintOrder(self, order: list):

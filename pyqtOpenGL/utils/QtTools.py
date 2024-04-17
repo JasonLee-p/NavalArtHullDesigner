@@ -42,6 +42,7 @@ class QParamSlider(QWidget):
     """带参数显示的滑动条"""
     sigValueChanged = pyqtSignal()
 
+    # noinspection PyUnresolvedReferences
     def __init__(self, parent, key, value, start, stop, step, _type: str = "int"):
         """type:  int / float """
         super().__init__(parent)
@@ -68,12 +69,12 @@ class QParamSlider(QWidget):
     def index(self):
         return self.slider.value()
 
+    # noinspection PyAttributeOutsideInit
     def initUI(self):
         self.setMaximumWidth(450)
         hbox = QtWidgets.QHBoxLayout(self)
         hbox.setContentsMargins(0, 0, 0, 0)
         hbox.setSpacing(5)
-
         self.label = QtWidgets.QLabel(self.key, self)
         # self.label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignRight)
 
@@ -108,6 +109,7 @@ class QParamSlider(QWidget):
 class QPathSelector(QWidget):
     sigValueChanged = pyqtSignal()
 
+    # noinspection PyUnresolvedReferences
     def __init__(self, parent, name: str, default_path: str):
         super().__init__(parent)
         self.setMaximumWidth(450)
@@ -133,6 +135,7 @@ class QPathSelector(QWidget):
         path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Select Path", options=options)
         if path and path != self.value:
             self.path_editor.setText(path)
+            # noinspection PyUnresolvedReferences
             self.sigValueChanged.emit()
 
     @property
@@ -143,6 +146,7 @@ class QPathSelector(QWidget):
     def value(self, val):
         if val != self.value:
             self.path_editor.setText(val)
+            # noinspection PyUnresolvedReferences
             self.sigValueChanged.emit()
 
     def setTight(self):
@@ -168,7 +172,9 @@ class QDirectorySelector(QWidget):
         hbox.addWidget(self.dir_editor, 5)
         hbox.addWidget(self.path_button, 2)
         # 信号/槽
+        # noinspection PyUnresolvedReferences
         self.path_button.clicked.connect(self.select_path)
+        # noinspection PyUnresolvedReferences
         self.dir_editor.editingFinished.connect(self.sigValueChanged)
 
     @pyqtSlot()
@@ -178,6 +184,7 @@ class QDirectorySelector(QWidget):
         _dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory", options=options)
         if _dir and _dir != self.value:
             self.dir_editor.setText(_dir)
+            # noinspection PyUnresolvedReferences
             self.sigValueChanged.emit()
 
     @property
@@ -209,6 +216,7 @@ class QTextEditor(QWidget):
         hbox.addWidget(self.name_label, 2)
         hbox.addWidget(self.text_editor, 7)
         # 信号/槽
+        # noinspection PyUnresolvedReferences
         self.text_editor.returnPressed.connect(self.sigValueChanged)
 
     @property
@@ -241,6 +249,7 @@ class QOptionSelector(QWidget):
         self.hbox.addWidget(self.name_label, 1)
         self.hbox.addWidget(self.options, 2)
         # 信号/槽
+        # noinspection PyUnresolvedReferences
         self.options.currentIndexChanged.connect(self.sigValueChanged)
 
     @property
@@ -343,6 +352,7 @@ class QCheckList(QWidget):
             self.box_group.addButton(checkbox, i)
         # 互斥
         self.box_group.setExclusive(exclusive)
+        # noinspection PyUnresolvedReferences
         self.box_group.buttonClicked.connect(self.sigValueChanged)
         self.value = _id
 
@@ -369,6 +379,7 @@ class QCheckList(QWidget):
 class QTablePanel(QWidget):
     sigTableChanged = pyqtSignal(str)
 
+    # noinspection PyUnresolvedReferences
     def __init__(self, parent, table: dict, name: str = None, _type="v"):
         super().__init__(parent)
         if name is not None:
@@ -447,6 +458,7 @@ class QTablePanel(QWidget):
         sender = self.sender()
         key = sender.objectName()
         self._table[key] = sender.value
+        # noinspection PyUnresolvedReferences
         self.sigTableChanged.emit(key)
 
     @property
@@ -572,6 +584,7 @@ class QImageViewWidget(QtWidgets.QLabel):
         return super().resizeEvent(a0)
 
     def keyPressEvent(self, ev: QtGui.QKeyEvent) -> None:
+        # noinspection PyUnresolvedReferences
         self.sigKeyPressed.emit(ev)
 
     def mouseMoveEvent(self, event):
@@ -579,6 +592,7 @@ class QImageViewWidget(QtWidgets.QLabel):
         if self.q_img is not None:
             self.update()
         if self.mouse_pressed:
+            # noinspection PyUnresolvedReferences
             self.sigMousePressedMove.emit((self.x_img, self.y_img))
 
     def mouseDoubleClickEvent(self, a0) -> None:
@@ -588,11 +602,13 @@ class QImageViewWidget(QtWidgets.QLabel):
 
     def mousePressEvent(self, ev) -> None:
         self.mouse_pressed = True
+        # noinspection PyUnresolvedReferences
         self.sigMousePressed.emit((self.x_img, self.y_img))
         return super().mousePressEvent(ev)
 
     def mouseReleaseEvent(self, ev) -> None:
         self.mouse_pressed = False
+        # noinspection PyUnresolvedReferences
         self.sigMouseReleased.emit((self.x_img, self.y_img))
         return super().mouseReleaseEvent(ev)
 
@@ -658,6 +674,7 @@ class VisualizeWidget(QtWidgets.QFrame):
         self.setData = self.set_data
         self._screen = QtWidgets.QApplication.screenAt(QtGui.QCursor.pos())
 
+    # noinspection PyAttributeOutsideInit
     def init_ui(self):
         self.vbox = QtWidgets.QVBoxLayout(self)
         self.vbox.setContentsMargins(0, 0, 0, 0)
@@ -686,8 +703,9 @@ class VisualizeWidget(QtWidgets.QFrame):
         self.tab_widget.addTab(self.quiver_view, "quiver")  # 3
         self.tab_widget.addTab(self.surface_quiver_view, "surfacequiver")  # 4
         self.tab_widget.addTab(QGelSlimWidget(self), "gelslim")  # 5
-
+        # noinspection PyUnresolvedReferences
         self.tab_widget.currentChanged.connect(self.on_tab_changed)
+        # noinspection PyUnresolvedReferences
         self.grid_move_panel.sigTableChanged.connect(self.on_grid_changed)
 
     def set_data(self, img=None, start_pts=None, stop_pts=None, tab_index=None):
@@ -779,6 +797,7 @@ class QTableSlider(QWidget):
         for key, val in table.items():
             paramSlider = QParamSlider(self, key, *val)
             paramSlider.setObjectName(key)
+            # noinspection PyUnresolvedReferences
             paramSlider.sigValueChanged.connect(self.onTableChanged)
             self.vbox.addWidget(paramSlider)
             self.table[key] = val[0]
@@ -787,6 +806,7 @@ class QTableSlider(QWidget):
     def onTableChanged(self):
         sender = self.sender()
         self._table[sender.key] = sender.value
+        # noinspection PyUnresolvedReferences
         self.sigTableChanged.emit()
 
     @property
@@ -820,13 +840,16 @@ class QMenu(QWidget):
             self.button_group.addButton(button)
         self.box.addItem(spacer)
         # 信号 / 槽
+        # noinspection PyUnresolvedReferences
         self.button_group.buttonClicked.connect(self.on_menu_changed)
 
     def on_menu_changed(self, button):
+        # noinspection PyUnresolvedReferences
         self.sigMenuChanged.emit(button.text())
 
 
 def add_line(layout, _type: str = 'h'):
+    # noinspection PyProtectedMember
     line = QtWidgets.QFrame(layout._parent())
     if _type == "h":
         line.setFrameShape(QtWidgets.QFrame.HLine)
@@ -864,6 +887,7 @@ class QTCV:
         self.app_is_init = False
         self.Key = Qt.Key
 
+    # noinspection PyAttributeOutsideInit
     def init(self):
         self.app = QtWidgets.QApplication.instance()
         if self.app is None:
@@ -872,6 +896,7 @@ class QTCV:
         self.win_list = dict()
         self.timer = QTimer()
         self.timer.setSingleShot(True)
+        # noinspection PyUnresolvedReferences
         self.timer.timeout.connect(self.on_timeout)
         self.key = None
         self.app_is_init = True
@@ -879,7 +904,7 @@ class QTCV:
     def imshow(self, name: str, img, auto_scale=True):
         if not self.app_is_init:
             self.init()
-        if not name in self.win_list:
+        if name not in self.win_list:
             self.win_list[name] = QImageViewWidget(None, auto_scale=auto_scale)
             self.win_list[name].move(len(self.win_list) * 100, len(self.win_list) * 100)
             self.win_list[name].resize(img.shape[1], img.shape[0])
@@ -897,20 +922,24 @@ class QTCV:
         return self.key
 
     def on_timeout(self):
+        # noinspection PyAttributeOutsideInit
         self.key = None
         self.loop.quit()
 
     def keyPressEvent(self, event: QtGui.QKeyEvent):
+        # noinspection PyAttributeOutsideInit
         self.key = event.key()
         self.timer.stop()
         self.loop.quit()
 
     def closeEvent(self, event):
+        # noinspection PyAttributeOutsideInit
         self.key = None
         self.timer.stop()
         self.loop.quit()
 
     def destroyAllWindows(self):
+        # noinspection PyAttributeOutsideInit
         self.win_list = dict()
 
 
@@ -929,6 +958,7 @@ class QtThread(QThread):
     def run(self):
         res = self.func(*self.args, **self.kwargs)
         # 任务完成后发出信号
+        # noinspection PyUnresolvedReferences
         self.sigFinished.emit(res)
 
 
@@ -939,6 +969,7 @@ class QSynchronizer:
             self.app = QApplication(sys.argv)
         self.loop = QEventLoop()
 
+    # noinspection PyAttributeOutsideInit
     def wait_until(self, condition: Callable, period=0.02, timeout=20, *args, **kwargs):
         self.condition = lambda: condition(*args, **kwargs)
         self.t_0 = time()
@@ -946,6 +977,7 @@ class QSynchronizer:
         self.period = period
 
         self.timer = QTimer()
+        # noinspection PyUnresolvedReferences
         self.timer.timeout.connect(self.on_timeout)
         self.timer.start(int(period * 1000))
         if not self.loop.isRunning():

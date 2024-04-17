@@ -58,5 +58,6 @@ class Ladder(SectionHandler):
 
     def delete(self):
         Ladder.idMap.pop(self.getId())
+        # noinspection PyProtectedMember
         SectionHandler._ladder_tab._items.pop(self)
         super().delete()

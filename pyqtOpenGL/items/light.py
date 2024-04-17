@@ -1,5 +1,5 @@
 from ctypes import c_void_p
-from typing import Union, List
+from typing import Union, List, Optional
 
 import OpenGL.GL as gl
 
@@ -13,6 +13,7 @@ __all__ = ["PointLight", "LightMixin", "light_fragment_shader"]
 
 
 class PointLight(GLGraphicsItem):
+    _light_vbo: Optional[VBO] = None
 
     def __init__(
             self,
@@ -61,13 +62,16 @@ class PointLight(GLGraphicsItem):
         if visible is not None:
             self.__visible = visible
 
+    # noinspection PyMethodOverriding
     def translate(self, dx, dy, dz):
         self.position += [dx, dy, dz]
 
+    # noinspection PyMethodOverriding
     def rotate(self, x, y, z, angle):
         tr = Matrix4x4().fromAxisAndAngle(x, y, z, angle)
         self.position = tr * self.position
 
+    # noinspection PyMethodOverriding
     def scale(self, x, y, z):
         self.position *= [x, y, z]
 
@@ -75,11 +79,14 @@ class PointLight(GLGraphicsItem):
     def initializeGL(cls):
         cls._light_vert, cls._light_idx = sphere(0.3, 12, 12)
         cls._light_vao = VAO()
+        # noinspection PyUnresolvedReferences
         cls._light_vbo = VBO([cls._light_vert], [3])
         cls._light_vbo.setAttrPointer([0], [0])
+        # noinspection PyUnresolvedReferences
         cls._light_ebo = EBO(cls._light_idx)
         cls._light_shader = Shader(vertex_shader, fragment_shader)
 
+    # noinspection PyProtectedMember,PyMethodOverriding,PyUnresolvedReferences
     def paint(self, view_matrix: Matrix4x4):
         if not self.__visible:
             return
@@ -101,6 +108,7 @@ class LightMixin:
 
     def addLight(self, light: Union[PointLight, List[PointLight]]):
         if not hasattr(self, "lights"):
+            # noinspection PyAttributeOutsideInit
             self.lights = []
         if isinstance(light, PointLight):
             self.lights.append(light)

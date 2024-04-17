@@ -153,7 +153,7 @@ class MainEditor(MainEditorGUI):
         for key, func in shortcuts.items():
             action = QAction(self)
             action.setShortcut(QKeySequence(key))
-            action.triggered.connect(func)
+            action.triggered.connect(func)  # noqa
             self.addAction(action)
 
     def setCurrentPrj(self, prj):

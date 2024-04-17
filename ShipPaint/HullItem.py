@@ -135,6 +135,8 @@ def _get_index(half_index):
 
 
 class HullSectionItem(GLMeshItem):
+
+    # noinspection PyProtectedMember
     def __init__(self, handler, z, nodes: Union[list, tuple]):
         """
         """

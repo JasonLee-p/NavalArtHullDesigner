@@ -242,7 +242,7 @@ class QGelSlimWidget(GLViewWidget):
         if h > 400:
             zmap = cv2.resize(zmap, (480, 360), interpolation=cv2.INTER_NEAREST)
         zmap = np.pad(zmap, ((1, 1), (1, 1)), mode='constant', constant_values=0)
-
+        # noinspection PyProtectedMember
         scale = self.gelslim_model.gelslim_gel._x_size / w
         self.gelslim_model.setDepth(zmap=-zmap)
 

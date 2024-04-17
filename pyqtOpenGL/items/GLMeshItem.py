@@ -7,7 +7,7 @@ from .shader import Shader
 from ..GLGraphicsItem import GLGraphicsItem
 from ..transform3d import Matrix4x4
 
-__all__ = ['GLMeshItem']
+__all__ = ['GLMeshItem', 'mesh_vertex_shader']
 
 
 class GLMeshItem(GLGraphicsItem, LightMixin):

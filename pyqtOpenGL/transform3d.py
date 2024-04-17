@@ -339,6 +339,7 @@ class Vector3:
         return np.linalg.norm(self._data)
 
     def cross(self, other):
+        # noinspection PyProtectedMember
         return Vector3(np.cross(self._data, other._data))
 
     def normalized(self):
@@ -356,16 +357,20 @@ class Vector3:
     def __repr__(self):
         return f"Vec3({self.x:.3g}, {self.y:.3g}, {self.z:.3g})"
 
+    # noinspection PyProtectedMember
     def __sub__(self, other):
         return Vector3(self._data - other._data)
 
+    # noinspection PyProtectedMember
     def __add__(self, other):
         return Vector3(self._data + other._data)
 
+    # noinspection PyProtectedMember
     def __isub__(self, other):
         self._data -= other._data
         return self
 
+    # noinspection PyProtectedMember
     def __iadd__(self, other):
         self._data += other._data
         return self
@@ -459,6 +464,7 @@ class Vector3:
 
 @Vector3.__init__.register
 def _(self, v: Vector3):
+    # noinspection PyProtectedMember
     self._data = np.array(v._data, dtype='f4')
 
 

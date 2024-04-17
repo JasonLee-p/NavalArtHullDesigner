@@ -16,8 +16,8 @@ from ..functions import dispatchmethod
 from ..transform3d import Vector3
 
 __all__ = [
-    "Mesh", "Material", "EditItemMaterial", "direction_matrixs", "vertex_normal_smooth",
-    "sphere", "cylinder", "cube", "cone", "plane"
+    "Mesh", "Material", "EditItemMaterial", "direction_matrixs", "vertex_normal_smooth", "SymetryCylinderMesh",
+    "sphere", "cylinder", "cube", "cone", "plane", "grid3d", "surface",
 ]
 
 Vec2 = (2 * c_float)
@@ -934,13 +934,19 @@ def surface(zmap, xy_size):
     return verts, faces.reshape(-1, 3)
 
 
-def grid3d(grid):
+def grid3d(grid: np.ndarray):
+    """
+    返回一个网格的顶点和面
+    :param grid:
+    :return:
+    """
     # grid: (h, w, 3)
     h, w = grid.shape[:2]
     ncol, nrow = w - 1, h - 1
 
-    rowtemplate = np.arange(ncol, dtype=np.uint32).reshape(1, ncol, 1) + \
-                  np.array([[[0, ncol + 1, ncol + 2, 1]]])  # 1, ncols, 4
+    rowtemplate = np.arange(ncol, dtype=np.uint32).reshape(1, ncol, 1) + np.array(
+        [[[0, ncol + 1, ncol + 2, 1]]]
+    )  # 1, ncols, 4
     rowbase = np.arange(nrow, dtype=np.uint32).reshape(nrow, 1, 1) * (ncol + 1)  # nrows, 1, 1
     faces = (rowtemplate + rowbase).reshape(-1, 4).astype(np.uint32)
 
