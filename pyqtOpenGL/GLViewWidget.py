@@ -92,7 +92,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         # 加速渲染
         self.setAutoFillBackground(True)
         # self.setUpdateBehavior(QOpenGLWidget.DoubleBuffer)
-        self.frameSwapped.connect(self.parent().update) if self.parent() else None
+        self.frameSwapped.connect(self.parent().update) if self.parent() else None  # noqa
 
     def change_proj_mode(self, proj_mode: Literal['ortho', 'perspective']):
         self.camera.change_proj_mode(proj_mode)
@@ -419,6 +419,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self.select_end.setY(int(ev.localPos().y()))
             if not self.select_box.visible():
                 self.select_box.setVisible(True)
+            self.paintGL_outside()
 
     def mouseReleaseEvent(self, ev):
         ctl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
@@ -521,10 +522,10 @@ def getExc(indent=4, prefix='|  ', skip=1):
     return '\n'.join(lines3)
 
 
-def printExc(msg='', indent=4, prefix='|'):
+def printExc(msg='', indent=0, prefix='|'):
     """Print an error message followed by an indented exception backtrace
     (This function is intended to be called within except: blocks)"""
-    exc = getExc(indent=0, prefix="", skip=2)
+    exc = getExc(indent=indent, prefix=prefix, skip=2)
     # print(" "*indent + prefix + '='*30 + '>>')
     warnings.warn("\n".join([msg, exc]), RuntimeWarning, stacklevel=2)
     # print(" "*indent + prefix + '='*30 + '<<')

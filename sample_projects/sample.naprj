@@ -1,8 +1,8 @@
 {
-  "check_code": "3627eca0a8f0f0a3c58f495216696ddb27c0071e",
+  "check_code": "bd466c9cd9d8bbaf9dc317ff7751343186e63fb3",
   "project_name": "SampleProject",
   "author": "JasonLee",
-  "edit_time": "2024-4-17 9:50:11",
+  "edit_time": "2024-4-18 2:27:50",
   "hull_section_group": [
     {
       "name": "\u4e3b\u4f53",
@@ -47,7 +47,7 @@
             "#888889",
             "#888889"
           ],
-          "armor": null
+          "armor": 5
         },
         {
           "z": -3,
@@ -75,7 +75,7 @@
             "#888889",
             "#888889"
           ],
-          "armor": null
+          "armor": 5
         },
         {
           "z": 3,
@@ -103,7 +103,7 @@
             "#888889",
             "#888889"
           ],
-          "armor": null
+          "armor": 5
         },
         {
           "z": 9,
@@ -131,7 +131,7 @@
             "#888889",
             "#888889"
           ],
-          "armor": null
+          "armor": 5
         }
       ],
       "rail": {

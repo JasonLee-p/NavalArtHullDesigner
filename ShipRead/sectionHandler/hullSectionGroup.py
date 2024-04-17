@@ -18,7 +18,7 @@ class HullSection(SubSectionHandler):
     idMap = {}
     deleted_s = pyqtSignal()
 
-    def __init__(self, prj, z, node_datas, colors):
+    def __init__(self, prj, z, node_datas, colors, armor):
         self.hullProject = prj
         self._parent = None
         self._frontSection = None
@@ -27,7 +27,7 @@ class HullSection(SubSectionHandler):
         self.nodes: List[SectionNodeXY] = []
         self.nodes_data: Optional[np.ndarray] = None
         self.load_nodes(node_datas, colors)
-        self.armor = None
+        self.armor = armor if armor else 5
         super().__init__()
         for node in self.nodes:
             node.init_parent(self)
@@ -106,7 +106,8 @@ class HullSectionGroup(SectionHandler):
         new_hs = HullSection(self.hullProject,
                              self._frontSection.z + 2,
                              [[node.x, node.y] for node in self._frontSection.nodes],
-                             [node.Col.rgba() for node in self._frontSection.nodes])
+                             [node.Col.rgba() for node in self._frontSection.nodes],
+                             5)
         self._frontSection = new_hs
 
     def _add_section(self, section: HullSection):

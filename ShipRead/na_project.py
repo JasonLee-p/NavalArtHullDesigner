@@ -367,7 +367,7 @@ class NaPrjReader:
     def load_hull_section(self, data):
         sections = []
         for section in data:
-            hull_section = HullSection(self.hullProject, section['z'], section['nodes'], section['col'])
+            hull_section = HullSection(self.hullProject, section['z'], section['nodes'], section['col'], section['armor'])
             sections.append(hull_section)
         return sections
 

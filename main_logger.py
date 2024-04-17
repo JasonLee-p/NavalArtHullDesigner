@@ -33,7 +33,10 @@ class Log:
             self.file.write(f"[INFO] {log_time}\n{info}\n\n")
 
     def save(self):
-        self.file.close()
+        try:
+            self.file.close()
+        except Exception as e:
+            print(f"[ERROR] {e}")
 
 
 @singleton

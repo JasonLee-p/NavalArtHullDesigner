@@ -99,8 +99,8 @@ class MainEditorHandler(list):
 
 def lastEdit():
     print("[INFO] 最近编辑")
-    mainEditor = mainEditors.new("lastEdit")
-    if not mainEditor:
+    _mainEditor = mainEditors.new("lastEdit")
+    if not _mainEditor:
         return
 
 
