@@ -1,11 +1,13 @@
-from ..GLGraphicsItem import GLGraphicsItem
-from ..transform3d import Matrix4x4, Quaternion, Vector3
+from pathlib import Path
+
+import OpenGL.GL as gl
+import numpy as np
+
+from .BufferObject import VAO, VBO
 from .shader import Shader
 from .texture import Texture2D
-from .BufferObject import VAO, VBO, EBO
-import numpy as np
-import OpenGL.GL as gl
-from pathlib import Path
+from ..GLGraphicsItem import GLGraphicsItem
+from ..transform3d import Matrix4x4, Vector3
 
 BASE_DIR = Path(__file__).resolve().parent
 

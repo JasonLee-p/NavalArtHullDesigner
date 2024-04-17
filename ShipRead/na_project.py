@@ -6,6 +6,7 @@ import os
 import time
 from hashlib import sha1
 
+import ujson
 from GUI.element_structure_widgets import *
 from PyQt5.QtGui import QVector3D, QColor
 from PyQt5.QtWidgets import QMessageBox
@@ -122,17 +123,17 @@ class ShipProject(QObject):
             ]
         }
         """
-    add_hull_section_group_s = pyqtSignal(str)  # 添加船体截面组的信号，传出截面组id
-    add_armor_section_group_s = pyqtSignal(str)  # 添加装甲截面组的信号，传出截面组id
-    add_bridge_s = pyqtSignal(str)  # 添加舰桥的信号，传出舰桥id
-    add_ladder_s = pyqtSignal(str)  # 添加梯子的信号，传出梯子id
-    add_model_s = pyqtSignal(str)  # 添加模型的信号，传出模型id
+    add_hull_section_group_s = pyqtSignal(str)  # noqa  # 添加船体截面组的信号，传出截面组id
+    add_armor_section_group_s = pyqtSignal(str)  # noqa  # 添加装甲截面组的信号，传出截面组id
+    add_bridge_s = pyqtSignal(str)  # noqa  # 添加舰桥的信号，传出舰桥id
+    add_ladder_s = pyqtSignal(str)  # noqa  # 添加梯子的信号，传出梯子id
+    add_model_s = pyqtSignal(str)  # noqa  # 添加模型的信号，传出模型id
 
-    del_hull_section_group_s = pyqtSignal(str)  # 删除船体截面组的信号，传出截面组id
-    del_armor_section_group_s = pyqtSignal(str)  # 删除装甲截面组的信号，传出截面组id
-    del_bridge_s = pyqtSignal(str)  # 删除舰桥的信号，传出舰桥id
-    del_ladder_s = pyqtSignal(str)  # 删除梯子的信号，传出梯子id
-    del_model_s = pyqtSignal(str)  # 删除模型的信号，传出模型id
+    del_hull_section_group_s = pyqtSignal(str)  # noqa  # 删除船体截面组的信号，传出截面组id
+    del_armor_section_group_s = pyqtSignal(str)  # noqa  # 删除装甲截面组的信号，传出截面组id
+    del_bridge_s = pyqtSignal(str)  # noqa  # 删除舰桥的信号，传出舰桥id
+    del_ladder_s = pyqtSignal(str)  # noqa  # 删除梯子的信号，传出梯子id
+    del_model_s = pyqtSignal(str)  # noqa  # 删除模型的信号，传出模型id
 
     def __init__(self, main_handler, gl_widget: 'GLWidgetGUI', path: str):  # noqa
         """
@@ -268,7 +269,9 @@ class ShipProject(QObject):
         """
         self.save()
         with self.locker:
-            ...
+            with open(path, 'w', encoding='utf-8') as f:  # noqa
+                # TODO:
+                ...
 
     def to_dict(self):
         year, month, day, hour, minute, second = time.localtime(time.time())[:6]

@@ -341,9 +341,9 @@ class BasicDialog(QDialog):
             # 判断鼠标所在的位置是否为角落
             if _pos.x() < self.resize_area and _pos.x() < self.resize_area:
                 self.resize_dir = 'lt'
-            elif _pos.x() < self.resize_area and _pos.x() > self.height() - self.resize_area:
+            elif self.resize_area > _pos.x() > self.height() - self.resize_area:
                 self.resize_dir = 'lb'
-            elif _pos.x() > self.width() - self.resize_area and _pos.x() < self.resize_area:
+            elif self.width() - self.resize_area < _pos.x() < self.resize_area:
                 self.resize_dir = 'rt'
             elif _pos.x() > self.width() - self.resize_area and _pos.x() > self.height() - self.resize_area:
                 self.resize_dir = 'rb'
@@ -376,9 +376,9 @@ class BasicDialog(QDialog):
                 self.setCursor(Qt.SizeVerCursor)
             elif _pos.x() < self.resize_area and _pos.x() < self.resize_area:
                 self.setCursor(Qt.SizeFDiagCursor)
-            elif _pos.x() < self.resize_area and _pos.x() > self.height() - self.resize_area:
+            elif self.resize_area > _pos.x() > self.height() - self.resize_area:
                 self.setCursor(Qt.SizeBDiagCursor)
-            elif _pos.x() > self.width() - self.resize_area and _pos.x() < self.resize_area:
+            elif self.width() - self.resize_area < _pos.x() < self.resize_area:
                 self.setCursor(Qt.SizeBDiagCursor)
             elif _pos.x() > self.width() - self.resize_area and _pos.x() > self.height() - self.resize_area:
                 self.setCursor(Qt.SizeFDiagCursor)

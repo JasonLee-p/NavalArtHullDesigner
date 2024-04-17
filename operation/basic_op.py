@@ -5,7 +5,6 @@
 from abc import abstractmethod
 from typing import List, Union
 
-from GUI import FG_COLOR0, FG_COLOR1, GRAY, BG_COLOR3, LIGHTER_RED
 from PyQt5.QtCore import QMutex
 
 

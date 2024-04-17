@@ -1,9 +1,10 @@
-from ..GLGraphicsItem import GLGraphicsItem
-from ..transform3d import Matrix4x4, Quaternion, Vector3
-from .shader import Shader
-from .BufferObject import VAO, VBO
-import numpy as np
 import OpenGL.GL as gl
+import numpy as np
+
+from .BufferObject import VAO, VBO
+from .shader import Shader
+from ..GLGraphicsItem import GLGraphicsItem
+from ..transform3d import Matrix4x4, Vector3
 
 __all__ = ['GLBoxItem']
 

@@ -1,14 +1,13 @@
+from ctypes import c_void_p
 from typing import Union, List
 
-import numpy as np
-import math
 import OpenGL.GL as gl
-from ctypes import c_float, sizeof, c_void_p, Structure
-from .shader import Shader
+
 from .BufferObject import VAO, VBO, EBO
-from ..transform3d import Vector3, Matrix4x4
-from ..GLGraphicsItem import GLGraphicsItem
 from .MeshData import sphere
+from .shader import Shader
+from ..GLGraphicsItem import GLGraphicsItem
+from ..transform3d import Vector3, Matrix4x4
 
 __all__ = ["PointLight", "LightMixin", "light_fragment_shader"]
 

@@ -11,7 +11,7 @@ class Railing(SubSectionHandler):
     栏杆
     """
     idMap = {}
-    deleted_s = pyqtSignal()
+    deleted_s = pyqtSignal()  # noqa
 
     def __init__(self, prj, parent):
         self.hullProject = prj
@@ -38,7 +38,7 @@ class Handrail(SubSectionHandler):
     栏板
     """
     idMap = {}
-    deleted_s = pyqtSignal()
+    deleted_s = pyqtSignal()  # noqa
 
     def __init__(self, prj, parent):
         self.hullProject = prj
@@ -62,7 +62,7 @@ class Bridge(SectionHandler):
     舰桥
     """
     idMap = {}
-    deleted_s = pyqtSignal()
+    deleted_s = pyqtSignal()  # noqa
 
     def __init__(self, prj, name, rail_only):
         self.hullProject = prj

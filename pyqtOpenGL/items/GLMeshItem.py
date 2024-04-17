@@ -1,11 +1,11 @@
 import OpenGL.GL as gl
 import numpy as np
 
+from .MeshData import Mesh
+from .light import LightMixin, light_fragment_shader
 from .shader import Shader
 from ..GLGraphicsItem import GLGraphicsItem
-from ..transform3d import Matrix4x4, Vector3
-from .MeshData import vertex_normal_smooth, Mesh
-from .light import LightMixin, light_fragment_shader
+from ..transform3d import Matrix4x4
 
 __all__ = ['GLMeshItem']
 

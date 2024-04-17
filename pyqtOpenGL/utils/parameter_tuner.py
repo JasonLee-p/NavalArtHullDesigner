@@ -1,13 +1,10 @@
 import sys
 
-try:
-    import cv2
-except:
-    pass
+import cv2
 import numpy as np
 from time import time
 from pathlib import Path
-from typing import Callable, Union
+from typing import Callable, Union, Optional
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QWidget, QApplication
 from PyQt5.QtCore import pyqtSignal, QTimer, Qt, pyqtSlot
@@ -30,26 +27,26 @@ class InputType:
 class InputSource:
     """输入源"""
 
-    def __init__(self, source: Union[str, Path] = None, type: str = None):
+    def __init__(self, source: Union[str, Path] = None, _type: str = None):
         """
         type: 'video', 'image'
         """
         self.input_source = None
-        self.type = type
-        self.update_source(source, type)
+        self.type = _type
+        self.update_source(source, _type)
         self.paused = False
 
     @property
     def is_connected(self):
         return self.input_source is not None
 
-    def update_source(self, source: Union[str, Path, np.ndarray], type: str):
-        if type == InputType.VIDEO:
+    def update_source(self, source: Union[str, Path, np.ndarray], _type: str):
+        if _type == InputType.VIDEO:
             assert not str(source).split('.')[-1] in ("jpg", "png")
             self.input_source = VideoReader(source)
             self.height, self.width = self.input_source.height, self.input_source.width
 
-        elif type == InputType.IMAGE:
+        elif _type == InputType.IMAGE:
             if isinstance(source, np.ndarray):
                 self.input_source = source
             else:
@@ -57,7 +54,7 @@ class InputSource:
             assert self.input_source is not None, "[ERROR] Reading image failed"
             self.height, self.width = self.input_source.shape[0:2]
 
-        self.type = type
+        self.type = _type
 
     def get_frame(self):
         if not self.is_connected:
@@ -156,7 +153,7 @@ class VideoControlWidget(QtWidgets.QWidget):
         self.stamp_label = QtWidgets.QLabel(self)
         self.hbox = create_layout(
             self,
-            type="h",
+            _type="h",
             widgets=[self.backButton, self.playButton, self.forwardButton,
                      self.recordButton, self.stamp_label],
             stretchs=[1, 1, 1, 1, 1],
@@ -231,7 +228,7 @@ class ParameterTuner(QWidget):
     def __init__(
             self,
             func: Callable,
-            params: dict = {},
+            params: Optional[dict] = None,
             video: InputSource = None,
             preprocess: Callable = None,
     ):
@@ -242,6 +239,8 @@ class ParameterTuner(QWidget):
         """
         # 初始化窗口
         super().__init__()
+        if params is None:
+            params = dict()
         self.func = func
         self.video = video
         self.preprocess = preprocess
@@ -275,7 +274,7 @@ class ParameterTuner(QWidget):
         self.src_img_widget.setMinimumWidth(150)
         self.hbox = create_layout(
             self,
-            type="h",
+            _type="h",
             widgets=[self.left_frame, self.right_frame, self.src_img_widget],
             stretchs=[1, 4, 4],
         )
@@ -284,7 +283,7 @@ class ParameterTuner(QWidget):
         self.status_label = QtWidgets.QLabel(self)
         self.left_vbox = create_layout(
             self.left_frame,
-            type="v",
+            _type="v",
             widgets=[self.panel, self.status_label],
             stretchs=[10, 1],
         )
@@ -293,7 +292,7 @@ class ParameterTuner(QWidget):
         self.vc_widget = VideoControlWidget(self, self.video)
         self.right_vbox = create_layout(
             self.right_frame,
-            type="v",
+            _type="v",
             widgets=[self.vis_widget, self.vc_widget],
             stretchs=[15, 1],
         )

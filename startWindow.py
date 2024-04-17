@@ -129,7 +129,7 @@ class _BasicDialog(QDialog):
     def __init__(self, parent=None, border_radius: Union[int, Tuple[int, int, int, int]] = 10,
                  title=None, size=QSize(400, 300), center_layout=None,
                  resizable=False, hide_top=False, hide_bottom=False, ensure_bt_fill=False):
-        self.close_bg = QIcon(QPixmap.fromImage(CLOSE_IMAGE))
+        self.close_bg = QIcon(QPixmap.fromImage(CLOSE_IMAGE))  # noqa
         self._parent = parent
         self._generate_self_parent = False
         if not parent:
@@ -373,17 +373,17 @@ class _BasicDialog(QDialog):
 
 
 class StartWindow(_BasicDialog):
-    lastEdit_signal = pyqtSignal()
-    newPrj_signal = pyqtSignal()
-    openPrj_signal = pyqtSignal()
-    setting_signal = pyqtSignal()
-    help_signal = pyqtSignal()
-    about_signal = pyqtSignal()
+    lastEdit_signal = pyqtSignal()  # noqa
+    newPrj_signal = pyqtSignal()  # noqa
+    openPrj_signal = pyqtSignal()  # noqa
+    setting_signal = pyqtSignal()  # noqa
+    help_signal = pyqtSignal()  # noqa
+    about_signal = pyqtSignal()  # noqa
 
     def __init__(self, parent=None, title="", size=QSize(1100, 800)):
         # 控件
-        self.ICO = QPixmap.fromImage(ICO_IMAGE)
-        self.TIP = QPixmap.fromImage(TIP_IMAGE)
+        self.ICO = QPixmap.fromImage(ICO_IMAGE)  # noqa
+        self.TIP = QPixmap.fromImage(TIP_IMAGE)  # noqa
         self.ico_lb = QLabel()
         self.tip_lb = QLabel()
         self.center_layout = QVBoxLayout()
@@ -411,7 +411,7 @@ class StartWindow(_BasicDialog):
         super().__init__(parent, (10, 10, 116, 116), title, size, self.center_layout, hide_bottom=True)
         self.hide()
         # 图标
-        self.ICO = QPixmap.fromImage(ICO_IMAGE)
+        self.ICO = QPixmap.fromImage(ICO_IMAGE)  # noqa
         self.setWindowIcon(QIcon(self.ICO))
         # 事件绑定
         self.__connect_funcs()

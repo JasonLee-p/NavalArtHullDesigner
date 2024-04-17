@@ -2,10 +2,9 @@
 """
 读取配置文件信息，保存配置信息
 """
-from typing import Union, Dict
 
 import ujson
-from funcs_utils import merge_dict, singleton
+from funcs_utils import merge_dict
 # from main_logger import Log
 from path_vars import *
 
@@ -85,7 +84,7 @@ class ConfigHandler:
                     dict_changed = merge_dict(self.__config, self.DEFAULT_CONFIG)
                     if dict_changed:
                         self.save_config()
-            except ValueError and KeyError as e:
+            except ValueError and KeyError as _:
                 self.__config = self.DEFAULT_CONFIG
                 self.save_config()
         else:

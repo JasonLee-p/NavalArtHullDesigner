@@ -5,13 +5,10 @@
 import gc
 import os
 
-import numpy as np
-import PIL.Image as Image
 from GUI.element_structure_widgets import *
 from ShipRead.na_project import ShipProject
 from funcs_utils import not_implemented
-from main_logger import StatusBarHandler
-from path_vars import CURRENT_PATH
+from path_vars import CURRENT_PATH, DESKTOP_PATH
 from pyqtOpenGL import *
 from pyqtOpenGL.camera import Camera
 from pyqtOpenGL.items.MeshData import EditItemMaterial
@@ -148,7 +145,7 @@ class ElementStructureTab(MutiDirectionTab):
 
 
 class ElementEditTab(MutiDirectionTab):
-    elementType_updated = pyqtSignal(str)
+    elementType_updated = pyqtSignal(str)  # noqa
 
     def __init__(self, parent):
         """
@@ -187,7 +184,7 @@ class ElementEditTab(MutiDirectionTab):
         top_widget = QWidget()
         top_widget.setLayout(QHBoxLayout())
         top_widget.layout().addWidget(self.elementType_label)
-        top_widget.layout().addWidget(self.elementName_label, stretch=1)
+        top_widget.layout().addWidget(self.elementName_label, stretch=1)  # noqa
         top_widget.layout().setSpacing(0)
         top_widget.layout().setContentsMargins(0, 0, 0, 0)
         self.main_layout.addWidget(top_widget)
@@ -338,8 +335,8 @@ class SettingTab(MutiDirectionTab):
 
 
 class GLWidgetGUI(GLViewWidget):
-    clear_selected_items = pyqtSignal()
-    after_selection = pyqtSignal()
+    clear_selected_items = pyqtSignal()  # noqa
+    after_selection = pyqtSignal()  # noqa
 
     def __init__(self):
         self.main_editor = None

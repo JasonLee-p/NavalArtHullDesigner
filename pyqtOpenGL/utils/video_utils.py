@@ -23,11 +23,6 @@ class VideoReader:
         if self.pts_0:
             self.jump(self.pts_0)
 
-    @property
-    def stamp(self):
-        """当前时间戳"""
-        return self.pts_cur * self.time_base
-
     def get_loop_frame(self):
         """循环读取图片帧
         返回(图片, 时间戳s)
@@ -36,11 +31,14 @@ class VideoReader:
             frame = next(self._generator)
             image = frame.to_ndarray(format='bgr24')
             self.pts_cur = frame.pts
-        except:  # 重置
+        except (StopIteration, av.AVError):
+            # 重置
             self.jump(self.pts_0)
             frame = next(self._generator)
             image = frame.to_ndarray(format='bgr24')
             self.pts_cur = frame.pts
+        except:  # noqa
+            return None, -1
         return image, frame.time  # 返回图片(bgr)和时间戳
 
     def get_frame(self):
@@ -49,7 +47,9 @@ class VideoReader:
             frame = next(self._generator)
             image = frame.to_ndarray(format='bgr24')
             self.pts_cur = frame.pts
-        except:
+        except (StopIteration, av.AVError):
+            return None, -1
+        except:  # noqa
             return None, -1
         return image, frame.time
 

@@ -1,16 +1,17 @@
 import sys
 import typing
-import yaml
 from time import time
+from typing import Callable
+
 import cv2
 import numpy as np
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QWidget, QApplication, QSizePolicy
-from PyQt5.QtCore import pyqtSignal, QTimer, Qt, QSize, pyqtSlot, QPoint, QEventLoop, QThread, QRect
-from PyQt5.QtGui import QImage, QPixmap, QResizeEvent
+import yaml
 from PyQt5 import QtGui
-from matplotlib import cm
-from typing import Callable
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSignal, QTimer, Qt, pyqtSlot, QPoint, QEventLoop, QThread, QRect
+from PyQt5.QtGui import QResizeEvent
+from PyQt5.QtWidgets import QWidget, QApplication
+
 from ..GLWidgets import *
 
 __all__ = [
@@ -41,11 +42,11 @@ class QParamSlider(QWidget):
     """带参数显示的滑动条"""
     sigValueChanged = pyqtSignal()
 
-    def __init__(self, parent, key, value, start, stop, step, type: str = "int"):
+    def __init__(self, parent, key, value, start, stop, step, _type: str = "int"):
         """type:  int / float """
         super().__init__(parent)
         self.key = key
-        self.type = type
+        self.type = _type
         self.step = abs(step)  # > 0
         self.start = start
         self.stop = stop
@@ -174,9 +175,9 @@ class QDirectorySelector(QWidget):
     def select_path(self):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
-        dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory", options=options)
-        if dir and dir != self.value:
-            self.dir_editor.setText(dir)
+        _dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory", options=options)
+        if _dir and _dir != self.value:
+            self.dir_editor.setText(_dir)
             self.sigValueChanged.emit()
 
     @property
@@ -325,12 +326,12 @@ class QCheckList(QWidget):
     """互斥 check list"""
     sigValueChanged = pyqtSignal()
 
-    def __init__(self, parent, item_list: typing.List[str], id: int = 0, type="h", exclusive=True):
+    def __init__(self, parent, item_list: typing.List[str], _id: int = 0, _type="h", exclusive=True):
         super().__init__(parent=parent)
         self.exclusive = exclusive
-        if type == "v":
+        if _type == "v":
             self.box = QtWidgets.QVBoxLayout(self)
-        elif type == "h":
+        elif _type == "h":
             self.box = QtWidgets.QHBoxLayout(self)
 
         self.box.setContentsMargins(10, 10, 0, 0)
@@ -343,7 +344,7 @@ class QCheckList(QWidget):
         # 互斥
         self.box_group.setExclusive(exclusive)
         self.box_group.buttonClicked.connect(self.sigValueChanged)
-        self.value = id
+        self.value = _id
 
     @property
     def value(self):
@@ -368,17 +369,17 @@ class QCheckList(QWidget):
 class QTablePanel(QWidget):
     sigTableChanged = pyqtSignal(str)
 
-    def __init__(self, parent, table: dict, name: str = None, type="v"):
+    def __init__(self, parent, table: dict, name: str = None, _type="v"):
         super().__init__(parent)
         if name is not None:
             self.setObjectName(name)
         self._table = dict()  # {key: value, }
         self._widgets = dict()
         # 定义布局
-        if type == "v":
+        if _type == "v":
             self.box = QtWidgets.QVBoxLayout(self)
             spacer = QtWidgets.QSpacerItem(0, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        elif type == "h":
+        elif _type == "h":
             self.box = QtWidgets.QHBoxLayout(self)
             spacer = QtWidgets.QSpacerItem(20, 0, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         # 定义 widgets
@@ -425,11 +426,11 @@ class QTablePanel(QWidget):
                 widget.sigValueChanged.connect(self.onTableChanged, 0)
                 self._table[key] = val[1]
             elif val[0] == "line":
-                line_type = 'v' if type == 'h' else 'h'
-                add_line(self.box, type=line_type)
+                line_type = 'v' if _type == 'h' else 'h'
+                add_line(self.box, _type=line_type)
                 continue
             elif val[0] == "spacer":
-                size = (1, val[1]) if type == 'v' else (val[1], 1)
+                size = (1, val[1]) if _type == 'v' else (val[1], 1)
                 spacer1 = QtWidgets.QSpacerItem(size[0], size[1], QtWidgets.QSizePolicy.Minimum,
                                                 QtWidgets.QSizePolicy.Minimum)
                 self.box.addItem(spacer1)
@@ -500,7 +501,7 @@ def QColormapPanel():
         "cm_scale": ["float", 40, 1, 250, 1],
         "cm_bias": ["float", 0.2, -0.5, 0.5, 0.01],
     }
-    colormap_panel = QTablePanel(None, colormap_panel, type="h")
+    colormap_panel = QTablePanel(None, colormap_panel, _type="h")
     colormap_panel.widget("colormap").name_label.setText("cm")
     colormap_panel.widget("colormap").hbox.setStretch(1, 1)
 
@@ -519,7 +520,7 @@ def QGridMovepanel():
         "grid1_z": ["int", 0, -255, 255, 1],
         "grid2_z": ["int", 255, -255, 255, 1],
     }
-    grid_move_panel = QTablePanel(None, grid_move_panel, type="h")
+    grid_move_panel = QTablePanel(None, grid_move_panel, _type="h")
     # colormap_panel.setContentsMargins(0, 0, 0, 0)
     grid_move_panel.setStretchs([1, 1, 5, 5])
     grid_move_panel.box.setSpacing(30)
@@ -635,8 +636,8 @@ class QImageViewWidget(QtWidgets.QLabel):
 
     def get_img(self):
         h, w = self.q_img.height(), self.q_img.width()
-        bytes = self.q_img.bits().asstring(self.q_img.byteCount())
-        img = np.frombuffer(bytes, np.uint8).reshape((h, w, self.q_img.depth() // 8))
+        _bytes = self.q_img.bits().asstring(self.q_img.byteCount())
+        img = np.frombuffer(_bytes, np.uint8).reshape((h, w, self.q_img.depth() // 8))
         img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
         return img
 
@@ -759,8 +760,8 @@ class VisualizeWidget(QtWidgets.QFrame):
 
         pixmap = self._screen.grabWindow(0).copy(QRect(pos.x(), pos.y(), w, h))
         qimage = pixmap.toImage()
-        bytes = qimage.bits().asstring(qimage.byteCount())
-        img = np.frombuffer(bytes, np.uint8).reshape((h, w, 4))
+        _bytes = qimage.bits().asstring(qimage.byteCount())
+        img = np.frombuffer(_bytes, np.uint8).reshape((h, w, 4))
         img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
         return img
 
@@ -797,14 +798,14 @@ class QMenu(QWidget):
     """根据菜单列表创建一组菜单按钮"""
     sigMenuChanged = pyqtSignal(str)
 
-    def __init__(self, parent, menu_list: list, type="v"):
+    def __init__(self, parent, menu_list: list, _type="v"):
         super().__init__(parent)
         self.menu_list = menu_list
         # 定义布局
-        if type == "v":
+        if _type == "v":
             self.box = QtWidgets.QVBoxLayout(self)
             spacer = QtWidgets.QSpacerItem(0, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        elif type == "h":
+        elif _type == "h":
             self.box = QtWidgets.QHBoxLayout(self)
             spacer = QtWidgets.QSpacerItem(20, 0, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.box.setContentsMargins(0, 0, 0, 0)
@@ -825,11 +826,11 @@ class QMenu(QWidget):
         self.sigMenuChanged.emit(button.text())
 
 
-def add_line(layout, type: str = 'h'):
+def add_line(layout, _type: str = 'h'):
     line = QtWidgets.QFrame(layout._parent())
-    if type == "h":
+    if _type == "h":
         line.setFrameShape(QtWidgets.QFrame.HLine)
-    if type == "v":
+    if _type == "v":
         line.setFrameShape(QtWidgets.QFrame.VLine)
     line.setFrameShadow(QtWidgets.QFrame.Sunken)
     layout.addWidget(line)
@@ -837,7 +838,7 @@ def add_line(layout, type: str = 'h'):
 
 def create_layout(
         parent,
-        type: str = "v",
+        _type: str = "v",
         widgets: list = None,
         stretchs: list = None,
         content_margins: tuple = (0, 0, 0, 0),
@@ -847,7 +848,7 @@ def create_layout(
     widgets = widgets if widgets is not None else []
     stretchs = stretchs if stretchs is not None else []
 
-    layout = QtWidgets.QVBoxLayout(parent) if type == "v" else QtWidgets.QHBoxLayout(parent)
+    layout = QtWidgets.QVBoxLayout(parent) if _type == "v" else QtWidgets.QHBoxLayout(parent)
     layout.setContentsMargins(*content_margins)
     layout.setSpacing(spacing)
     for i, widget in enumerate(widgets):

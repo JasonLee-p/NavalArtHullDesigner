@@ -1,11 +1,12 @@
 """
 
 """
+from typing import Union
+
 import numpy as np
-from typing import Any, Union
+from PyQt5.QtGui import QQuaternion, QMatrix4x4, QVector3D, QMatrix3x3, QVector4D
 
 from .functions import dispatchmethod
-from PyQt5.QtGui import QQuaternion, QMatrix4x4, QVector3D, QMatrix3x3, QVector4D
 
 
 class Quaternion(QQuaternion):
@@ -474,4 +475,4 @@ if __name__ == '__main__':
                     ])
     # nt = Matrix4x4.fromAxisAndAngle(1, 0, 0, 30)
     q = Quaternion.fromAxisAndAngle(0, 1, 1, 34)
-    q = Quaternion()
+    # q = Quaternion()

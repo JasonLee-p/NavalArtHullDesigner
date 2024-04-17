@@ -8,8 +8,8 @@ from operation import *
 
 
 class EditTabWidget(QWidget):
-    pos_changed_s = pyqtSignal(list)
-    rot_changed_s = pyqtSignal(list)
+    pos_changed_s = pyqtSignal(list)  # noqa
+    rot_changed_s = pyqtSignal(list)  # noqa
 
     main_editor = None
     gl_widget = None

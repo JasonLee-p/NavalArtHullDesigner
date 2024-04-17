@@ -1,12 +1,12 @@
-from OpenGL.GL import *  # noqa
+from typing import Union
+
+import numpy as np
 from OpenGL import GL
-from math import radians
+from OpenGL.GL import *  # noqa
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 
-from .transform3d import Matrix4x4, Quaternion
-import numpy as np
-from typing import Union
+from .transform3d import Matrix4x4
 
 GLOptions = {
     'opaque': {
@@ -250,7 +250,7 @@ class GLGraphicsItem(QtCore.QObject):
         if self.__selectable:
             return self.__selected
         # unselectable items are only selected if their selectable parent is selected
-        return self.parent() is not None and self.parent().selected(parent=True)
+        return self.parent() is not None and self.parent().selected(parent=True) if parent else False
 
     def setSelected(self, s, children=True):
         """Set the selected state of this item."""

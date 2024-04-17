@@ -1,16 +1,18 @@
 from pathlib import Path
 from typing import Union, List, Dict
+
 import numpy as np
-import OpenGL.GL as gl
+
+from .GLAxisItem import GLAxisItem
+from .GLModelItem import GLModelItem
 from ..GLGraphicsItem import GLGraphicsItem
 from ..transform3d import Matrix4x4
-from .GLModelItem import GLModelItem
-from .GLAxisItem import GLAxisItem
-from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
+
+BASE_DIR = Path(__file__).resolve().parent
+
 
 __all__ = ['GLURDFItem']
 
@@ -150,20 +152,20 @@ class GLURDFItem(GLGraphicsItem):
         # 遍历每个joint元素
         for joint in self.urdf.findall('joint'):
             name = joint.get('name')
-            type = joint.get('type')
+            _type = joint.get('type')
             origin = rpy_xyz_to_mat(*parse_origin(joint.find('origin')))
             parent = self.links[joint.find('parent').get('link')]
             child = self.links[joint.find('child').get('link')]
 
-            if type == 'fixed':  # 忽略固定关节
+            if _type == 'fixed':  # 忽略固定关节
                 child.setTransform(origin)
 
-            if type in ['revolute', 'prismatic']:
+            if _type in ['revolute', 'prismatic']:
                 axis = np.array(joint.find('axis').get('xyz').split(), dtype=float)
                 limit = np.array([joint.find('limit').get('lower'), joint.find('limit').get('upper')], dtype=float)
                 self.joints[name] = Joint(
                     child=child,
-                    type=type,
+                    type=_type,
                     axis=axis,
                     limit=limit,
                     origin=origin

@@ -315,7 +315,7 @@ class ImageButton(QPushButton):
         self.bd_radius = bd_radius
         self.bg = bg
 
-        img = QPixmap(QImage.fromData(QByteArray(self.img_bytes)))
+        img = QPixmap(QImage.fromData(QByteArray(self.img_bytes)))  # noqa
         img.scaled(self.width, self.height, Qt.KeepAspectRatio)
         rounded_img = QPixmap(self.width, self.height)
         rounded_img.fill(Qt.transparent)
@@ -448,7 +448,7 @@ class CircleBtWithTextLabel(QPushButton):
         self.setLayout(self.layout)
         self.text_label = TextLabel(self, text, font=YAHEI[10], color=FG_COLOR0, align=Qt.AlignLeft | Qt.AlignVCenter)
         self.__r_widgets = [self.text_label, self]
-        self.circle = CircleSelectButton(self, self._r_widgets, tool_tip, radius, color, check_color)
+        self.circle = CircleSelectButton(self, self._r_widgets, tool_tip, radius, color, color, check_color)
         self.layout.addWidget(self.circle, Qt.AlignLeft | Qt.AlignVCenter)
         self.layout.addWidget(self.text_label, Qt.AlignLeft | Qt.AlignVCenter)
         self.setFixedSize(size[0], size[1])

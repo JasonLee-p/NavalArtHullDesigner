@@ -1,10 +1,11 @@
 from contextlib import contextmanager
 from typing import List, Union, Dict, Callable, Type, Tuple
-from PyQt5.QtCore import Qt, QPoint, QSize, QEvent
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtGui import QFocusEvent, QMouseEvent
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton
+
 import numpy as np
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt, QPoint, QSize
+from PyQt5.QtGui import QFocusEvent
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton
 
 Number = Union[int, float]
 NumberTuple = Tuple[Number]
@@ -475,12 +476,12 @@ class ArrayTypeItem(QtWidgets.QWidget, ToolItem):
     sigChanged = QtCore.pyqtSignal(object)
 
     def __init__(self, label: str, value: NumberTuple,
-                 type: Union[Type[int], Type[float]], editable=True, callback: Callable = None):
+                 _type: Union[Type[int], Type[float]], editable=True, callback: Callable = None):
         super().__init__()
         self.set_label(label)
         self._value = list(value)
         self.length = len(value)
-        self.type = type
+        self.type = _type
         assert self.length > 0, "Array length must be greater than 0"
 
         self.name_label = QtWidgets.QLabel(label, self)
@@ -489,18 +490,18 @@ class ArrayTypeItem(QtWidgets.QWidget, ToolItem):
         self.inputs_layout.setContentsMargins(0, 0, 0, 0)
 
         self.inputs = []
-        validator = QtGui.QIntValidator() if type == int else QtGui.QDoubleValidator()
+        validator = QtGui.QIntValidator() if _type == int else QtGui.QDoubleValidator()
         for i in range(self.length):
-            input = QtWidgets.QLineEdit(str(self.type(value[i])), self.inputs_frame)
-            input.setMinimumWidth(10)
-            input.setValidator(validator)
+            _input = QtWidgets.QLineEdit(str(self.type(value[i])), self.inputs_frame)
+            _input.setMinimumWidth(10)
+            _input.setValidator(validator)
             if not editable:
-                input.setFocusPolicy(Qt.NoFocus)
-            input.editingFinished.connect(self._on_changed)
-            input.setObjectName(str(i))  # 设置objectName, 用于区分信号来源
+                _input.setFocusPolicy(Qt.NoFocus)
+            _input.editingFinished.connect(self._on_changed)
+            _input.setObjectName(str(i))  # 设置objectName, 用于区分信号来源
 
-            self.inputs.append(input)
-            self.inputs_layout.addWidget(input, 1)
+            self.inputs.append(_input)
+            self.inputs_layout.addWidget(_input, 1)
 
         self.box = create_layout(self, True,
                                  [self.inputs_frame, self.name_label], [5, 2], spacing=10)
@@ -522,24 +523,24 @@ class ArrayTypeItem(QtWidgets.QWidget, ToolItem):
         self.sigChanged.emit(self._value)
 
     def _on_changed(self):
-        id = int(self.sender().objectName())
-        val = self.type(self.inputs[id].text())
-        if self._value[id] != val:
-            self._value[id] = val
+        _id = int(self.sender().objectName())
+        val = self.type(self.inputs[_id].text())
+        if self._value[_id] != val:
+            self._value[_id] = val
             self.sigChanged.emit(self._value)
 
 
 class DragValue(QtWidgets.QLineEdit):
     sigValueChanged = QtCore.pyqtSignal(object)
 
-    def __init__(self, value, min_val, max_val, step, decimals=2, format: str = None,
+    def __init__(self, value, min_val, max_val, step, decimals=2, _format: str = None,
                  parent=None):
         super().__init__(parent)
         self.decimal_format = "%." + str(decimals) + "f"
-        if format is None:
+        if _format is None:
             self.format = self.decimal_format
         else:
-            self.format = format
+            self.format = _format
         self.drag_position = QPoint()  # 记录鼠标按下的位置
         self.pressed = False
 
@@ -628,13 +629,13 @@ class DragValueItem(QtWidgets.QWidget, ToolItem):
     sigChanged = QtCore.pyqtSignal(object)
 
     def __init__(self, label: str, value, min_val, max_val, step, decimals: int = 0,
-                 format: str = None,
+                 _format: str = None,
                  callback: Callable = None):
         super().__init__()
         self.set_label(label)
 
         self.name_label = QtWidgets.QLabel(label, self)
-        self.value_drager = DragValue(value, min_val, max_val, step, decimals, format, self)
+        self.value_drager = DragValue(value, min_val, max_val, step, decimals, _format, self)
 
         self.box = create_layout(self, True,
                                  [self.value_drager, self.name_label],
@@ -661,7 +662,7 @@ class DragArrayItem(QtWidgets.QWidget, ToolItem):
     sigChanged = QtCore.pyqtSignal(object)
 
     def __init__(self, label: str, value, min_val, max_val, step, decimals,
-                 format: Union[str, Tuple[str]] = None, callback: Callable = None, horizontal=True):
+                 _format: Union[str, Tuple[str]] = None, callback: Callable = None, horizontal=True):
         super().__init__()
         self.length = len(value)
         self.set_label(label)
@@ -671,7 +672,7 @@ class DragArrayItem(QtWidgets.QWidget, ToolItem):
         max_val = self._validate_arg(max_val)
         step = self._validate_arg(step)
         decimals = self._validate_arg(decimals)
-        format = self._validate_arg(format)
+        _format = self._validate_arg(_format)
 
         self.name_label = QtWidgets.QLabel(label, self)
 
@@ -682,11 +683,11 @@ class DragArrayItem(QtWidgets.QWidget, ToolItem):
 
         self.inputs: List[DragValue] = []
         for i in range(self.length):
-            input = DragValue(value[i], min_val[i], max_val[i], step[i], decimals[i], format[i], self.inputs_frame)
-            input.sigValueChanged.connect(self._on_changed)
-            input.setObjectName(str(i))  # 设置objectName, 用于区分信号来源
-            self.inputs.append(input)
-            self.inputs_layout.addWidget(input, 1)
+            _input = DragValue(value[i], min_val[i], max_val[i], step[i], decimals[i], _format[i], self.inputs_frame)
+            _input.sigValueChanged.connect(self._on_changed)
+            _input.setObjectName(str(i))  # 设置objectName, 用于区分信号来源
+            self.inputs.append(_input)
+            self.inputs_layout.addWidget(_input, 1)
 
         self.box = create_layout(self, True,
                                  [self.inputs_frame, self.name_label], [5, 2], spacing=10)
@@ -704,10 +705,10 @@ class DragArrayItem(QtWidgets.QWidget, ToolItem):
             raise TypeError(f"arg must be list, tuple, int or float, but got {type(arg)}")
 
     def _on_changed(self, val):
-        id = int(self.sender().objectName())
-        self._value[id] = val
+        _id = int(self.sender().objectName())
+        self._value[_id] = val
         # return self.sigChanged.emit(self._value)
-        return self.sigChanged.emit((id, val))
+        return self.sigChanged.emit((_id, val))
 
     @property
     def value(self) -> List[Number]:
@@ -861,9 +862,9 @@ class ToolBox:
         return array_float
 
     @classmethod
-    def add_drag_value(cls, label: str, value, min_val, max_val, step, decimals=2, format: str = None,
+    def add_drag_value(cls, label: str, value, min_val, max_val, step, decimals=2, _format: str = None,
                        callback: Callable = None) -> DragValueItem:
-        drag_int = DragValueItem(label, value, min_val, max_val, step, decimals, format, callback)
+        drag_int = DragValueItem(label, value, min_val, max_val, step, decimals, _format, callback)
         cls._add_item(label, drag_int)
         return drag_int
 
@@ -874,9 +875,9 @@ class ToolBox:
                        max_val: Union[Number, NumberTuple],
                        step: Union[Number, NumberTuple],
                        decimals: Union[int, Tuple[int]] = 0,
-                       format: Union[str, Tuple[str]] = None,
+                       _format: Union[str, Tuple[str]] = None,
                        callback: Callable = None,
                        horizontal: bool = True) -> DragArrayItem:
-        drag_array = DragArrayItem(label, value, min_val, max_val, step, decimals, format, callback, horizontal)
+        drag_array = DragArrayItem(label, value, min_val, max_val, step, decimals, _format, callback, horizontal)
         cls._add_item(label, drag_array)
         return drag_array

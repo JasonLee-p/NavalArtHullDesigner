@@ -2,35 +2,29 @@
 """
 This module provides a widget for displaying 3D data.
 """
-import warnings
-import traceback
 import sys
-
 import time
-from ctypes import c_float, c_void_p
+import traceback
+import warnings
+from math import radians, tan
+from typing import List, Set, Literal
 
-import funcs_utils
-from PIL import Image
+import OpenGL.GL as gl
 import numpy as np
 import numpy.core._exceptions as np_core_exc  # noqa
 from GUI import TextLabel, WIN_WID, WIN_HEI
-
 from OpenGL.GL import *  # noqa
-import OpenGL.GL as gl
-from math import radians, tan
-
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal, QPoint, QMutex
-from PyQt5.QtWidgets import QOpenGLWidget, QMessageBox
+from PyQt5.QtWidgets import QMessageBox
 from main_logger import Log
 from pyqtOpenGL.items.GL2DSelectBox import GLSelectBox
 
+from .GLGraphicsItem import GLGraphicsItem, PickColorManager
 from .camera import Camera
 from .functions import mkColor
-from .transform3d import Vector3, Matrix4x4
-from typing import List, Set, Union, Literal
-from .GLGraphicsItem import GLGraphicsItem, PickColorManager
 from .items.light import PointLight
+from .transform3d import Vector3
 
 
 def _draw_item(item):
@@ -328,7 +322,11 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             for it in self.items:
                 try:
                     it.drawItemTree_pickMode()
-                except Exception as e:
+                except np_core_exc._ArrayMemoryError as _:  # noqa
+                    QMessageBox().warning(None, "严重错误", "申请内存错误，程序即将退出")
+                    Log().error(traceback.format_exc(), "申请内存错误，程序即将退出")
+                    sys.exit(1)
+                except Exception as e:  # noqa
                     printExc()
                     print("Error while drawing item %s in pick mode." % str(it))
         else:

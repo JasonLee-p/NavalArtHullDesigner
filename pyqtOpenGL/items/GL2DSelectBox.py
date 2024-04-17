@@ -33,7 +33,10 @@ class GLSelectBox(GLGraphicsItem):
             -1, 1,
             -1, -1,
         ], dtype=np.float32).reshape(-1, 2)
-        self.setVisible(False)
+        if not parentItem:
+            self.setVisible(False)
+        else:
+            self.setParentItem(parentItem)
 
     def initializeGL(self):
         self.shader = Shader(vertex_shader, fragment_shader)

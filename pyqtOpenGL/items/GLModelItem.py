@@ -1,17 +1,16 @@
 from pathlib import Path
+from typing import List
 
 import OpenGL.GL as gl
-from PyQt5.QtCore import pyqtSignal
 
-# from pyqtOpenGL import PointLight
-
-from ..GLGraphicsItem import GLGraphicsItem, PickColorManager
-from ..transform3d import Matrix4x4, Quaternion, Vector3
-from .shader import Shader
+from .GLMeshItem import mesh_vertex_shader
 from .MeshData import Mesh
 from .light import LightMixin, light_fragment_shader
-from .GLMeshItem import mesh_vertex_shader
-from typing import List, Union
+from .shader import Shader
+from ..GLGraphicsItem import GLGraphicsItem
+from ..transform3d import Matrix4x4
+
+# from pyqtOpenGL import PointLight
 
 __all__ = ['GLModelItem']
 

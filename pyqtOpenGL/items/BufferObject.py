@@ -1,10 +1,11 @@
 """
 缓冲区对象
 """
+from ctypes import c_void_p
+from typing import List
+
 import OpenGL.GL as gl
-from typing import List, Union
 import numpy as np
-from ctypes import c_uint, c_float, c_void_p
 
 GL_Type = {
     np.dtype("f4"): gl.GL_FLOAT,
@@ -54,15 +55,15 @@ class MemoryBlock:
         ptr = 0
 
         # 更新块大小和块使用情况，并计算保持块
-        for id, len in zip(ids, blocks):
-            t = self.block_offsets[id] - ptr
+        for _id, _len in zip(ids, blocks):
+            t = self.block_offsets[_id] - ptr
             if t > 0:
-                keep_blocks.append([ptr, t, id])  # 读取偏移量, 大小, id(然后转换为写入偏移量)
+                keep_blocks.append([ptr, t, _id])  # 读取偏移量, 大小, id(然后转换为写入偏移量)
 
-            ptr = self.block_offsets[id] + self.block_lens[id]
-            self.block_used[id] = len
-            if len > self.block_lens[id]:
-                self.block_lens[id] = len
+            ptr = self.block_offsets[_id] + self.block_lens[_id]
+            self.block_used[_id] = _len
+            if _len > self.block_lens[_id]:
+                self.block_lens[_id] = _len
                 extend = True
         if ptr < self.sum_lens:
             keep_blocks.append([ptr, self.sum_lens - ptr, -1])
@@ -71,17 +72,17 @@ class MemoryBlock:
             self.block_offsets = [0] + np.cumsum(self.block_lens).tolist()[:-1]  # 更新块偏移量
             self.sum_lens = sum(self.block_lens)
             for kb in keep_blocks:  # 计算写入偏移量
-                id = kb[2]
-                end = self.block_offsets[id] if id != -1 else self.sum_lens
+                _id = kb[2]
+                end = self.block_offsets[_id] if _id != -1 else self.sum_lens
                 kb[2] = end - kb[1]
 
-        for id, len in zip(ids, blocks):
-            copy_blocks.append([self.block_offsets[id], len])  # 写入偏移量, 大小
+        for _id, _len in zip(ids, blocks):
+            copy_blocks.append([self.block_offsets[_id], _len])  # 写入偏移量, 大小
 
         return copy_blocks, keep_blocks, extend
 
-    def locBlock(self, id):
-        return self.block_offsets[id], self.block_lens[id]
+    def locBlock(self, _id):
+        return self.block_offsets[_id], self.block_lens[_id]
 
     @property
     def nblocks(self):
@@ -94,21 +95,21 @@ class MemoryBlock:
     def __len__(self):
         return self.sum_lens
 
-    def __getitem__(self, id):
+    def __getitem__(self, _id):
         return {
-            "offset": self.block_offsets[id],
-            "length": self.block_lens[id],
-            "used": self.block_used[id],
-            "dtype": self.dtype[id],
-            "attr_size": self.attr_size[id],
-            "attr_idx": self.attr_idx[id],
+            "offset": self.block_offsets[_id],
+            "length": self.block_lens[_id],
+            "used": self.block_used[_id],
+            "dtype": self.dtype[_id],
+            "attr_size": self.attr_size[_id],
+            "attr_idx": self.attr_idx[_id],
         }
 
     def __repr__(self) -> str:
-        repr = "|"
+        _repr = "|"
         for i in range(len(self.block_lens)):
-            repr += f"{self.block_offsets[i]}> {self.block_used[i]}/{self.block_lens[i]}|"
-        return repr
+            _repr += f"{self.block_offsets[i]}> {self.block_used[i]}/{self.block_lens[i]}|"
+        return _repr
 
 
 class VBO:
@@ -126,15 +127,15 @@ class VBO:
         if self.blocks.nbytes > 0:
             self.bind()
             gl.glBufferData(gl.GL_ARRAY_BUFFER, self.blocks.nbytes, None, self._usage)
-        self.updateData(range(len(data)), data)
+        self.updateData([i for i in range(len(data))], data)
 
     def _loadSubDatas(self, block_id: List[int], data: List[np.ndarray]):
         """加载数据到缓冲区"""
         self.bind()
 
-        for id, da in zip(block_id, data):
-            offset = int(self.blocks.block_offsets[id])
-            length = int(self.blocks.block_used[id])
+        for _id, da in zip(block_id, data):
+            offset = int(self.blocks.block_offsets[_id])
+            length = int(self.blocks.block_used[_id])
             gl.glBufferSubData(gl.GL_ARRAY_BUFFER, offset, length, da)
 
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
@@ -186,11 +187,11 @@ class VBO:
     def delete(self):
         gl.glDeleteBuffers(1, [self._vbo])
 
-    def getData(self, id):
+    def getData(self, _id):
         """从缓冲区获取数据"""
         self.bind()
-        offset, nbytes = self.blocks.locBlock(id)  # 读取数据的偏移量和大小
-        dtype = self.blocks.dtype[id]
+        offset, nbytes = self.blocks.locBlock(_id)  # 读取数据的偏移量和大小
+        dtype = self.blocks.dtype[_id]
         data = np.empty(int(nbytes / dtype.itemsize), dtype=dtype)
 
         gl.glGetBufferSubData(
@@ -198,7 +199,7 @@ class VBO:
             offset, nbytes,
             data.ctypes.data_as(c_void_p)
         )
-        asize = self.blocks.attr_size[id]
+        asize = self.blocks.attr_size[_id]
         return data.reshape(-1, asize if isinstance(asize, int) else sum(asize))
 
     def setAttrPointer(self, block_id: List[int], attr_id: List[int] = None, divisor=0):

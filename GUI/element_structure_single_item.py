@@ -100,6 +100,7 @@ class PosShow(ShowButton):
         self.layout_.addWidget(self.posY_show, 1, 2)
         self.layout_.addWidget(self.posZ_show, 1, 3)
 
+    # noinspection PyTypeChecker
     def setPos(self, pos):
         if isinstance(pos, np.ndarray):
             self.posX_show.setText(str(round(pos[0], 4)))
@@ -188,6 +189,7 @@ class PosRotShow(ShowButton):
     def setPosZ(self, z):
         self.posZ_show.setText(str(z))
 
+    # noinspection PyTypeChecker
     def setRot(self, rot):
         if isinstance(rot, np.ndarray):
             self.rotX_show.setText(str(round(rot[0], 2)))

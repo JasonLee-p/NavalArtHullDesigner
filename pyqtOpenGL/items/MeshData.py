@@ -1,19 +1,19 @@
-import numpy as np
 import math
-from typing import List, Union, Tuple, Literal, Optional
+from ctypes import c_float, c_void_p
 from pathlib import Path
+from time import time
+from typing import List, Union, Tuple, Literal, Optional
+
 import OpenGL.GL as gl
 import assimp_py as assimp
-from time import time
-from ctypes import c_float, sizeof, c_void_p, Structure
-
+import numpy as np
 from PyQt5.QtGui import QColor
 
-from .shader import Shader
 from .BufferObject import VAO, VBO, EBO
+from .shader import Shader
 from .texture import Texture2D
-from ..transform3d import Vector3
 from ..functions import dispatchmethod
+from ..transform3d import Vector3
 
 __all__ = [
     "Mesh", "Material", "EditItemMaterial", "direction_matrixs", "vertex_normal_smooth",
@@ -616,7 +616,7 @@ class SymetryCylinderMesh:
     def _updateNormal(self, idx, point, FI, LI, UI):
         ...
 
-    def _fitX(self, srcPoints, dstPoints, idx):
+    def _fitX(self, srcPoints, dstPoints, idx):  # noqa
         """
         拟合点集
         :param srcPoints: 拟合的源点集
@@ -624,6 +624,7 @@ class SymetryCylinderMesh:
         :param idx: 需要拟合的索引
         :return:
         """
+        # TODO:
         return dstPoints
 
 
@@ -720,12 +721,14 @@ def sphere(radius=1.0, rows=12, cols=12, calc_uv_norm=False):
     return verts, faces
 
 
-def cylinder(radius=[1.0, 1.0], length=1.0, rows=12, cols=12, offset=False):
+def cylinder(radius=None, length=1.0, rows=12, cols=12, offset=False):
     """
     Return a MeshData instance with vertexes and faces computed
     for a cylindrical surface.
     The cylinder may be tapered with different radii at each end (truncated cone)
     """
+    if radius is None:
+        radius = [1.0, 1.0]
     verts = np.empty(((rows + 3) * cols + 2, 3), dtype=np.float32)  # 顶面的点和底面的点重复一次, 保证法线计算正确
     verts1 = verts[:(rows + 1) * cols, :].reshape(rows + 1, cols, 3)
     if isinstance(radius, int):

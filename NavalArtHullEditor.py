@@ -17,7 +17,7 @@ try:
     from OpenGL.GLUT import *
     # 本地库
     from GUI import *
-    from main_logger import Log
+    from main_logger import Log, StatusBarHandler
     from funcs_utils import singleton
     from main_editor import MainEditor
     from startWindow import StartWindow
@@ -80,11 +80,11 @@ class MainEditorHandler(list):
             QMessageBox().warning(None, "警告", "编辑窗口数量已达上限（5）", QMessageBox.Ok)
             return None
 
-    def close(self, mainEditor: MainEditor):
+    def close(self, main_editor: MainEditor):
         global startWindow
         # 将窗口从数组删除
-        self.remove(mainEditor)
-        del mainEditor
+        self.remove(main_editor)
+        del main_editor
         print(f"unref: {gc.collect()}")  # 手动垃圾回收
         # 保存配置
         self.configHandler.save_config()
@@ -106,29 +106,29 @@ def lastEdit():
 
 def newPrj():
     print("[INFO] 新建项目")
-    mainEditor = mainEditors.new()
-    if not mainEditor:
+    _mainEditor = mainEditors.new()
+    if not _mainEditor:
         return
 
 
 def openPrj():
     print("[INFO] 打开项目")
-    mainEditor = mainEditors.new()
-    if not mainEditor:
+    _mainEditor = mainEditors.new()
+    if not _mainEditor:
         return
 
 
 def setting():
     print("[INFO] 设置")
-    mainEditor = mainEditors.new()
-    if not mainEditor:
+    _mainEditor = mainEditors.new()
+    if not _mainEditor:
         return
 
 
 def _help():
     print("[INFO] 帮助")
-    mainEditor = mainEditors.new()
-    if not mainEditor:
+    _mainEditor = mainEditors.new()
+    if not _mainEditor:
         return
 
 
@@ -166,7 +166,7 @@ if __name__ == '__main__':
             startWindow.hide()
             mainEditors: MainEditorHandler = MainEditorHandler(Log())
             # 打开文件
-            mainEditor = mainEditors.new("openPrjByPath", opened_file_path)
+            mainEditor = mainEditors.open(opened_file_path)
         else:
             startWindow.show()
 

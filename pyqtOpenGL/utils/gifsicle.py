@@ -27,7 +27,7 @@ def optimize_gif(
         Path or paths to gif(s) image(s) to optimize.
     destination:Optional[str] = None
         Path where to save updated gif(s).
-        By default the old image is overwrited.
+        By default, the old image is overwrited.
         If multiple sources are specified, they will be merged.
     optimize: bool = False,
         Boolean flag to add the option to optimize image.
@@ -107,15 +107,28 @@ def video2gif(
         save_path=None,
         speed=1,
         fps=12,
-        shape_scale=1,
-        img_shape=None,  # h, w
-        optimize_options=['-O3'],  # '--colors', '128',
-        crop_rect=(0, 0, 1, 1),  # x, y, w, h
+        shape_scale=1.,
+        img_shape=None,
+        optimize_options=None,
+        crop_rect=(0, 0, 1, 1),
 ):
-    video = VideoReader(video_path)
+    """
+    :param video_path: 视频路径
+    :param save_path: 保存路径
+    :param speed: 速度
+    :param fps: 帧率
+    :param shape_scale: 图片缩放比例
+    :param img_shape: 图片大小：(h, w)
+    :param optimize_options: 优化选项：['--colors', '128']
+    :param crop_rect: 裁剪区域：(x, y, w, h)
+    :return:
+    """
+    if optimize_options is None:
+        optimize_options = ['-O3']
+    _video = VideoReader(video_path)
 
     # calculate img shape
-    img = video.get_frame()[0]
+    img = _video.get_frame()[0]
     img = crop_img(img, crop_rect)
     if img_shape is None:
         img_shape = (int(img.shape[0] * shape_scale), int(img.shape[1] * shape_scale))
@@ -133,10 +146,10 @@ def video2gif(
     stream.pix_fmt = 'rgb8'
 
     # write gif
-    duration = video.duration
+    duration = _video.duration
     pbar_width = 20
     cnt = 0
-    for img, stamp in video.get_generator(fps=fps / speed):
+    for img, stamp in _video.get_generator(fps=fps / speed):
         img = crop_img(img, crop_rect)
         frame = av.VideoFrame.from_ndarray(img, format='bgr24')
         frame = frame.reformat(format='rgb8')
@@ -156,7 +169,7 @@ def video2gif(
 
 
 def avalible_codecs():
-    codecs = av.codec.codec.codecs_available
+    codecs = av.codec.codec.codecs_available  # noqa
     for codec in codecs:
         print(codec)
 

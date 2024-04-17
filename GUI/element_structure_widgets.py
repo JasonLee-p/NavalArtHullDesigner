@@ -12,7 +12,7 @@ class ESW(QObject):
         :param main_editor:
         :param tab_widget:
         """
-        super().__init__()
+        super().__init__(None)
         self._items = []
         self.title = ""
         self.main_editor = main_editor

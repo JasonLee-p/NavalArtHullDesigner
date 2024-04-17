@@ -1,10 +1,10 @@
 from pathlib import Path
+
 import numpy as np
-import OpenGL.GL as gl
-from ..GLGraphicsItem import GLGraphicsItem
+
 from .GLModelItem import GLModelItem
 from .GLSurfacePlotItem import GLSurfacePlotItem
-from pathlib import Path
+from ..GLGraphicsItem import GLGraphicsItem
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -25,7 +25,7 @@ class GLGelSimItem(GLGraphicsItem):
             path=BASE_DIR / "resources/models/GelSlim_obj/GelSlim.obj",
             lights=lights,
             glOptions="translucent_cull",
-            texcoords_scale=40,
+            # texcoords_scale=40,
             parentItem=self,
         )
         self.gelslim_base.setPaintOrder([1, 0])

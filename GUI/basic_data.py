@@ -5,24 +5,21 @@ GUI基础参数
 import ctypes
 from base64 import b64decode
 
-import ujson
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-
-from path_vars import DESKTOP_PATH, CONFIG_PATH
 
 try:
     YAHEI = [QFont("Microsoft YaHei", size) for size in range(0, 101)]
     HEI = [QFont("SimHei", size) if size else None for size in range(0, 101)]
     # 加粗
-    BOLD_YAHEI = [QFont("Microsoft YaHei", size, weight=QFont.Bold) for size in range(0, 101)]
-    BOLD_HEI = [QFont("SimHei", size, weight=QFont.Bold) for size in range(0, 101)]
+    BOLD_YAHEI = [QFont("Microsoft YaHei", size, weight=QFont.Bold) for size in range(0, 101)]  # noqa
+    BOLD_HEI = [QFont("SimHei", size, weight=QFont.Bold) for size in range(0, 101)]  # noqa
     # 斜体
-    ITALIC_YAHEI = [QFont("Microsoft YaHei", size, italic=True) for size in range(0, 101)]
-    ITALIC_HEI = [QFont("SimHei", size, italic=True) for size in range(0, 101)]
+    ITALIC_YAHEI = [QFont("Microsoft YaHei", size, italic=True) for size in range(0, 101)]  # noqa
+    ITALIC_HEI = [QFont("SimHei", size, italic=True) for size in range(0, 101)]  # noqa
     # 加粗斜体
-    BOLD_ITALIC_YAHEI = [QFont("Microsoft YaHei", size, weight=QFont.Bold, italic=True) for size in range(0, 101)]
-    BOLD_ITALIC_HEI = [QFont("SimHei", size, weight=QFont.Bold, italic=True) for size in range(0, 101)]
+    BOLD_ITALIC_YAHEI = [QFont("Microsoft YaHei", size, weight=QFont.Bold, italic=True) for size in range(0, 101)]  # noqa
+    BOLD_ITALIC_HEI = [QFont("SimHei", size, weight=QFont.Bold, italic=True) for size in range(0, 101)]  # noqa
 except Exception as e:
     print(e)
 
@@ -112,22 +109,22 @@ BYTES_TIP = b64decode(_tip)
 BYTES_INDICATOR = b64decode(_indicator)
 BYTES_FOLDER = b64decode(_folder)
 
-CLOSE_IMAGE = QImage.fromData(QByteArray(BYTES_CLOSE))
-ADD_IMAGE = QImage.fromData(QByteArray(BYTES_ADD))
-CHOOSE_IMAGE = QImage.fromData(QByteArray(BYTES_CHOOSE))
-MINIMIZE_IMAGE = QImage.fromData(QByteArray(BYTES_MINIMIZE))
-MAXIMIZE_IMAGE = QImage.fromData(QByteArray(BYTES_MAXIMIZE))
-NORMAL_IMAGE = QImage.fromData(QByteArray(BYTES_NORMAL))
-ICO_IMAGE = QImage.fromData(QByteArray(BYTES_ICO))
-SETTINGS_IMAGE = QImage.fromData(QByteArray(BYTES_SETTINGS))
-STRUCTURE_IMAGE = QImage.fromData(QByteArray(BYTES_STRUCTURE))
-LAYER_IMAGE = QImage.fromData(QByteArray(BYTES_LAYER))
-ELEMENTS_IMAGE = QImage.fromData(QByteArray(BYTES_ELEMENTS))
-USER_IMAGE = QImage.fromData(QByteArray(BYTES_USER))
-EDIT_IMAGE = QImage.fromData(QByteArray(BYTES_EDIT))
-TIP_IMAGE = QImage.fromData(QByteArray(BYTES_TIP))
-INDICATOR_IMAGE = QImage.fromData(QByteArray(BYTES_INDICATOR))
-FOLDER_IMAGE = QImage.fromData(QByteArray(BYTES_FOLDER))
+CLOSE_IMAGE = QImage.fromData(QByteArray(BYTES_CLOSE))  # noqa
+ADD_IMAGE = QImage.fromData(QByteArray(BYTES_ADD))  # noqa
+CHOOSE_IMAGE = QImage.fromData(QByteArray(BYTES_CHOOSE))  # noqa
+MINIMIZE_IMAGE = QImage.fromData(QByteArray(BYTES_MINIMIZE))  # noqa
+MAXIMIZE_IMAGE = QImage.fromData(QByteArray(BYTES_MAXIMIZE))  # noqa
+NORMAL_IMAGE = QImage.fromData(QByteArray(BYTES_NORMAL))  # noqa
+ICO_IMAGE = QImage.fromData(QByteArray(BYTES_ICO))  # noqa
+SETTINGS_IMAGE = QImage.fromData(QByteArray(BYTES_SETTINGS))  # noqa
+STRUCTURE_IMAGE = QImage.fromData(QByteArray(BYTES_STRUCTURE))  # noqa
+LAYER_IMAGE = QImage.fromData(QByteArray(BYTES_LAYER))  # noqa
+ELEMENTS_IMAGE = QImage.fromData(QByteArray(BYTES_ELEMENTS))  # noqa
+USER_IMAGE = QImage.fromData(QByteArray(BYTES_USER))  # noqa
+EDIT_IMAGE = QImage.fromData(QByteArray(BYTES_EDIT))  # noqa
+TIP_IMAGE = QImage.fromData(QByteArray(BYTES_TIP))  # noqa
+INDICATOR_IMAGE = QImage.fromData(QByteArray(BYTES_INDICATOR))  # noqa
+FOLDER_IMAGE = QImage.fromData(QByteArray(BYTES_FOLDER))  # noqa
 
 ctypes.windll.shcore.SetProcessDpiAwareness(1)  # 设置高分辨率
 SCALE_FACTOR = ctypes.windll.shcore.GetScaleFactorForDevice(0)  # 获取缩放比例

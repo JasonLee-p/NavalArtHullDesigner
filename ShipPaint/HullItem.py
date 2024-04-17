@@ -1,13 +1,12 @@
 """
 定义了船体的绘制类
 """
-import ctypes
 from typing import Union, Literal
 
 import numpy as np
 # from main_logger import Log
-from pyqtOpenGL import Matrix4x4, GLGraphicsItem, GLMeshItem, Mesh, Quaternion, vertex_normal_smooth
-from pyqtOpenGL.items.MeshData import face_normal, vertex_normal_faceNormal, SymetryCylinderMesh, EditItemMaterial
+from pyqtOpenGL import Matrix4x4, GLGraphicsItem, GLMeshItem, Quaternion
+from pyqtOpenGL.items.MeshData import SymetryCylinderMesh, EditItemMaterial
 
 # 从正下方开始，逆时针排列（向z-方向看）
 SQUARE_POINTS = np.array([
@@ -223,109 +222,109 @@ class HullSectionItem(GLMeshItem):
     def get_frontSection(self):
         return self.handler._parent._frontSection  # noqa
 
-    def get_mesh_data(self):
-        """
-        获取用于绘制的数据
-        顶点坐标顺序规则：
-        前：从左下靠中间（x0，y-）开始，逆时针排列（向z-方向看）
-        后：从左下靠中间（x0，y-）开始，逆时针排列（向z-方向看）
-        顶点索引顺序规则：
-        弧面从左下逆时针（向z-方向看）到右下，前面，后面，左面，右面
-        添加顶点时，需要按点的y值按索引添加，不打乱顺序
-        :return:
-        """
-        if self._z == 0:
-            raise ValueError("z不能为0")
-        front_z = self._z
-        back_z = self._z
-        front_nodes = self._nodes
-        back_nodes = self._nodes
-        if self._z > 0:  # 前
-            back_z = self.get_backSection().z  # noqa
-            back_nodes = self.get_backSection().nodes  # noqa
-        elif self._z < 0:
-            front_z = self.get_frontSection().z  # noqa
-            front_nodes = self.get_frontSection().nodes  # noqa
-        front_top_point0, front_top_point1 = front_nodes[-1], front_nodes[-2]
-        back_top_point0, back_top_point1 = back_nodes[-1], back_nodes[-2]
-        front_bot_point0, front_bot_point1 = front_nodes[0], front_nodes[1]
-        back_bot_point0, back_bot_point1 = back_nodes[0], back_nodes[1]
-        _HALF_INDEX = 11 + len(self._nodes)  # 顶部和底部中点分别+1，弧面分别+5，两侧顶部底部重合平均-1，得出11
-        # 将前后两个截面的点分别初始化
-        front_points = np.array([[0, 0, front_z] for _ in range(2 * _HALF_INDEX)], dtype=np.float32)
-        back_points = np.array([[0, 0, back_z] for _ in range(2 * _HALF_INDEX)], dtype=np.float32)
-        """先计算带弧度的点"""
-        top_cur = self.getTopCur()
-        bot_cur = self.getBotCur()
-        # 先初始化最底部和最顶部的点的y坐标（x坐标都为0）
-        front_points[0][1] = front_bot_point0.y
-        back_points[0][1] = back_bot_point0.y
-        front_points[_HALF_INDEX][1] = front_top_point0.y
-        back_points[_HALF_INDEX][1] = back_top_point0.y
-        # 计算弧面的点
-        up_cur_height = (front_top_point0.y - front_top_point1.y) / 2
-        down_cur_height = (front_bot_point1.y - front_bot_point0.y) / 2
-        front_down_left, front_down_right = get_curve_points('bot', bot_cur, front_bot_point0.x, front_bot_point1.x,
-                                                             down_cur_height)
-        front_up_left, front_up_right = get_curve_points('up', top_cur, front_top_point1.x, front_top_point0.x,
-                                                         up_cur_height)
-        back_down_left, back_down_right = get_curve_points('bot', bot_cur, back_bot_point0.x, back_bot_point1.x,
-                                                           down_cur_height)
-        back_up_left, back_up_right = get_curve_points('up', top_cur, back_top_point1.x, back_top_point0.x,
-                                                       up_cur_height)
-        # 将弧面的y坐标加上顶点的y坐标
-        down_offset = (front_bot_point1.y + front_bot_point0.y) / 2
-        up_offset = (front_top_point1.y + front_top_point0.y) / 2
-        front_down_left[:, 1] += down_offset
-        front_down_right[:, 1] += down_offset
-        front_up_left[:, 1] += up_offset
-        front_up_right[:, 1] += up_offset
-        back_down_left[:, 1] += down_offset
-        back_down_right[:, 1] += down_offset
-        back_up_left[:, 1] += up_offset
-        back_up_right[:, 1] += up_offset
-        # 将弧面的点扩展为xyz坐标
-        front_down_left = np.hstack((front_down_left, np.full((6, 1), front_z)))
-        front_down_right = np.hstack((front_down_right, np.full((6, 1), front_z)))
-        front_up_left = np.hstack((front_up_left, np.full((6, 1), front_z)))
-        front_up_right = np.hstack((front_up_right, np.full((6, 1), front_z)))
-        back_down_left = np.hstack((back_down_left, np.full((6, 1), back_z)))
-        back_down_right = np.hstack((back_down_right, np.full((6, 1), back_z)))
-        back_up_left = np.hstack((back_up_left, np.full((6, 1), back_z)))
-        back_up_right = np.hstack((back_up_right, np.full((6, 1), back_z)))
-        # 按顺序添加到点集中
-        front_points[1:7] = front_down_left
-        back_points[1:7] = back_down_left
-        # 添加普通点
-        for i in range(1, len(self._nodes) - 1):  # 1到-1是为了舍掉顶部底部的已经添加的点
-            left_point_i = i + 6  # 左侧顺序填充
-            right_point_i = 2 * _HALF_INDEX - i - 6  # 右侧倒序填充
-            front_points[left_point_i] = [front_nodes[i].x, front_nodes[i].y, front_z]
-            front_points[right_point_i] = [- front_nodes[i].x, front_nodes[i].y, front_z]
-            back_points[left_point_i] = [back_nodes[i].x, back_nodes[i].y, back_z]
-            back_points[right_point_i] = [- back_nodes[i].x, back_nodes[i].y, back_z]
-        # 当前已填充到的索引为 5 + len(self._nodes)
-        front_points[_HALF_INDEX - 6:_HALF_INDEX] = front_up_left
-        front_points[_HALF_INDEX + 1:_HALF_INDEX + 7] = front_up_right
-        front_points[_HALF_INDEX * 2 - 6:] = front_down_right
-        back_points[_HALF_INDEX - 6:_HALF_INDEX] = back_up_left
-        back_points[_HALF_INDEX + 1:_HALF_INDEX + 7] = back_up_right
-        back_points[_HALF_INDEX * 2 - 6:] = back_down_right
-        vertexes = np.vstack([front_points, back_points])
-        """计算索引"""
-        indexes = _get_index(_HALF_INDEX)
-        """计算法向量"""
-        normals = self._get_vertex_normal(vertexes, indexes, _HALF_INDEX)
-        return vertexes, indexes, normals
-
-    def _get_vertex_normal(self, vert, ind, half_index):
-        """
-        计算顶点法向量
-        :param vert: 顶点坐标
-        :param ind: 顶点索引
-        :return: 法向量
-        """
-        return vertex_normal_faceNormal(vert, ind)
+    # def get_mesh_data(self):
+    #     """
+    #     获取用于绘制的数据
+    #     顶点坐标顺序规则：
+    #     前：从左下靠中间（x0，y-）开始，逆时针排列（向z-方向看）
+    #     后：从左下靠中间（x0，y-）开始，逆时针排列（向z-方向看）
+    #     顶点索引顺序规则：
+    #     弧面从左下逆时针（向z-方向看）到右下，前面，后面，左面，右面
+    #     添加顶点时，需要按点的y值按索引添加，不打乱顺序
+    #     :return:
+    #     """
+    #     if self._z == 0:
+    #         raise ValueError("z不能为0")
+    #     front_z = self._z
+    #     back_z = self._z
+    #     front_nodes = self._nodes
+    #     back_nodes = self._nodes
+    #     if self._z > 0:  # 前
+    #         back_z = self.get_backSection().z  # noqa
+    #         back_nodes = self.get_backSection().nodes  # noqa
+    #     elif self._z < 0:
+    #         front_z = self.get_frontSection().z  # noqa
+    #         front_nodes = self.get_frontSection().nodes  # noqa
+    #     front_top_point0, front_top_point1 = front_nodes[-1], front_nodes[-2]
+    #     back_top_point0, back_top_point1 = back_nodes[-1], back_nodes[-2]
+    #     front_bot_point0, front_bot_point1 = front_nodes[0], front_nodes[1]
+    #     back_bot_point0, back_bot_point1 = back_nodes[0], back_nodes[1]
+    #     _HALF_INDEX = 11 + len(self._nodes)  # 顶部和底部中点分别+1，弧面分别+5，两侧顶部底部重合平均-1，得出11
+    #     # 将前后两个截面的点分别初始化
+    #     front_points = np.array([[0, 0, front_z] for _ in range(2 * _HALF_INDEX)], dtype=np.float32)
+    #     back_points = np.array([[0, 0, back_z] for _ in range(2 * _HALF_INDEX)], dtype=np.float32)
+    #     """先计算带弧度的点"""
+    #     top_cur = self.getTopCur()
+    #     bot_cur = self.getBotCur()
+    #     # 先初始化最底部和最顶部的点的y坐标（x坐标都为0）
+    #     front_points[0][1] = front_bot_point0.y
+    #     back_points[0][1] = back_bot_point0.y
+    #     front_points[_HALF_INDEX][1] = front_top_point0.y
+    #     back_points[_HALF_INDEX][1] = back_top_point0.y
+    #     # 计算弧面的点
+    #     up_cur_height = (front_top_point0.y - front_top_point1.y) / 2
+    #     down_cur_height = (front_bot_point1.y - front_bot_point0.y) / 2
+    #     front_down_left, front_down_right = get_curve_points('bot', bot_cur, front_bot_point0.x, front_bot_point1.x,
+    #                                                          down_cur_height)
+    #     front_up_left, front_up_right = get_curve_points('up', top_cur, front_top_point1.x, front_top_point0.x,
+    #                                                      up_cur_height)
+    #     back_down_left, back_down_right = get_curve_points('bot', bot_cur, back_bot_point0.x, back_bot_point1.x,
+    #                                                        down_cur_height)
+    #     back_up_left, back_up_right = get_curve_points('up', top_cur, back_top_point1.x, back_top_point0.x,
+    #                                                    up_cur_height)
+    #     # 将弧面的y坐标加上顶点的y坐标
+    #     down_offset = (front_bot_point1.y + front_bot_point0.y) / 2
+    #     up_offset = (front_top_point1.y + front_top_point0.y) / 2
+    #     front_down_left[:, 1] += down_offset
+    #     front_down_right[:, 1] += down_offset
+    #     front_up_left[:, 1] += up_offset
+    #     front_up_right[:, 1] += up_offset
+    #     back_down_left[:, 1] += down_offset
+    #     back_down_right[:, 1] += down_offset
+    #     back_up_left[:, 1] += up_offset
+    #     back_up_right[:, 1] += up_offset
+    #     # 将弧面的点扩展为xyz坐标
+    #     front_down_left = np.hstack((front_down_left, np.full((6, 1), front_z)))
+    #     front_down_right = np.hstack((front_down_right, np.full((6, 1), front_z)))
+    #     front_up_left = np.hstack((front_up_left, np.full((6, 1), front_z)))
+    #     front_up_right = np.hstack((front_up_right, np.full((6, 1), front_z)))
+    #     back_down_left = np.hstack((back_down_left, np.full((6, 1), back_z)))
+    #     back_down_right = np.hstack((back_down_right, np.full((6, 1), back_z)))
+    #     back_up_left = np.hstack((back_up_left, np.full((6, 1), back_z)))
+    #     back_up_right = np.hstack((back_up_right, np.full((6, 1), back_z)))
+    #     # 按顺序添加到点集中
+    #     front_points[1:7] = front_down_left
+    #     back_points[1:7] = back_down_left
+    #     # 添加普通点
+    #     for i in range(1, len(self._nodes) - 1):  # 1到-1是为了舍掉顶部底部的已经添加的点
+    #         left_point_i = i + 6  # 左侧顺序填充
+    #         right_point_i = 2 * _HALF_INDEX - i - 6  # 右侧倒序填充
+    #         front_points[left_point_i] = [front_nodes[i].x, front_nodes[i].y, front_z]
+    #         front_points[right_point_i] = [- front_nodes[i].x, front_nodes[i].y, front_z]
+    #         back_points[left_point_i] = [back_nodes[i].x, back_nodes[i].y, back_z]
+    #         back_points[right_point_i] = [- back_nodes[i].x, back_nodes[i].y, back_z]
+    #     # 当前已填充到的索引为 5 + len(self._nodes)
+    #     front_points[_HALF_INDEX - 6:_HALF_INDEX] = front_up_left
+    #     front_points[_HALF_INDEX + 1:_HALF_INDEX + 7] = front_up_right
+    #     front_points[_HALF_INDEX * 2 - 6:] = front_down_right
+    #     back_points[_HALF_INDEX - 6:_HALF_INDEX] = back_up_left
+    #     back_points[_HALF_INDEX + 1:_HALF_INDEX + 7] = back_up_right
+    #     back_points[_HALF_INDEX * 2 - 6:] = back_down_right
+    #     vertexes = np.vstack([front_points, back_points])
+    #     """计算索引"""
+    #     indexes = _get_index(_HALF_INDEX)
+    #     """计算法向量"""
+    #     normals = self._get_vertex_normal(vertexes, indexes, _HALF_INDEX)
+    #     return vertexes, indexes, normals
+    #
+    # def _get_vertex_normal(self, vert, ind, half_index):
+    #     """
+    #     计算顶点法向量
+    #     :param vert: 顶点坐标
+    #     :param ind: 顶点索引
+    #     :return: 法向量
+    #     """
+    #     return vertex_normal_faceNormal(vert, ind)
 
     def setPoint(self, pointSection, x, y):
         """
@@ -377,7 +376,7 @@ class ArmorSectionItem(GLMeshItem):
     def __init__(self, handler, z, nodes):
         """
         """
-        super().__init__()
+        super().__init__()  # noqa  # TODO:
         self.sectionGroup = None  # 船体截面组，将会在ArmorSectionGroupItem中设置
         self.handler = handler
         self._z = z

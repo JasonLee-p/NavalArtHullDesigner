@@ -98,7 +98,7 @@ class TabButton(Button):
         self.click_pos = None
         self._temp_button.setVisible(False)
         self._temp_button.move(self.mapToGlobal(QPoint(0, 0)))
-        QCoreApplication.processEvents()
+        QCoreApplication.processEvents()  # noqa  # 刷新界面
 
 
 class ButtonGroup:
@@ -621,7 +621,7 @@ class MultiDirTabMainFrame(QFrame):
                                         int(self.height() * 0.75)),
             self.down_tab_frame: QRect(0, int(self.height() * 0.75), self.width(), int(self.height() * 0.25))
         }
-        pos = QCursor.pos()
+        pos = QCursor().pos()
         for tw in (self.left_tab_frame, self.right_tab_frame, self.down_tab_frame):
             btw = tw.bt_widget
             if not tw.all_tabs:
@@ -781,7 +781,7 @@ class TabWidget(QTabWidget):
 
 
 class Window(QWidget):
-    closed = pyqtSignal()
+    closed = pyqtSignal()  # noqa
 
     def __init__(
             self, parent, title: str, ico_bites: bytes, ico_size: int = 22, topH: int = 36, bottomH: int = 36,
@@ -973,7 +973,7 @@ class Window(QWidget):
                                          self.height() + self.y() - event.globalPos().x())
                     elif self.resize_dir == CONST.DOWN:
                         self.setGeometry(self.x(), self.y(), self.width(), event.globalPos().x() - self.y())
-                    QCoreApplication.processEvents()
+                    QCoreApplication.processEvents()  # noqa  # 使窗口立即重绘
                     event.accept()
 
     def init_top_widget(self):
@@ -1042,10 +1042,10 @@ class Window(QWidget):
 
     def showMaximized(self):
         if self.resizable and not self.isMaximized():
-            self.maximize_button.setIcon(QIcon(QPixmap.fromImage(NORMAL_IMAGE)))
+            self.maximize_button.setIcon(QIcon(QPixmap.fromImage(NORMAL_IMAGE)))  # noqa
             super().showMaximized()
         else:
-            self.maximize_button.setIcon(QIcon(QPixmap.fromImage(MAXIMIZE_IMAGE)))
+            self.maximize_button.setIcon(QIcon(QPixmap.fromImage(MAXIMIZE_IMAGE)))  # noqa
             super().showNormal()
 
     def animate(self, start=0, end=1, duration=200):

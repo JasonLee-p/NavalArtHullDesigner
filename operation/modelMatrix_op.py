@@ -3,7 +3,7 @@
 """
 from PyQt5.QtGui import QVector3D
 
-from .basic_op import Operation, OperationStack
+from .basic_op import Operation
 
 
 class MoveToOperation(Operation):

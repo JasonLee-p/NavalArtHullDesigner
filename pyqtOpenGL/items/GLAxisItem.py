@@ -1,11 +1,11 @@
 import OpenGL.GL as gl
 import numpy as np
 
-from .shader import Shader
 from .BufferObject import VBO, EBO, VAO
-from ..GLGraphicsItem import GLGraphicsItem
-from ..transform3d import Matrix4x4, Vector3, Quaternion
 from .MeshData import cone, direction_matrixs
+from .shader import Shader
+from ..GLGraphicsItem import GLGraphicsItem
+from ..transform3d import Matrix4x4, Vector3
 
 __all__ = ['GLAxisItem']
 

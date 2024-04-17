@@ -3,9 +3,8 @@
 编辑器运行逻辑
 """
 import webbrowser
-from typing import Union
-import psutil
 
+import psutil
 from GUI import MainEditorGUI, EditTabWidget
 from PyQt5.QtWidgets import QFileDialog
 from ShipRead.na_project import *
@@ -16,10 +15,10 @@ from path_vars import DESKTOP_PATH
 
 
 class MemoryThread(QThread):
-    memory_updated_s = pyqtSignal(int)
+    memory_updated_s = pyqtSignal(int)  # noqa
 
     def __init__(self):
-        super().__init__()
+        super().__init__(None)
         self.process = psutil.Process()
 
     def run(self):
@@ -172,16 +171,16 @@ class MainEditor(MainEditorGUI):
         self.structure_tab.add_armorSectionGroup(asGroup)
 
     def add_bridge_s(self, bridge_id):
-        bridge = Bridge.get_by_id(bridge_id)
-        self.structure_tab.add_bridge(bridge)
+        _bridge = Bridge.get_by_id(bridge_id)
+        self.structure_tab.add_bridge(_bridge)
 
     def add_ladder_s(self, ladder_id):
-        ladder = Ladder.get_by_id(ladder_id)
-        self.structure_tab.add_ladder(ladder)
+        _ladder = Ladder.get_by_id(ladder_id)
+        self.structure_tab.add_ladder(_ladder)
 
     def add_model_s(self, model_id):
-        model = Model.get_by_id(model_id)
-        self.structure_tab.add_model(model)
+        _model = Model.get_by_id(model_id)
+        self.structure_tab.add_model(_model)
 
     def del_hull_section_group_s(self, group_id):
         hsGroup = HullSectionGroup.get_by_id(group_id)
@@ -192,16 +191,16 @@ class MainEditor(MainEditorGUI):
         self.structure_tab.del_armorSectionGroup(asGroup)
 
     def del_bridge_s(self, bridge_id):
-        bridge = Bridge.get_by_id(bridge_id)
-        self.structure_tab.del_bridge(bridge)
+        _bridge = Bridge.get_by_id(bridge_id)
+        self.structure_tab.del_bridge(_bridge)
 
     def del_ladder_s(self, ladder_id):
-        ladder = Ladder.get_by_id(ladder_id)
-        self.structure_tab.del_ladder(ladder)
+        _ladder = Ladder.get_by_id(ladder_id)
+        self.structure_tab.del_ladder(_ladder)
 
     def del_model_s(self, model_id):
-        model = Model.get_by_id(model_id)
-        self.structure_tab.del_model(model)
+        _model = Model.get_by_id(model_id)
+        self.structure_tab.del_model(_model)
 
     def show_editor(self, item):
         if isinstance(item, list):

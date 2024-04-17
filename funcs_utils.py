@@ -103,13 +103,13 @@ def open_url(url):
     return func
 
 
-def not_implemented(func):
+def not_implemented(func):  # pragma: no cover
     """
     装饰器，弹出提示框，提示该功能暂未实现
     :return:
     """
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs):  # pragma: no cover
         QMessageBox.information(None, "提示", "该功能暂未实现，敬请期待！", QMessageBox.Ok)
 
     return wrapper
@@ -131,7 +131,7 @@ def singleton(cls):
     return wrapper
 
 
-def empty_func(*args, **kwargs):
+def empty_func(*args, **kwargs):  # pragma: no cover
     """ 空函数，用于占位 """
     pass
 

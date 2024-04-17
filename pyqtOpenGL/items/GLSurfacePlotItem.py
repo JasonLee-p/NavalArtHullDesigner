@@ -1,13 +1,15 @@
-import numpy as np
-import OpenGL.GL as gl
 from pathlib import Path
-from ..GLGraphicsItem import GLGraphicsItem
-from ..transform3d import Matrix4x4, Vector3
-from .shader import Shader
+
+import OpenGL.GL as gl
+import numpy as np
+
 from .BufferObject import VAO, VBO, EBO, c_void_p
 from .MeshData import Material, surface
-from .texture import Texture2D
 from .light import LightMixin, light_fragment_shader
+from .shader import Shader
+from .texture import Texture2D
+from ..GLGraphicsItem import GLGraphicsItem
+from ..transform3d import Matrix4x4
 
 BASE_DIR = Path(__file__).resolve().parent
 

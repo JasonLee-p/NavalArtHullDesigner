@@ -1,9 +1,9 @@
 """
 
 """
-from PyQt5.QtGui import QColor, QVector3D
 from GUI.element_structure_widgets import *
-from ShipPaint import ArmorSectionItem, ArmorSectionGroupItem
+from PyQt5.QtGui import QColor, QVector3D
+from ShipPaint import ArmorSectionGroupItem
 from ShipRead.sectionHandler.baseSH import SectionNodeXY, SectionHandler, SubSectionHandler
 
 
@@ -12,7 +12,7 @@ class ArmorSection(SubSectionHandler):
     装甲截面
     """
     idMap = {}
-    deleted_s = pyqtSignal()
+    deleted_s = pyqtSignal()  # noqa
 
     def __init__(self, prj, z, node_datas):
         self.hullProject = prj
@@ -49,7 +49,7 @@ class ArmorSectionGroup(SectionHandler):
     装甲截面组
     """
     idMap = {}
-    deleted_s = pyqtSignal()
+    deleted_s = pyqtSignal()  # noqa
 
     def __init__(self, prj, name, pos, rot, col, sections):
         self.hullProject = prj

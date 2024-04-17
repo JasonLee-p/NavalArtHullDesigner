@@ -1,11 +1,12 @@
 import OpenGL.GL as gl
 import numpy as np
-from .shader import Shader
+
 from .BufferObject import VBO, EBO, VAO
-from ..GLGraphicsItem import GLGraphicsItem
-from ..transform3d import Matrix4x4, Vector3
-from .MeshData import cone, direction_matrixs, vertex_normal_smooth
+from .MeshData import vertex_normal_smooth
 from .light import LightMixin
+from .shader import Shader
+from ..GLGraphicsItem import GLGraphicsItem
+from ..transform3d import Matrix4x4
 
 __all__ = ['GLInstancedMeshItem']
 
@@ -18,8 +19,8 @@ class GLInstancedMeshItem(GLGraphicsItem, LightMixin):
             vertexes=None,
             indices=None,
             normals=None,
-            lights=list(),
-            color=[1., 1., 1.],
+            lights=None,
+            color=None,
             size=1.,
             opacity=1.,
             glOptions='opaque',
@@ -27,6 +28,10 @@ class GLInstancedMeshItem(GLGraphicsItem, LightMixin):
             parentItem=None
     ):
         super().__init__(parentItem=parentItem)
+        if color is None:
+            color = [1., 1., 1.]
+        if lights is None:
+            lights = list()
         self.setGLOptions(glOptions)
         self._vertices = vertexes
         self._indices = indices

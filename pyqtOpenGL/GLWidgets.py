@@ -1,11 +1,11 @@
-from .GLViewWidget import GLViewWidget
-from .camera import Camera
-from .transform3d import Matrix4x4
-from .items import *
-from PyQt5.QtCore import Qt
-import numpy as np
-from matplotlib import cm
 import cv2
+import numpy as np
+from PyQt5.QtCore import Qt
+from matplotlib import cm
+
+from .GLViewWidget import GLViewWidget
+from .items import *
+from .transform3d import Matrix4x4
 
 __all__ = [
     "DefaultViewWidget",
@@ -21,8 +21,6 @@ class DefaultViewWidget(GLViewWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-        if isinstance(self.camera, Camera):
-            self.camera.set_params((0, 0, 1000), pitch=-75, yaw=0, roll=-90)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         # 坐标轴
         self.axis = GLAxisItem(size=(100, 100, 100), tip_size=40)
@@ -114,8 +112,10 @@ class QPointCloudWidget(DefaultViewWidget):
 
 class QQuiverWidget(DefaultViewWidget):
 
-    def __init__(self, parent=None, tip_size=[0.7, 1], width=1.0):
+    def __init__(self, parent=None, tip_size=None, width=1.0):
         super().__init__(parent)
+        if tip_size is None:
+            tip_size = [0.7, 1]
         verts, faces = sphere(width * 0.5, 8, 8)
         self.sphere = GLInstancedMeshItem(vertexes=verts, indices=faces, color=[0.1, 0.1, 0.1], calcNormals=False)
         self.quiver = GLArrowPlotItem(tip_size=tip_size, color=(1, 0.2, 0), width=width)
@@ -146,8 +146,10 @@ class QQuiverWidget(DefaultViewWidget):
 
 class QSurfaceQuiverWidget(QSurfaceWidget):
 
-    def __init__(self, parent=None, x_size=640, tip_size=[0.7, 1], width=1.0):
+    def __init__(self, parent=None, x_size=640, tip_size=None, width=1.0):
         super().__init__(parent, x_size)
+        if tip_size is None:
+            tip_size = [0.7, 1]
         verts, faces = sphere(width * 0.35, 8, 8)
         self.sphere = GLInstancedMeshItem(vertexes=verts, indices=faces, color=[0.1, 0.1, 0.1], calcNormals=False)
         self.quiver = GLArrowPlotItem(tip_size=tip_size, color=(0.7, 0.2, 0), width=width)

@@ -3,7 +3,6 @@
 """
 from GUI.element_structure_widgets import *
 from PyQt5.QtGui import QVector3D
-from main_logger import Log
 
 from pyqtOpenGL import GLMeshItem, sphere, cube, EditItemMaterial, GLGraphicsItem
 
@@ -317,7 +316,7 @@ class SectionNodeXY(SubSectionHandler):
     xy节点，用于记录船体或装甲截面的节点
     """
     idMap = {}
-    deleted_s = pyqtSignal()
+    deleted_s = pyqtSignal()  # noqa
 
     def __init__(self, parent=None):
         self._parent = parent
@@ -337,7 +336,7 @@ class SectionNodeXZ(SubSectionHandler):
     xz节点，用于记录舰桥的节点
     """
     idMap = {}
-    deleted_s = pyqtSignal()
+    deleted_s = pyqtSignal()  # noqa
 
     def __init__(self, parent):
         self._parent = parent

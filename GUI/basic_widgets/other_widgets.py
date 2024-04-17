@@ -66,8 +66,8 @@ class IconLabel(QLabel):
         super().__init__(parent)
         ico = QIcon()
         icon = QPixmap()
-        icon_image = QImage.fromData(QByteArray(ico_bytes))
-        icon.convertFromImage(icon_image)
+        icon_image = QImage.fromData(QByteArray(ico_bytes))  # noqa
+        icon.convertFromImage(icon_image)  # noqa
         ico.addPixmap(icon, QIcon.Normal, QIcon.Off)
         self.setPixmap(ico.pixmap(QSize(26, 26)))
         self.setFixedSize(55, height)
@@ -87,9 +87,9 @@ class BorderRadiusImage(QLabel):
             self.width, self.height = img_size[0], img_size[1]
         self.img_bytes = img_bytes
         self.bd_radius = bd_radius
-        image = QImage.fromData(QByteArray(self.img_bytes))
+        image = QImage.fromData(QByteArray(self.img_bytes))  # noqa
         img = QPixmap()
-        img.convertFromImage(image)
+        img.convertFromImage(image)  # noqa
         img.scaled(self.width, self.height, Qt.KeepAspectRatio)
         rounded_img = QPixmap()
         rounded_img.scaled(self.width, self.height, Qt.KeepAspectRatio)
@@ -171,7 +171,7 @@ class TextEdit(QLineEdit):
 
 
 class NumberEdit(TextEdit):
-    value_changed = pyqtSignal(float)
+    value_changed = pyqtSignal(float)  # noqa
 
     def __init__(
             self, parent, root_parent,
@@ -282,7 +282,7 @@ class NumberEdit(TextEdit):
 
 
 class Slider(QSlider):
-    value_changed = pyqtSignal(int)
+    value_changed = pyqtSignal(int)  # noqa
 
     def __init__(self, parent, orientation, range_, step, init_value=0):
         super().__init__(orientation, parent)
@@ -415,15 +415,15 @@ class ColorSlider(QSlider):
         gradient = QLinearGradient(rect.topLeft(), rect.topRight())
         if self.type == ColorSlider.H:
             for i in range(0, 360):
-                gradient.setColorAt(i / 360, QColor.fromHsl(i, 255, 127))
+                gradient.setColorAt(i / 360, QColor().fromHsl(i, 255, 127))
         elif self.type == ColorSlider.S:
-            l_color = QColor.fromHsl(self.hue_slider.value(), 0, self.lightness_slider.value())
-            r_color = QColor.fromHsl(self.hue_slider.value(), 255, self.lightness_slider.value())
+            l_color = QColor().fromHsl(self.hue_slider.value(), 0, self.lightness_slider.value())
+            r_color = QColor().fromHsl(self.hue_slider.value(), 255, self.lightness_slider.value())
             gradient.setColorAt(0, l_color)
             gradient.setColorAt(1, r_color)
         elif self.type == ColorSlider.L:
             for i in range(0, 256):
-                gradient.setColorAt(i / 255, QColor.fromHsl(self.hue_slider.value(), self.saturation_slider.value(), i))
+                gradient.setColorAt(i / 255, QColor().fromHsl(self.hue_slider.value(), self.saturation_slider.value(), i))
         painter.fillRect(rect, gradient)
         # 绘制游标
         pos_x = int(self.value() / self.maximum() * self.width())

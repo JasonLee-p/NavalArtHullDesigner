@@ -1,11 +1,11 @@
-from ..GLGraphicsItem import GLGraphicsItem
-from ..transform3d import Matrix4x4, Quaternion, Vector3
-from .shader import Shader
-from .BufferObject import VAO, VBO
-import numpy as np
 import OpenGL.GL as gl
-from .light import LightMixin, PointLight
-from typing import List
+import numpy as np
+
+from .BufferObject import VAO, VBO
+from .light import LightMixin
+from .shader import Shader
+from ..GLGraphicsItem import GLGraphicsItem
+from ..transform3d import Matrix4x4
 
 __all__ = ['GLGridItem']
 

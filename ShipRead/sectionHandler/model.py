@@ -4,7 +4,6 @@
 from GUI.element_structure_widgets import *
 from PyQt5.QtGui import QVector3D
 from ShipRead.sectionHandler.baseSH import SectionHandler
-from path_vars import CURRENT_PATH
 from pyqtOpenGL import GLModelItem
 
 
@@ -13,7 +12,7 @@ class Model(SectionHandler):
     模型
     """
     idMap = {}
-    deleted_s = pyqtSignal()
+    deleted_s = pyqtSignal()  # noqa
 
     def __init__(self, prj, name, pos: QVector3D, rot: List[float], scl: List[float], file_path):
         self.hullProject = prj

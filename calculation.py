@@ -5,7 +5,7 @@
 
 from PyQt5.QtGui import QVector3D
 from numpy import linalg, cos, sin, radians, array, conj, linspace
-from quaternion import quaternion
+from quaternion import quaternion  # noqa  # 这是numpy-quaternion库的quaternion类
 from funcs_utils import CONST
 
 

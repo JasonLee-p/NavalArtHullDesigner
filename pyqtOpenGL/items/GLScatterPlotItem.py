@@ -18,12 +18,14 @@ class GLScatterPlotItem(GLGraphicsItem):
             self,
             pos=None,
             size=1,
-            color=[1.0, 1.0, 1.0],
+            color=None,
             antialias=True,
             glOptions='opaque',
             parentItem=None
     ):
         super().__init__(parentItem=parentItem)
+        if color is None:
+            color = [1.0, 1.0, 1.0]
         self.antialias = antialias
         self.setGLOptions(glOptions)
 
@@ -49,7 +51,7 @@ class GLScatterPlotItem(GLGraphicsItem):
         self._gl_update_flag = False
 
     def setData(self, pos=None, color=None, size=None):
-        """"
+        """
         ====================  ==================================================
         **Arguments:**
         pos                (N,3) array of floats specifying point locations.
