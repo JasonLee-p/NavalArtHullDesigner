@@ -7,7 +7,7 @@ import time
 import traceback
 import warnings
 from math import radians, tan
-from typing import List, Set, Literal
+from typing import List, Set, Literal, Optional
 
 import OpenGL.GL as gl
 import numpy as np
@@ -16,6 +16,7 @@ from GUI import TextLabel, WIN_WID, WIN_HEI
 from OpenGL.GL import *  # noqa
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal, QPoint, QMutex
+from PyQt5.QtGui import QPainter, QColor, QCursor
 from PyQt5.QtWidgets import QMessageBox
 from main_logger import Log
 from pyqtOpenGL.items.GL2DSelectBox import GLSelectBox
@@ -43,6 +44,26 @@ def _draw_item(item):
 class GLViewWidget(QtWidgets.QOpenGLWidget):
     gl_initialized = pyqtSignal()
 
+    # 剪贴板
+    clipboard = []
+
+    def selectAll(self):
+        for item in self.items:
+            item.setSelected(True)
+            self.selected_items.append(item)
+        self._after_selection()
+
+    def copy(self):
+        GLViewWidget.clipboard = self.selected_items.copy()
+
+    def delete_selected(self):
+        prj = self.selected_items[0].handler.prj
+        for item in self.selected_items:
+            self.removeItem(item)
+            prj.del_section(item.handler)
+        self.selected_items.clear()
+        self.paintGL_outside()
+
     def __init__(
             self,
             cam_position=Vector3(10., 10., 10.),
@@ -61,7 +82,9 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         """
         QtWidgets.QOpenGLWidget.__init__(self, parent)
         self.event_mutex = QMutex()
-        self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        self._paint_enabled = True  # 作为刷新的开关
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        self.setStatusTip("3D View")
         self.camera = Camera(cam_position, cam_tar, fov=fov, sensitivity=cam_sensitivity)
         self.mouse_last_pos = None  # used for mouse move event
         self.pan_btn = pan_btn
@@ -147,6 +170,9 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         Remove the item from the scene.
         """
         self.items.remove(item)
+        if item.selected():
+            item.setSelected(False)
+            self.selected_items.remove(item)
         item.setView(None)
         self.update()
 
@@ -178,19 +204,30 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         gl.glEnable(GL_MULTISAMPLE)
         gl.glEnable(GL_DEPTH_TEST)
 
+    def enablePaint(self, enable: bool):
+        self._paint_enabled = enable
+
     def paintGL(self):
         """
         viewport specifies the arguments to glViewport. If None, then we use self.opts['viewport']
         region specifies the sub-region of self.opts['viewport'] that should be rendered.
         Note that we may use viewport != self.opts['viewport'] when exporting.
         """
+        if not self._paint_enabled:
+            return
         glClearColor(*self.bg_color)
         glDepthMask(GL_TRUE)
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
-        self.drawItems(pickMode=False)
         if self.select_box.visible():
+            self.drawItems(pickMode=False, update=False)
             self.select_box.updateGL(self.select_start, self.select_end)
             self.select_box.paint()
+            # self.painter.setPen(QColor(255, 255, 255))
+            # self.painter.drawRect(self.select_start.x(), self.select_start.y(),
+            #                       self.select_end.x() - self.select_start.x(),
+            #                       self.select_end.y() - self.select_start.y())
+        else:
+            self.drawItems(pickMode=False)
         self.__update_FPS()
 
     def resizeGL(self, w, h):
@@ -225,8 +262,9 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         glViewport(0, 0, self.deviceWidth() // ratio, self.deviceHeight() // ratio)
         glClearColor(0, 0, 0, 0)
         glDisable(GL_MULTISAMPLE)
-        glEnable(GL_DEPTH_TEST)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
+        glEnable(GL_DEPTH_TEST)
+        glDepthFunc(GL_LESS)
         # 设置拾取区域
         glScissor(x_, self.deviceHeight() // ratio - y_ - h_, w_, h_)
         glEnable(GL_SCISSOR_TEST)
@@ -317,7 +355,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self.fps_label.setText(f"FPS: {1 / dt:.1f}")
         self.__last_time = time.time()
 
-    def drawItems(self, pickMode=False):
+    def drawItems(self, pickMode=False, update=True):
         if pickMode:  # 拾取模式
             for it in self.items:
                 try:
@@ -373,6 +411,19 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         fov = self.camera.fov
         return max(-pos[2], 0) * 2. * tan(0.5 * radians(fov)) / self.deviceHeight()
 
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Type.MouseButtonPress:
+            self.mousePressEvent(event)
+            return True
+        elif event.type() == QtCore.QEvent.Type.MouseMove:
+            # 鼠标移动事件不传递给父控件，直接处理
+            self.mouseMoveEvent(event)
+            return True
+        elif event.type() == QtCore.QEvent.Type.MouseButtonRelease:
+            self.mouseReleaseEvent(event)
+            return True
+        return super().eventFilter(obj, event)
+
     def mousePressEvent(self, ev):
         lpos = ev.position() if hasattr(ev, 'position') else ev.localPos()
         self.mouse_last_pos = lpos
@@ -390,9 +441,19 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         diff = lpos - self.mouse_last_pos
         self.mouse_last_pos = lpos
 
-        if alt_down:
-            # 不进行视角变换
-            return
+        # 如果鼠标到达屏幕边缘，光标位置就移动到另一侧
+        if lpos.x() < 0:
+            QCursor.setPos(self.mapToGlobal(QPoint(self.deviceWidth() - 1, int(lpos.y()))))
+            self.mouse_last_pos = QPoint(self.deviceWidth() - 1, int(lpos.y()))
+        elif lpos.x() > self.deviceWidth() - 1:
+            QCursor.setPos(self.mapToGlobal(QPoint(0, int(lpos.y()))))
+            self.mouse_last_pos = QPoint(0, int(lpos.y()))
+        elif lpos.y() < 0:
+            QCursor.setPos(self.mapToGlobal(QPoint(int(lpos.x()), self.deviceHeight() - 1)))
+            self.mouse_last_pos = QPoint(int(lpos.x()), self.deviceHeight() - 1)
+        elif lpos.y() > self.deviceHeight() - 1:
+            QCursor.setPos(self.mapToGlobal(QPoint(int(lpos.x()), 0)))
+            self.mouse_last_pos = QPoint(int(lpos.x()), 0)
 
         if ctrl_down:
             # 视角微调
@@ -406,12 +467,11 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
                 diff.setX(0)
 
         if ev.buttons() == self.pan_btn:
-            self.camera.pan(diff.x(), diff.y())
+            if not alt_down:
+                self.camera.pan(diff.x(), diff.y())
             self.paintGL_outside()
         elif ev.buttons() == self.orbit_btn:
-            if alt_down:
-                self.camera.orbit(diff.x(), diff.y())
-            elif not alt_down:
+            if not alt_down:
                 self.camera.orbit(diff.x(), diff.y())
             self.paintGL_outside()
         elif ev.buttons() == self.select_btn:
@@ -423,6 +483,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
 
     def mouseReleaseEvent(self, ev):
         ctl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
+        alt_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier)
         self.select_end.setX(int(ev.localPos().x()))
         self.select_end.setY(int(ev.localPos().y()))
         if ev.button() == self.select_btn:
@@ -450,17 +511,24 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
                         it.setSelected(True)
                         self.selected_items.append(it)
             self._after_selection()
+        elif ev.button() == QtCore.Qt.MouseButton.RightButton and alt_down:
+            self._rightButtonReleased(ev)
         self.paintGL_outside()
+
+    def _rightButtonReleased(self, ev):
+        ...
 
     def wheelEvent(self, ev):
         self.event_mutex.lock()
+        alt_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier)
         delta = ev.angleDelta().y()
         delta = 1 if delta > 0 else -1
-        if ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier:  # 按下ctrl键
-            self.camera.zoom(delta * 0.1)
-        else:
-            self.camera.zoom(delta)
-        self.paintGL_outside()
+        if not alt_down:
+            if ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier:  # 按下ctrl键
+                self.camera.zoom(delta * 0.1)
+            else:
+                self.camera.zoom(delta)
+            self.paintGL_outside()
         self.event_mutex.unlock()
 
     def _clear_selected_items(self):
@@ -488,13 +556,6 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         """
         return self.context() == QtGui.QOpenGLContext.currentContext()
 
-    def keyPressEvent(self, a0) -> None:
-        """按键处理"""
-        if a0.text() == '1':
-            pos, euler = self.camera.get_params()
-            print(f"pos: ({pos.x:.2f}, {pos.y:.2f}, {pos.z:.2f})  "
-                  f"euler: ({euler[0]:.2f}, {euler[1]:.2f}, {euler[2]:.2f})")
-
     def close(self):
         super().close()
 
@@ -513,7 +574,7 @@ def formatException(exctype, value, tb, skip=0):
     return lines
 
 
-def getExc(indent=4, prefix='|  ', skip=1):
+def getExc(indent=4, prefix='  ', skip=1):
     lines = formatException(*sys.exc_info(), skip=skip)
     lines2 = []
     for line in lines:

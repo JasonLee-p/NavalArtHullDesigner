@@ -13,6 +13,7 @@ class MoveToOperation(Operation):
         移动到操作
         :param sectionHandler: 被移动的元素
         :param target_pos: 目标位置
+        :param edits: 相关的显示控件
         """
         super().__init__()
         self.name = f"移动 {sectionHandler.name} 到 ({round(target_pos.x(), 4)}, {round(target_pos.y())}, {round(target_pos.z())})"
@@ -43,6 +44,7 @@ class MoveOperation(Operation):
         移动操作
         :param sectionHandler: 被移动的元素
         :param move_vec: 移动向量
+        :param edits: 相关的显示控件
         """
         super().__init__()
         self.name = f"移动 {sectionHandler.name} ({round(move_vec.x(), 4)}, {round(move_vec.y())}, {round(move_vec.z())})"
@@ -73,6 +75,7 @@ class RotateOperation(Operation):
         旋转操作
         :param setctionHandler: 被旋转的元素
         :param target_rot: 目标旋转角度
+        :param edits: 相关的显示控件
         """
         super().__init__()
         self.name = f"旋转 {setctionHandler.name} 到 ({round(target_rot[0], 2)}, {round(target_rot[1], 2)}, {round(target_rot[2], 2)})"

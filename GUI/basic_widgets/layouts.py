@@ -3,9 +3,7 @@
 定义一些常用的布局
 """
 from abc import abstractmethod
-from typing import Literal, List, Dict
-
-# from PyQt5.QtCore import QPoint, QRect, QCoreApplication
+from typing import Literal, Optional, List, Dict
 
 from .buttons import *
 
@@ -189,9 +187,9 @@ class ButtonGroup:
 
 
 class _MutiDirectionTab(QWidget):
-    __draggable_tab = None
-    __dragging_tab: Union['_MutiDirectionTab', None] = None
-    __dragging_button: Union['TabButton', None] = None
+    __draggable_tab: Optional['_MutiDirectionTab'] = None
+    __dragging_tab: Optional['_MutiDirectionTab'] = None
+    __dragging_button: Optional[TabButton] = None
 
     def __init__(self, main_widget_with_multidir, init_direction=CONST.RIGHT,
                  name: str = None, image: QImage = None,
@@ -204,7 +202,7 @@ class _MutiDirectionTab(QWidget):
         if isinstance(bd_radius, int):
             bd_radius = [bd_radius] * 4
         super().__init__(None)
-        self.setMouseTracking(True)
+        # self.setMouseTracking(True)
         self.name = name
         self.direction = init_direction  # 当前位置
         self.main_widget_with_multidir = main_widget_with_multidir  # 父窗口
@@ -270,6 +268,10 @@ class _MutiDirectionTab(QWidget):
         # noinspection PyProtectedMember
         cls.__dragging_button = cls.__draggable_tab._button
         cls.__dragging_button.start_dragging()
+        # 禁用刷新
+        center_w = cls.__draggable_tab.main_widget_with_multidir.center_widget
+        if hasattr(center_w, 'enablePaint'):
+            center_w.enablePaint(True)
 
     @classmethod
     def _end_dragging_button(cls):
@@ -643,6 +645,12 @@ class MultiDirTabMainFrame(QFrame):
         # noinspection PyProtectedMember
         _MutiDirectionTab._draw_temp_button()
 
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.MouseMove:
+            self.mouseMoveEvent(event)
+            return True
+        return super().eventFilter(obj, event)
+
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         if event.buttons() == Qt.LeftButton:
@@ -664,6 +672,9 @@ class MultiDirTabMainFrame(QFrame):
                 tar_tabFrame = self.TabWidgetMap[tar_dir]
                 tar_tabFrame.return_normal_style()
             FreeTabFrame.dragged_in_frame = None
+            # 启用刷新
+            if hasattr(self.center_widget, 'enablePaint'):
+                self.center_widget.enablePaint(True)
         # noinspection PyProtectedMember
         _MutiDirectionTab._end_dragging_button()
         self.update()

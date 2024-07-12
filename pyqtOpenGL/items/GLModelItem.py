@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List
 
 import OpenGL.GL as gl
+from PyQt5.QtCore import pyqtSignal
 
 from .GLMeshItem import mesh_vertex_shader
 from .MeshData import Mesh
@@ -38,6 +39,8 @@ class GLModelItem(GLGraphicsItem, LightMixin):
         self.setGLOptions(glOptions)
         # model
         self.meshes: List[Mesh] = Mesh.load_model(path, material=material)
+        if not self.meshes:
+            self.load_failed = True
         self._order = list(range(len(self.meshes)))
         self.__drawLine = drawLine
         self.__lineWidth = lineWidth

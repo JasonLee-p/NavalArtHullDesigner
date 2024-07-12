@@ -8,8 +8,38 @@ from ..basic_data import *
 
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QSlider, QSplitter, QScrollArea, QFrame, QLabel, QLineEdit, QProgressBar, QWidget, \
-    QHBoxLayout, QSizePolicy
+    QHBoxLayout, QSizePolicy, QMenu
 from PyQt5.QtGui import *
+
+
+class Menu(QMenu):
+    def __init__(self, parent=None, font=YAHEI[9], bg=(BG_COLOR0, BG_COLOR1, BG_COLOR2, BG_COLOR3),
+                 color=FG_COLOR0, bd=1, bd_radius=0, bd_color=WHITE):
+        super().__init__(parent)
+        self.setFont(font)
+        self.setStyleSheet(f"""
+            QMenu{{
+                background-color: {bg[0]}; color: {color}; 
+                border: {bd}px solid {bd_color}; 
+                border-radius: {bd_radius}px;
+            }}
+            QMenu::item{{
+                background-color: transparent;
+                color: {color}; 
+                border-radius: {bd_radius}px;
+                padding-top: 4px;
+                padding-bottom: 4px;
+                padding-left: 20px;
+                padding-right: 20px;
+            }}
+            QMenu::item:hover{{
+                background-color: {BG_COLOR2}; color: {color};
+            }}
+            QMenu::item:selected{{
+                background-color: {BG_COLOR3}; color: {color};
+            }}
+            
+        """)
 
 
 class HorSpliter(QFrame):
@@ -29,13 +59,11 @@ class VerSpliter(QFrame):
 class TextLabel(QLabel):
     def __init__(self, parent, text, font=YAHEI[10], color=FG_COLOR0, align=Qt.AlignLeft):
         super().__init__(parent=parent, text=text)
-        self.text = text
         self.setFont(font)
         self.setStyleSheet(f"background-color: rgba(0, 0, 0, 0); color: {color};")
         self.setAlignment(align)
 
     def set_text(self, text, color: str = None):
-        self.text = text
         if color:
             self.setStyleSheet(f"color:{color};")
         self.setText(text)
@@ -171,7 +199,7 @@ class TextEdit(QLineEdit):
 
 
 class NumberEdit(TextEdit):
-    value_changed = pyqtSignal(float)  # noqa
+    value_changed = pyqtSignal(float)  # 主动更改内容或滚轮滚动时触发，不会在撤回操作的时候触发  # noqa
 
     def __init__(
             self, parent, root_parent,
@@ -229,6 +257,8 @@ class NumberEdit(TextEdit):
         self.value_changed.emit(self.current_value)
         self.root_parent.update()
         self.update_mutex.unlock()
+        # 不传递事件
+        event.accept()
 
     def text_changed(self):
         pass
@@ -567,6 +597,9 @@ class ScrollArea(QScrollArea):
 
 
 class RatioDisplayWidget(QWidget):
+    """
+    用于显示比例的小部件
+    """
     def __init__(self, current_value, max_value, label_text='', unit='M'):
         super().__init__(None)
 

@@ -216,33 +216,69 @@ class ShipProject(QObject):
         file_dialog.fileSelected.connect(lambda p: self.add_model_byPath(p))  # noqa
         file_dialog.exec_()
 
+    def add_section(self, prjsection: Union[HullSectionGroup, ArmorSectionGroup, Bridge, Ladder, Model]):
+        if isinstance(prjsection, HullSectionGroup):
+            self.add_hullSectionGroup(prjsection)
+        elif isinstance(prjsection, ArmorSectionGroup):
+            self.add_armorSectionGroup(prjsection)
+        elif isinstance(prjsection, Bridge):
+            self.add_bridge(prjsection)
+        elif isinstance(prjsection, Ladder):
+            self.add_ladder(prjsection)
+        elif isinstance(prjsection, Model):
+            self.add_model(prjsection)
+        else:
+            raise TypeError(f"未知的类型{prjsection}")
+
+    def add_sections(self, prjsections: List[Union[HullSectionGroup, ArmorSectionGroup, Bridge, Ladder, Model]]):
+        for prjsection in prjsections:
+            self.add_section(prjsection)
+
     def add_hullSectionGroup(self, prjsection: HullSectionGroup):
-        self.__hull_section_group.append(prjsection)
+        if prjsection in self.__hull_section_group:
+            self.__hull_section_group.append(prjsection.getCopy())
+        else:
+            self.__hull_section_group.append(prjsection)
         self.add_hull_section_group_s.emit(str(id(prjsection)))
 
     def add_armorSectionGroup(self, prjsection: ArmorSectionGroup):
-        self.__armor_section_group.append(prjsection)
+        if prjsection in self.__armor_section_group:
+            self.__armor_section_group.append(prjsection.getCopy())
+        else:
+            self.__armor_section_group.append(prjsection)
         self.add_armor_section_group_s.emit(str(id(prjsection)))
 
     def add_bridge(self, prjsection: Bridge):
-        self.__bridge.append(prjsection)
+        if prjsection in self.__bridge:
+            self.__bridge.append(prjsection.getCopy())
+        else:
+            self.__bridge.append(prjsection)
         self.add_bridge_s.emit(str(id(prjsection)))
 
     def add_ladder(self, prjsection: Ladder):
-        self.__ladder.append(prjsection)
+        if prjsection in self.__ladder:
+            self.__ladder.append(prjsection.getCopy())
+        else:
+            self.__ladder.append(prjsection)
         self.add_ladder_s.emit(str(id(prjsection)))
 
     def add_model(self, prjsection: Model):
         """
         将模型添加到工程中，同时发出信号，通知视图更新
         """
-        self.__model.append(prjsection)
+        if prjsection in self.__model:
+            self.__model.append(prjsection.getCopy())
+        else:
+            self.__model.append(prjsection)
         self.add_model_s.emit(prjsection.getId())
 
     def add_model_byPath(self, path: str):
         name = os.path.basename(path)
         name = name[:name.rfind(".")]
+        path = os.path.abspath(path)
         model_ = Model(self, name, QVector3D(0, 0, 0), [0, 0, 0], [1, 1, 1], path)
+        if hasattr(model_, "load_failed") and model_.load_failed:
+            return
         self.add_model(model_)
 
     def del_section(self, prjsection: Union[HullSectionGroup, ArmorSectionGroup, Bridge, Ladder, Railing, Handrail]):
@@ -261,6 +297,8 @@ class ShipProject(QObject):
         elif isinstance(prjsection, Model):
             self.__model.remove(prjsection)
             self.del_model_s.emit(prjsection.getId())
+        else:
+            raise TypeError(f"未知的类型{prjsection}")
 
     def export2NA(self, path):
         """
@@ -367,7 +405,12 @@ class NaPrjReader:
     def load_hull_section(self, data):
         sections = []
         for section in data:
-            hull_section = HullSection(self.hullProject, section['z'], section['nodes'], section['col'], section['armor'])
+            if "name" in section:
+                _name = section['name']
+            else:
+                _name = None
+            hull_section = HullSection(
+                self.hullProject, section['z'], section['nodes'], section['col'], section['armor'], _name)
             sections.append(hull_section)
         return sections
 
@@ -429,8 +472,12 @@ class NaPrjReader:
             if m_p.startswith("resources/"):  # 说明是内置模型，需要转换为绝对路径
                 m_p = os.path.join(CURRENT_PATH, m_p)
             try:
-                model_handler = Model(self.hullProject, model_['name'], QVector3D(*model_['pos']), model_['rot'], model_['scl'],
-                                      m_p)
+                model_handler = Model(
+                    self.hullProject, model_['name'], QVector3D(*model_['pos']), model_['rot'], model_['scl'], m_p)
+                # 加载失败的模型不添加
+                if hasattr(model_handler, "load_failed") and model_handler.load_failed:
+                    QMessageBox.warning(None, "警告", f"模型 {model_['name']} 加载失败，若您仍希望保留模型，请直接关闭程序！", QMessageBox.Ok)
+                    continue
             except KeyError:
                 raise KeyError(f"模型 {model_['name']} 的数据不完整")
             self.hullProject.add_model(model_handler)

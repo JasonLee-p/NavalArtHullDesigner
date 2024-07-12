@@ -8,6 +8,7 @@ import OpenGL.GL as gl
 import assimp_py as assimp
 import numpy as np
 from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QMessageBox
 
 from .BufferObject import VAO, VBO, EBO
 from .shader import Shader
@@ -202,10 +203,12 @@ class Mesh:
                         assimp.Process_PreTransformVertices
                         )
         # assimp.Process_CalcTangentSpace 计算法线空间
-        scene = assimp.ImportFile(str(path), post_process)
+        try:
+            scene = assimp.ImportFile(str(path), post_process)
+        except ValueError:
+            QMessageBox.warning(None, "错误", f"Assimp 无法导入 {path}")
+            return meshes
         # scene = _assimp.load(str(path))
-        if not scene:
-            raise ValueError("ERROR:: Assimp model failed to load, {}".format(path))
 
         is_dae = Path(path).suffix == ".dae"
         for m in scene.meshes:
@@ -358,6 +361,7 @@ class SymetryCylinderMesh:
     def initVertexes(self):
         """
         返回不使用索引数组的顶点数组
+        最后会更新 self.vertexes 和 self.normals
         :return:
         """
         if self.topPoints is None or self.bottomPoints is None:
@@ -370,8 +374,8 @@ class SymetryCylinderMesh:
         self._topPoints = np.concatenate((self.topPoints, self.rightTopPoints), axis=0)
         self._bottomPoints = np.concatenate((self.bottomPoints, self.rightBottomPoints), axis=0)
         # 顶面和底面的点
-        self.top_vert = np.zeros((vertexLen * 3, 3), dtype=np.float32)
-        self.bottom_vert = np.zeros((vertexLen * 3, 3), dtype=np.float32)
+        self.top_vert = np.zeros(((vertexLen - 2) * 3, 3), dtype=np.float32)
+        self.bottom_vert = np.zeros(((vertexLen - 2) * 3, 3), dtype=np.float32)
         self._updateTopBottom(FI, LI, UI)
         self.side_vert = np.zeros((vertexLen * 6, 3), dtype=np.float32)
         self._updateSide(FI, LI, UI)
@@ -389,6 +393,10 @@ class SymetryCylinderMesh:
         self.rightBottomPoints = self.rightBottomPoints[::-1]
 
     def getDirIndex(self):
+        """
+        根据延伸方向返回前后左右上下的索引
+        :return:
+        """
         FI = 0  # 前后方向索引
         LI = 1  # 左右方向索引
         UI = 2  # 上下方向索引
@@ -402,31 +410,103 @@ class SymetryCylinderMesh:
             UI = 1
         return FI, LI, UI
 
+    def getDirIndexFI(self):
+        return 0 if self.direction == 'x' else 1 if self.direction == 'y' else 2
+
+    def getDirIndexLI(self):
+        return 1 if self.direction == 'x' else 0 if self.direction == 'y' else 2
+
+    def getDirIndexUI(self):
+        return 2 if self.direction == 'x' else 2 if self.direction == 'y' else 1
+
     def _updateTopBottom(self, FI, LI, UI):
         # 顶面和底面
-        for i in range(len(self._topPoints) - 1):
-            p0 = self._topPoints[i]
-            p1 = self._topPoints[i + 1]
-            self.top_vert[i * 3][FI] = self.topPos
-            self.top_vert[i * 3][LI] = p0[0]
-            self.top_vert[i * 3][UI] = p0[1]
-            self.top_vert[i * 3 + 1][FI] = self.topPos
-            self.top_vert[i * 3 + 1][LI] = p1[0]
-            self.top_vert[i * 3 + 1][UI] = p1[1]
-            self.top_vert[i * 3 + 2][FI] = self.topPos
-            self.top_vert[i * 3 + 2][LI] = self._topPoints[-1][0]
-            self.top_vert[i * 3 + 2][UI] = self._topPoints[-1][1]
-            p0 = self._bottomPoints[i]
-            p1 = self._bottomPoints[i + 1]
-            self.bottom_vert[i * 3][FI] = self.bottomPos
-            self.bottom_vert[i * 3][LI] = p0[0]
-            self.bottom_vert[i * 3][UI] = p0[1]
-            self.bottom_vert[i * 3 + 1][FI] = self.bottomPos
-            self.bottom_vert[i * 3 + 1][LI] = p1[0]
-            self.bottom_vert[i * 3 + 1][UI] = p1[1]
-            self.bottom_vert[i * 3 + 2][FI] = self.bottomPos
-            self.bottom_vert[i * 3 + 2][LI] = self._bottomPoints[-1][0]
-            self.bottom_vert[i * 3 + 2][UI] = self._bottomPoints[-1][1]
+        # for i in range(len(self._topPoints) - 1):
+        #     # 顶面
+        #     p0 = self._topPoints[i]
+        #     p1 = self._topPoints[i + 1]
+        #     # 点1
+        #     self.top_vert[i * 3][FI] = self.topPos
+        #     self.top_vert[i * 3][LI] = p0[0]
+        #     self.top_vert[i * 3][UI] = p0[1]
+        #     # 点2
+        #     self.top_vert[i * 3 + 1][FI] = self.topPos
+        #     self.top_vert[i * 3 + 1][LI] = p1[0]
+        #     self.top_vert[i * 3 + 1][UI] = p1[1]
+        #     # 下方中心点，每个三角形都有一个
+        #     self.top_vert[i * 3 + 2][FI] = self.topPos
+        #     self.top_vert[i * 3 + 2][LI] = self._topPoints[-1][0]
+        #     self.top_vert[i * 3 + 2][UI] = self._topPoints[-1][1]
+        #     # 底面
+        #     p0 = self._bottomPoints[i]
+        #     p1 = self._bottomPoints[i + 1]
+        #     # 点1
+        #     self.bottom_vert[i * 3][FI] = self.bottomPos
+        #     self.bottom_vert[i * 3][LI] = p0[0]
+        #     self.bottom_vert[i * 3][UI] = p0[1]
+        #     # 点2
+        #     self.bottom_vert[i * 3 + 1][FI] = self.bottomPos
+        #     self.bottom_vert[i * 3 + 1][LI] = p1[0]
+        #     self.bottom_vert[i * 3 + 1][UI] = p1[1]
+        #     # 下方中心点，每个三角形都有一个
+        #     self.bottom_vert[i * 3 + 2][FI] = self.bottomPos
+        #     self.bottom_vert[i * 3 + 2][LI] = self._bottomPoints[-1][0]
+        #     self.bottom_vert[i * 3 + 2][UI] = self._bottomPoints[-1][1]
+        for i in range(len(self._topPoints) // 2 - 1):
+            # 顶面
+            # 右下点索引为i
+            # 左下点索引为len(self._topPoints) - 1 - i
+            # 右上点索引为i + 1
+            # 左上点索引为len(self._topPoints) - 1 - i - 1
+            p_r_d = self._topPoints[i]
+            p_l_d = self._topPoints[len(self._topPoints) - 1 - i]
+            p_r_u = self._topPoints[i + 1]
+            p_l_u = self._topPoints[len(self._topPoints) - 1 - i - 1]
+            # 左底三角形
+            self.top_vert[i * 6][FI] = self.topPos
+            self.top_vert[i * 6][LI] = p_l_d[0]
+            self.top_vert[i * 6][UI] = p_l_d[1]
+            self.top_vert[i * 6 + 1][FI] = self.topPos
+            self.top_vert[i * 6 + 1][LI] = p_r_d[0]
+            self.top_vert[i * 6 + 1][UI] = p_r_d[1]
+            self.top_vert[i * 6 + 2][FI] = self.topPos
+            self.top_vert[i * 6 + 2][LI] = p_r_u[0]
+            self.top_vert[i * 6 + 2][UI] = p_r_u[1]
+            # 右上三角形
+            self.top_vert[i * 6 + 3][FI] = self.topPos
+            self.top_vert[i * 6 + 3][LI] = p_l_d[0]
+            self.top_vert[i * 6 + 3][UI] = p_l_d[1]
+            self.top_vert[i * 6 + 4][FI] = self.topPos
+            self.top_vert[i * 6 + 4][LI] = p_r_u[0]
+            self.top_vert[i * 6 + 4][UI] = p_r_u[1]
+            self.top_vert[i * 6 + 5][FI] = self.topPos
+            self.top_vert[i * 6 + 5][LI] = p_l_u[0]
+            self.top_vert[i * 6 + 5][UI] = p_l_u[1]
+            # 底面
+            p_r_d = self._bottomPoints[i]
+            p_l_d = self._bottomPoints[len(self._bottomPoints) - 1 - i]
+            p_r_u = self._bottomPoints[i + 1]
+            p_l_u = self._bottomPoints[len(self._bottomPoints) - 1 - i - 1]
+            # 左底三角形
+            self.bottom_vert[i * 6][FI] = self.bottomPos
+            self.bottom_vert[i * 6][LI] = p_r_d[0]
+            self.bottom_vert[i * 6][UI] = p_r_d[1]
+            self.bottom_vert[i * 6 + 1][FI] = self.bottomPos
+            self.bottom_vert[i * 6 + 1][LI] = p_l_d[0]
+            self.bottom_vert[i * 6 + 1][UI] = p_l_d[1]
+            self.bottom_vert[i * 6 + 2][FI] = self.bottomPos
+            self.bottom_vert[i * 6 + 2][LI] = p_l_u[0]
+            self.bottom_vert[i * 6 + 2][UI] = p_l_u[1]
+            # 右上三角形
+            self.bottom_vert[i * 6 + 3][FI] = self.bottomPos
+            self.bottom_vert[i * 6 + 3][LI] = p_r_d[0]
+            self.bottom_vert[i * 6 + 3][UI] = p_r_d[1]
+            self.bottom_vert[i * 6 + 4][FI] = self.bottomPos
+            self.bottom_vert[i * 6 + 4][LI] = p_l_u[0]
+            self.bottom_vert[i * 6 + 4][UI] = p_l_u[1]
+            self.bottom_vert[i * 6 + 5][FI] = self.bottomPos
+            self.bottom_vert[i * 6 + 5][LI] = p_r_u[0]
+            self.bottom_vert[i * 6 + 5][UI] = p_r_u[1]
 
     def _updateSide(self, FI, LI, UI):
         # 侧面
@@ -457,6 +537,70 @@ class SymetryCylinderMesh:
             self.side_vert[i * 6 + 5][FI] = self.topPos
             self.side_vert[i * 6 + 5][LI] = tp1[0]
             self.side_vert[i * 6 + 5][UI] = tp1[1]
+
+    def setMeshZ(self, topZ, botZ):
+        FI = 0
+        if self.direction == 'z':
+            FI = 2
+        elif self.direction == 'y':
+            FI = 1
+        update_topZ = abs(topZ - self.topPos) > 1e-6
+        update_botZ = abs(botZ - self.bottomPos) > 1e-6
+        if not update_botZ:
+            botZ = False
+        if not update_topZ:
+            topZ = False
+        if not update_topZ and not update_botZ:
+            return
+        # 修改top_vert和bottom_vert的Z坐标
+        self.updateTopBotVert(topZ, botZ, FI)
+        # 修改side_vert的Z坐标
+        self.updateSideVert(topZ, botZ, FI)
+        # 更新顶点数组
+        self.vertexes = np.concatenate((self.top_vert, self.bottom_vert, self.side_vert), axis=0)
+        # 更新法线
+        self.normals = vertex_normal_faceNormal(self.vertexes)
+        # self.normals = vertex_normal_smooth(self.vertexes, np.arange(self.vertexes.shape[0]).reshape(-1, 3))
+
+    def updateTopBotVert(self, topZ, botZ, FI):
+        """
+        :param topZ: 顶部Z坐标，若为False则不更新
+        :param botZ: 底部Z坐标，若为False则不更新
+        :param FI:
+        :return:
+        """
+        for i in range(len(self._topPoints) // 2 - 1):
+            if topZ:
+                self.top_vert[i * 6][FI] = topZ
+                self.top_vert[i * 6 + 1][FI] = topZ
+                self.top_vert[i * 6 + 2][FI] = topZ
+                self.top_vert[i * 6 + 3][FI] = topZ
+                self.top_vert[i * 6 + 4][FI] = topZ
+                self.top_vert[i * 6 + 5][FI] = topZ
+            if botZ:
+                self.bottom_vert[i * 6][FI] = botZ
+                self.bottom_vert[i * 6 + 1][FI] = botZ
+                self.bottom_vert[i * 6 + 2][FI] = botZ
+                self.bottom_vert[i * 6 + 3][FI] = botZ
+                self.bottom_vert[i * 6 + 4][FI] = botZ
+                self.bottom_vert[i * 6 + 5][FI] = botZ
+
+    def updateSideVert(self, topZ, botZ, FI):
+        """
+        :param topZ: 顶部Z坐标，若为False则不更新
+        :param botZ: 底部Z坐标，若为False则不更新
+        :param FI:
+        :return:
+        """
+        for i in range(len(self._topPoints)):
+            if topZ:
+                self.side_vert[i * 6][FI] = topZ
+                self.side_vert[i * 6 + 3][FI] = topZ
+                self.side_vert[i * 6 + 5][FI] = topZ
+            if botZ:
+                self.side_vert[i * 6 + 1][FI] = botZ
+                self.side_vert[i * 6 + 2][FI] = botZ
+                self.side_vert[i * 6 + 4][FI] = botZ
 
     def addPoint(self, point: tuple, side: Literal['top', 'bottom']):
         """
@@ -853,25 +997,28 @@ def plane(x, y):
 
 def face_normal(v1, v2, v3):
     """计算一个三角形的法向量"""
-    a = v2 - v1  # 三角形的一条边
-    b = v3 - v1  # 三角形的另一条边
-    return np.cross(a, b)
+    try:
+        a = v2 - v1  # 三角形的一条边
+        b = v3 - v1  # 三角形的另一条边
+        return np.cross(a, b)
+    except Exception as e:
+        print(f"v1: {v1}, v2: {v2}, v3: {v3}")
+        raise e
 
 
 def vertex_normal_smooth(vert, ind):
     """计算每个顶点的法向量，显示会平滑一些"""
-    if ind is None:
-        ind = np.arange(len(vert))
     nv = len(vert)  # 顶点的个数
-    nf = len(ind)  # 面的个数
+    nf = len(ind) // 3  # 面的个数
     norm = np.zeros((nv, 3), np.float32)  # 初始化每个顶点的法向量为零向量
-    for i in range(nf):  # 遍历每个面
-        v1, v2, v3 = vert[ind[i]]  # 获取面的三个顶点
+    for i in range(0, nf, 3):  # 遍历每个面
+        v1, v2, v3 = vert[ind[i:i + 3]]
         fn = face_normal(v1, v2, v3)  # 计算面的法向量
-        norm[ind[i]] += fn  # 将面的法向量累加到对应的顶点上
-    norm_len = np.linalg.norm(norm, axis=1, keepdims=True)  # 计算每个顶点的法向量的长度
-    norm_len[norm_len < 1e-5] = 1  # 处理零向量
-    norm = norm / norm_len  # 归一化每个顶点的法向量
+        norm[ind[i:i + 3]] += fn  # 将面的法向量累加到对应的顶点
+    # 归一化
+    norm_len = np.linalg.norm(norm, axis=1, keepdims=True)
+    norm_len[norm_len < 1e-5] = 1
+    norm = norm / norm_len
     return norm
 
 

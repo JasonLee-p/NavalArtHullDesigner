@@ -11,6 +11,18 @@ class Ladder(SectionHandler):
     """
     直梯
     """
+
+    def getCopy(self):
+        ladder = Ladder(self.hullProject, self.name, self.shape)
+        ladder.Pos = self.Pos
+        ladder.Rot = self.Rot
+        ladder.Col = self.Col
+        ladder.length = self.length
+        ladder.width = self.width
+        ladder.interval = self.interval
+        ladder.material_width = self.material_width
+        return ladder
+
     idMap = {}
     deleted_s = pyqtSignal()
 

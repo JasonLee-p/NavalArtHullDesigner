@@ -5,6 +5,7 @@ from typing import Union, Literal
 
 import numpy as np
 # from main_logger import Log
+import OpenGL.GL as gl
 from pyqtOpenGL import Matrix4x4, GLGraphicsItem, GLMeshItem, Quaternion
 from pyqtOpenGL.items.MeshData import SymetryCylinderMesh, EditItemMaterial
 
@@ -179,7 +180,8 @@ class HullSectionItem(GLMeshItem):
                          indices=np.array([i for i in range(len(self.mesh_data.vertexes))], dtype=np.uint32),
                          material=EditItemMaterial(),
                          # drawLine=True,
-                         glOptions='translucent')
+                         glOptions='translucent',
+                         glUsage=gl.GL_DYNAMIC_DRAW)
 
     def getCurPoints(self, direction: Literal['up', 'bot'], p0: np.ndarray, p1: np.ndarray):
         """
@@ -205,6 +207,34 @@ class HullSectionItem(GLMeshItem):
         result[:, 1] = result[:, 1] * (p1[1] - p0[1]) / 2
         result[:, 1] += offset
         return result
+
+    def setZ(self, _z):
+        """
+        设置z值
+        :return:
+        """
+        if self._z > 0:
+            self.mesh_data.setMeshZ(_z, self.handler._backSection.z)
+            front_section = self.handler._frontSection
+            back_section = self.handler._backSection
+            if front_section:
+                front_section.paintItem.mesh_data.setMeshZ(front_section.z, _z)
+                front_section.paintItem.updateVertexes(front_section.paintItem.mesh_data.vertexes)
+            if back_section and back_section.z < 0:
+                back_section.paintItem.mesh_data.setMeshZ(_z, back_section.z)
+                back_section.paintItem.updateVertexes(back_section.paintItem.mesh_data.vertexes)
+        elif self._z < 0:
+            self.mesh_data.setMeshZ(self.handler._frontSection.z, _z)
+            front_section = self.handler._frontSection
+            back_section = self.handler._backSection
+            if front_section and front_section.z > 0:
+                front_section.paintItem.mesh_data.setMeshZ(front_section.z, _z)
+                front_section.paintItem.updateVertexes(front_section.paintItem.mesh_data.vertexes)
+            if back_section:
+                back_section.paintItem.mesh_data.setMeshZ(_z, back_section.z)
+                back_section.paintItem.updateVertexes(back_section.paintItem.mesh_data.vertexes)
+        # 更新
+        self.updateVertexes(self.mesh_data.vertexes)
 
     def getTopCur(self):
         """
@@ -349,7 +379,7 @@ class HullSectionItem(GLMeshItem):
 class HullSectionGroupItem(GLGraphicsItem):
     def __init__(self, prj, hullSections):
         """
-        设置船体截面组整体的变换，并
+        设置船体截面组整体的变换，不负责具体绘制。
         :param prj: 工程对象
         :param hullSections: 截面对象列表
         """
@@ -372,6 +402,33 @@ class HullSectionGroupItem(GLGraphicsItem):
     def setEulerAngles(self, yaw, pitch, roll, local=True):
         q = Quaternion.fromEulerAngles(yaw, pitch, roll)
         self.__transform.rotate(q, local)
+
+    def addSection(self, section):
+        """
+        添加截面，在handler中的addSection中调用
+        :param section: 截面对象
+        """
+        # 排序
+        for i in range(len(self.hullSections)):
+            if self.hullSections[i].z > section.z:
+                self.hullSections.insert(i, section)
+                break
+        else:
+            self.hullSections.append(section)
+        section.paintItem.setParent(self)
+        # 更新前后截面
+        self._front_item = self.hullSections[-1]
+        self._back_item = self.hullSections[0]
+
+    def delSection(self, section):
+        """
+        删除截面，在handler中的delSection中调用
+        :param section: 截面对象
+        """
+        self.hullSections.remove(section)
+        # 更新前后截面
+        self._front_item = self.hullSections[-1]
+        self._back_item = self.hullSections[0]
 
 
 class ArmorSectionItem(GLMeshItem):
@@ -398,6 +455,7 @@ class ArmorSectionItem(GLMeshItem):
         """
         更新网格
         """
+        ...
 
 
 class ArmorSectionGroupItem(GLGraphicsItem):

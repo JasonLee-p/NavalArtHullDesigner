@@ -11,6 +11,12 @@ class ArmorSection(SubSectionHandler):
     """
     装甲截面
     """
+
+    def getCopy(self):
+        armor = ArmorSection(self.hullProject, self.z, [[node.x, node.y] for node in self.nodes])
+        armor.armor = self.armor
+        return armor
+
     idMap = {}
     deleted_s = pyqtSignal()  # noqa
 
@@ -50,6 +56,13 @@ class ArmorSectionGroup(SectionHandler):
     """
     idMap = {}
     deleted_s = pyqtSignal()  # noqa
+
+    def getCopy(self):
+        armor = ArmorSectionGroup(self.hullProject, self.name, self.Pos, self.Rot, self.Col,
+                                    [section.getCopy() for section in self.__sections])
+        armor.topCur = self.topCur
+        armor.botCur = self.botCur
+        return armor
 
     def __init__(self, prj, name, pos, rot, col, sections):
         self.hullProject = prj

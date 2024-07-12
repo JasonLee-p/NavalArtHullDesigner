@@ -6,16 +6,53 @@ import webbrowser
 
 import psutil
 from GUI import MainEditorGUI, EditTabWidget
+from GUI.sub_element_edt_widgets import SubElementShow
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import QFileDialog
 from ShipRead.na_project import *
-from funcs_utils import not_implemented
+from funcs_utils import not_implemented, snake_to_camel
 from main_logger import Log, StatusBarHandler
 from operation import OperationStack
+from operation.basic_op import Operation
 from path_vars import DESKTOP_PATH
 
 
+def update_structure(action):
+    """
+    装饰器，用于简化结构视图中组件的添加和删除操作。
+    :param action: 动作类型（'add' 或 'del'）
+    :return: 装饰器函数
+    """
+
+    def decorator(func):
+        # snake_case
+        snake_component_type = func.__name__[4:-2]  # 去除add_/del_四个字符以及_s结尾
+
+        def wrapper(self, component_id):
+            # 将下划线改为大驼峰，作为类名
+            camel_component_type = snake_to_camel(snake_component_type)
+            component_class = globals()[camel_component_type]
+            component = component_class.get_by_id(component_id)
+            getattr(self.structure_tab, f'{action}_{snake_component_type.lower()}')(component)
+
+        f"""
+        通过对象ID，将{snake_component_type} {'添加到' if action == 'add' else '从'} structure_tab（结构视图）中{'添加' if action == 'add' else '删除'}。
+        该函数将会链接到ShipProject对象的同名pyqtSignal，
+        以在通过ShipProject执行{'添加' if action == 'add' else '删除'}该组件的操作时{'往' if action == 'add' else '从'}structure_tab{'添加' if action == 'add' else '删除'}该组件的显示控件。
+        :param component_id: {snake_component_type} ID
+        :return: None
+        """
+        return wrapper
+
+    return decorator
+
+
 class MemoryThread(QThread):
+    """
+    内存监控线程
+    """
     memory_updated_s = pyqtSignal(int)  # noqa
+    cpu_updated_s = pyqtSignal(float)  # noqa
 
     def __init__(self):
         super().__init__(None)
@@ -24,18 +61,39 @@ class MemoryThread(QThread):
     def run(self):
         while True:
             memory_bytes = self.process.memory_info().rss
+            cpu_percent = self.process.cpu_percent()
             memory_mb = memory_bytes // (1024 * 1024)
             self.memory_updated_s.emit(memory_mb)
+            self.cpu_updated_s.emit(cpu_percent)
             self.sleep(2)
 
 
 class MainEditor(MainEditorGUI):
 
+    def excute(self, operation: Operation):
+        """
+        向operationStack添加操作并执行
+        :param operation: 操作对象
+        :return:
+        """
+        self.operationStack.execute(operation)
+
     def undo(self):
+        """
+        使operationStack撤回到上一个操作
+        :return:
+        """
         self.operationStack.undo()
 
     def redo(self):
+        """
+        使operationStack重做到下一个操作
+        :return:
+        """
         self.operationStack.redo()
+
+    def clearOperationStack(self):
+        self.operationStack.clear()
 
     def open_prj(self, path):
         # 打开path路径的工程文件
@@ -48,6 +106,7 @@ class MainEditor(MainEditorGUI):
         configHandler.add_prj(prj.project_name, path)
         StatusBarHandler().info(f"打开工程：{prj.project_name}")
         self.setCurrentPrj(prj)
+        return True
 
     def select_prj_toOpen(self):
         prjs = self.configHandler.get_config("Projects")
@@ -113,6 +172,12 @@ class MainEditor(MainEditorGUI):
     def tutorial(self):
         pass
 
+    def paste(self):
+        sections = set()
+        for item in self.gl_widget.clipboard:
+            sections.add(item.handler)
+        self._current_prj.add_sections(list(sections))
+
     def __init__(self, gl_widget, logger):
         """
         编辑器中所有事件，操作的主控制器
@@ -120,15 +185,23 @@ class MainEditor(MainEditorGUI):
         :param logger:
         """
 
-        # 管理所有操作
-        self.operationStack = OperationStack(self)
+        # 操作管理栈
+        self.operationStack = OperationStack(self, max_length=configHandler.get_config("OperationStackMaxLength"))
         self.operationStack.init_stack()
         super().__init__(gl_widget, logger)
         # 创建内存监控线程
         self.memoryThread = MemoryThread()
         self.memoryThread.start()
+        # 绑定信号和函数
+        self._glWidget_menu_actions = {
+            "全选": self.gl_widget.selectAll,
+            "复制": self.gl_widget.copy,
+            "粘贴": self.paste,
+            "删除": self.gl_widget.delete_selected,
+        }
+        self._bind_glWidget_menu()
         self._bind_signal()
-        # 快捷方式绑定
+        # 绑定快捷方式
         self._bind_shortcut({
             "Ctrl+S": self.save_prj,
             "Ctrl+Shift+S": self.save_as_prj,
@@ -139,17 +212,52 @@ class MainEditor(MainEditorGUI):
         EditTabWidget.main_editor = self
         EditTabWidget.gl_widget = gl_widget
         EditTabWidget.operationStack = self.operationStack
+        SubElementShow.operationStack = self.operationStack
+
+    def _bind_glWidget_menu(self):
+        for action_name, func in self._glWidget_menu_actions.items():
+            action = QAction(self)
+            action.setText(action_name)
+            action.triggered.connect(func)
+            self.gl_widget.menu.addAction(action)
 
     def _bind_signal(self):
         # 内存监控线程
         self.memoryThread.memory_updated_s.connect(self.memory_widget.set_values)
+        # self.memoryThread.cpu_updated_s.connect(self.update_cpu)
         # 选择船体元素后，显示编辑器
         self.gl_widget.clear_selected_items.connect(self.edit_tab.clear_editing_widget)
         self.gl_widget.after_selection.connect(
             lambda: self.show_editor(self.gl_widget.selected_items_handler()))
 
+        # 绑定gl_widget的键盘事件
+        self.gl_widget.keyPressEvent = self.keyPressEvent
+        self.gl_widget.keyReleaseEvent = self.keyReleaseEvent
+
+    def keyPressEvent(self, ev, qKeyEvent=None) -> None:
+        ctrl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
+        shift_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ShiftModifier)
+        alt_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier)
+        if ctrl_down:
+            tip_text = "Ctrl 快捷键指南：微调相机视角\tS 保存工程\tShift+S 另存为工程\tZ 撤销操作\tShift+Z 重做"
+            self.show_statu_(tip_text, "highlight")
+        elif shift_down:
+            tip_text = "Shift 快捷键指南：限制视角移动"
+            self.show_statu_(tip_text, "highlight")
+        elif alt_down:
+            tip_text = "Alt 快捷键指南："
+            self.show_statu_(tip_text, "highlight")
+
+    def keyReleaseEvent(self, ev, qKeyEvent=None) -> None:
+        if "快捷键指南" in self.status_label.text():
+            self.show_statu_("", "success")
+
     def _bind_shortcut(self, shortcuts: dict):
-        # 绑定快捷键
+        """
+        绑定快捷键
+        :param shortcuts: 例如：{"Ctrl+S": self.save_prj}
+        :return:
+        """
         for key, func in shortcuts.items():
             action = QAction(self)
             action.setShortcut(QKeySequence(key))
@@ -162,45 +270,45 @@ class MainEditor(MainEditorGUI):
     def getCurrentPrj(self):
         return self._current_prj
 
+    @update_structure('add')
     def add_hull_section_group_s(self, group_id):
-        hsGroup = HullSectionGroup.get_by_id(group_id)
-        self.structure_tab.add_hullSectionGroup(hsGroup)
+        pass
 
+    @update_structure('add')
     def add_armor_section_group_s(self, group_id):
-        asGroup = ArmorSectionGroup.get_by_id(group_id)
-        self.structure_tab.add_armorSectionGroup(asGroup)
+        pass
 
+    @update_structure('add')
     def add_bridge_s(self, bridge_id):
-        _bridge = Bridge.get_by_id(bridge_id)
-        self.structure_tab.add_bridge(_bridge)
+        pass
 
+    @update_structure('add')
     def add_ladder_s(self, ladder_id):
-        _ladder = Ladder.get_by_id(ladder_id)
-        self.structure_tab.add_ladder(_ladder)
+        pass
 
+    @update_structure('add')
     def add_model_s(self, model_id):
-        _model = Model.get_by_id(model_id)
-        self.structure_tab.add_model(_model)
+        pass
 
+    @update_structure('del')
     def del_hull_section_group_s(self, group_id):
-        hsGroup = HullSectionGroup.get_by_id(group_id)
-        self.structure_tab.del_hullSectionGroup(hsGroup)
+        pass
 
+    @update_structure('del')
     def del_armor_section_group_s(self, group_id):
-        asGroup = ArmorSectionGroup.get_by_id(group_id)
-        self.structure_tab.del_armorSectionGroup(asGroup)
+        pass
 
+    @update_structure('del')
     def del_bridge_s(self, bridge_id):
-        _bridge = Bridge.get_by_id(bridge_id)
-        self.structure_tab.del_bridge(_bridge)
+        pass
 
+    @update_structure('del')
     def del_ladder_s(self, ladder_id):
-        _ladder = Ladder.get_by_id(ladder_id)
-        self.structure_tab.del_ladder(_ladder)
+        pass
 
+    @update_structure('del')
     def del_model_s(self, model_id):
-        _model = Model.get_by_id(model_id)
-        self.structure_tab.del_model(_model)
+        pass
 
     def show_editor(self, item):
         if isinstance(item, list):

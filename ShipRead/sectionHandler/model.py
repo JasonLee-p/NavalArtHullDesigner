@@ -11,6 +11,11 @@ class Model(SectionHandler):
     """
     模型
     """
+
+    def getCopy(self):
+        model = Model(self.hullProject, self.name, self.Pos, self.Rot, self.Scl, self.file_path)
+        return model
+
     idMap = {}
     deleted_s = pyqtSignal()  # noqa
 
@@ -29,6 +34,11 @@ class Model(SectionHandler):
                                 drawLine=modelRenderConfig["ModelDrawLine"],
                                 lineWidth=modelRenderConfig["ModelLineWith"],
                                 lineColor=modelRenderConfig["ModelLineColor"])
+        # 如果加载失败，不继续
+        if hasattr(modelItem, "load_failed") and modelItem.load_failed:
+            self.load_failed = True
+            self.delete()
+            return
         self.setPaintItem(modelItem)
         self.setPos(pos)
         self.setRot(rot)
@@ -50,9 +60,11 @@ class Model(SectionHandler):
         所有的删除操作都应该调用这个方法，即使是在控件中删除
         :return:
         """
-        SectionHandler._model_tab._items.pop(self)  # noqa
-        Model.idMap.pop(self.getId())
         super().delete()
+        try:
+            Model.idMap.pop(self.getId())
+        except KeyError:
+            pass
 
     def to_dict(self):
         if isinstance(self.Rot, QVector3D):

@@ -55,6 +55,11 @@ __all__ = ['GLGraphicsItem', 'GLOptions', 'PickColorManager']
 
 
 def singleton(cls):
+    """
+    单例装饰器
+    :param cls:
+    :return:
+    """
     instances = {}
 
     def get_instance(*args, **kwargs):
@@ -122,6 +127,7 @@ class GLGraphicsItem(QtCore.QObject):
         }
     """
     set_selected_s = pyqtSignal(int)
+    _updateGL = True
 
     def __init__(
             self,
@@ -479,6 +485,13 @@ class GLGraphicsItem(QtCore.QObject):
         """
         pass
         # raise NotImplementedError()
+
+    def updateGL(self, *args, **kwds):
+        """
+        Called when the item needs to be redrawn.
+        """
+        if not self._updateGL:
+            return False
 
     def paint(self, model_matrix=Matrix4x4()):
         """

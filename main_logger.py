@@ -20,16 +20,19 @@ class Log:
     def error(self, trace, info):
         err_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         with self.wirte_locker:
+            print(f"[ERROR] {err_time}\n{trace}\n{info}\n")
             self.file.write(f"[ERROR] {err_time}\n{trace}\n{info}\n\n")
 
     def warning(self, info):
         warn_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         with self.wirte_locker:
+            print(f"[WARNING] {warn_time}\n{info}\n")
             self.file.write(f"[WARNING] {warn_time}\n{info}\n\n")
 
     def info(self, info):
         log_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         with self.wirte_locker:
+            print(f"[INFO] {log_time}\n{info}\n")
             self.file.write(f"[INFO] {log_time}\n{info}\n\n")
 
     def save(self):

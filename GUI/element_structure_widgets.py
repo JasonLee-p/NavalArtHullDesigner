@@ -54,7 +54,7 @@ class ESW(QObject):
     def add_item(self, item):
         """
         在加入元素后更新界面，并且如果当前没有元素则隐藏none_show
-        :param item: 元素
+        :param item: 元素（不是控件，而是实际的元素）
         :return: 是否添加成功
         """
         if not self._items:
@@ -64,11 +64,12 @@ class ESW(QObject):
     def del_item(self, item):
         """
         删除元素后更新界面，并且如果当前没有元素则显示none_show
-        :param item: 元素
+        :param item: 元素（不是控件，而是实际的元素）
         :return: 是否删除成功
         """
-        show_widget = self._items.pop(item)
-        show_widget.deleteLater()
+        self._items.remove(item)
+        if hasattr(item, "_showButton"):
+            item._showButton.deleteLater()  # noqa
         if not self._items:
             self.none_show.show()
 

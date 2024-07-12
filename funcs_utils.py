@@ -75,6 +75,17 @@ VECTOR_RELATION_MAP = {
 }
 
 
+def snake_to_camel(snake_str):
+    """
+    将蛇形命名法字符串转换为大驼峰命名法字符串。
+
+    :param snake_str: 以蛇形命名法表示的字符串
+    :return: 以大驼峰命名法表示的字符串
+    """
+    components = snake_str.split('_')
+    return ''.join(x.title() for x in components)
+
+
 def merge_dict(d1, d2):
     """
     递归地合并两个字典，d2的键值对优先级高

@@ -1,10 +1,13 @@
 """
 
 """
+import traceback
+
 from GUI.element_structure_widgets import *
+from GUI.sub_element_edt_widgets import SubElementShow
 from PyQt5.QtGui import QVector3D
 
-from pyqtOpenGL import GLMeshItem, sphere, cube, EditItemMaterial, GLGraphicsItem
+from pyqtOpenGL import GLMeshItem, sphere, cube, EditItemMaterial, GLGraphicsItem, GLModelItem
 
 
 class SectionHandler(QObject):
@@ -14,6 +17,7 @@ class SectionHandler(QObject):
     _main_handler = None
     _gl_widget = None
     _structure_tab = None
+    _edit_tab = None
     _hsg_tab = None
     _asg_tab = None
     _bridge_tab = None
@@ -34,6 +38,7 @@ class SectionHandler(QObject):
         cls._main_handler = hullPrj.main_handler
         cls._gl_widget = cls._main_handler.gl_widget
         cls._structure_tab = cls._main_handler.structure_tab
+        cls._edit_tab = cls._main_handler.edit_tab
         cls._hsg_tab = cls._structure_tab.hullSectionGroup_tab
         cls._asg_tab = cls._structure_tab.armorSectionGroup_tab
         cls._bridge_tab = cls._structure_tab.bridge_tab
@@ -64,9 +69,11 @@ class SectionHandler(QObject):
     def __init__(self, showButton_type: Literal['PosShow', 'PosRotShow'] = 'PosRotShow'):
         """
         初始化绘制对象，连接到主绘制窗口
+        paintItem被初始化为None，若需要则调用setPaintItem
+        _showButton被初始化为None，若需要则调用_init_showButton
         """
-        self.paintItem = None
-        self._showButton = None
+        self.paintItem: Optional[GLGraphicsItem] = None
+        self._showButton: Optional[Union[NoneShow, ShowButton]] = None
         super().__init__(None)
         # 获取主绘制窗口，使其能够连接到主窗口及其下属控件
         if not hasattr(self, "hullProject"):
@@ -137,7 +144,13 @@ class SectionHandler(QObject):
         elif type_ == 'PosRotShow':
             self._showButton = PosRotShow(self.hullProject.gl_widget, self._model_bt_scroll_widget, self)
         else:
-            raise ValueError(f"Unknown type: {type_}")
+            trace = traceback.extract_stack()[-2]
+            Log().error(trace, f"未知的showButton类型: {type_}")
+            raise ValueError(f"未知的showButton类型: {type_}")
+
+    @abstractmethod
+    def getCopy(self):
+        return SectionHandler()
 
     def addLight(self, lights: list):
         self.paintItem.addLight(lights)
@@ -212,13 +225,38 @@ class SectionHandler(QObject):
         else:
             return None
 
+    def delete_by_user(self):
+        """
+        用户操作删除组件
+        默认为无法撤回的操作；
+        若需要用操作栈，则再operation中新建操作类然后调用。
+        :return:
+        """
+        _d = QMessageBox.warning(self._main_handler, "提示", "删除后无法撤回，并清空历史操作记录，是否继续？",
+                                 buttons=QMessageBox.Yes | QMessageBox.No)
+        if _d == QMessageBox.No:
+            return
+        self.delete()
+        self._main_handler.clearOperationStack()
+
     @abstractmethod
     def delete(self):
+        """
+        释放对象
+        :return:
+        """
+        try:
+            self._gl_widget.removeItem(self.paintItem)
+        except ValueError:
+            pass
+        try:
+            self.hullProject.del_section(self)
+        except ValueError:
+            pass
         # noinspection PyUnresolvedReferences
         self.deleted_s.emit()
         self._showButton.deleteLater()
         self.deleteLater()
-        self._gl_widget.removeItem(self.paintItem)
 
     @abstractmethod
     def to_dict(self):
@@ -227,19 +265,28 @@ class SectionHandler(QObject):
 
 class SubSectionHandler(QObject):
     _main_handler = None
-    _gl_widget = None
+    _gl_widget: Optional[QObject] = None
 
     @classmethod
     def init_widgets(cls, parent):
+        """
+        初始化供子类使用的控件的引用
+        :param parent:
+        :return:
+        """
         cls._main_handler = parent.hullProject.main_handler
         cls._gl_widget = cls._main_handler.gl_widget
 
     def __init__(self):
+        """
+        初始化id，尝试初始化_parent
+        """
         if not hasattr(self, "_parent"):
             self._parent: Union[SectionHandler, SubSectionHandler, None] = None
         elif self._parent is not None:
             self.init_parent(self._parent)
-        self.paintItem: Union[GLGraphicsItem, None] = None
+        self.paintItem: Optional[GLGraphicsItem] = None
+        self._showButton: Optional[SubElementShow] = None
         super().__init__(None)
         # 赋值一个唯一的id
         self._custom_id = str(id(self))
@@ -253,22 +300,43 @@ class SubSectionHandler(QObject):
     def hasParent(self):
         return self._parent is not None
 
-    def hasPaintItem(self):
-        return self.paintItem is not None
+    def showButton(self):
+        """
+        获取showButton，若没有则创建
+        :return:
+        """
+        if self._showButton is None:
+            self._showButton = SubElementShow(self._parent._gl_widget, self._parent._model_bt_scroll_widget, self)
+        return self._showButton
 
     def init_parent(self, parent):
+        """
+        在父类的__init__函数中调用，初始化子类的self._parent引用
+        :param parent:
+        :return:
+        """
         self._parent = parent
         # 获取主绘制窗口，使其能够连接到主窗口及其下属控件
         SubSectionHandler.init_widgets(self._parent)
 
-    def init_paintItem_as_child(self):
+    def init_paintItems_parent(self):
+        """
+        将paintItem添加到父类的paintItem的子项中，一般在init_parent后调用
+        若已经调用了setPaintItem()，则不用再调用该函数
+        :return:
+        """
         if hasattr(self._parent, "paintItem"):
             self._parent.paintItem.addChildItem(self.paintItem)
         else:
-            raise AttributeError(f"{self} has no parent paintItem")
+            Log().warning(f"{self} has no parent paintItem")
 
     def setPaintItem(self, paintItem: Literal["default", GLGraphicsItem]):
-        if self.hasPaintItem():
+        """
+        设置paintItem，并尝试将其添加到父对象paintItem的子对象中
+        :param paintItem:
+        :return:
+        """
+        if self.paintItem is not None:
             self._parent.paintItem.removeChildItem(self.paintItem)
             self.paintItem.handler = None
             self.paintItem = None
@@ -287,10 +355,7 @@ class SubSectionHandler(QObject):
         self.paintItem = paintItem
         # 绑定handler
         self.paintItem.handler = self
-        if hasattr(self._parent, "paintItem"):
-            self._parent.paintItem.addChildItem(self.paintItem)
-        else:
-            print(f"[WARNING] {self} has no parent paintItem")
+        self.init_paintItems_parent()
         self.setSelected(False)
 
     def addLight(self, lights: list):
@@ -310,11 +375,35 @@ class SubSectionHandler(QObject):
     def selected(self):
         return self.paintItem.selected()
 
+    @abstractmethod
+    def getCopy(self):
+        return SubSectionHandler()
+
+    @abstractmethod
+    def delete_by_user(self):
+        """
+        由showButton调用，删除控件
+        :return:
+        """
+        pass
+
 
 class SectionNodeXY(SubSectionHandler):
     """
     xy节点，用于记录船体或装甲截面的节点
     """
+
+    def delete_in_GUI(self):
+        pass
+
+    def getCopy(self):
+        node = SectionNodeXY(self._parent)
+        node.x = self.x
+        node.y = self.y
+        node.y_index = self.y_index
+        node.Col = self.Col
+        return node
+
     idMap = {}
     deleted_s = pyqtSignal()  # noqa
 
@@ -335,6 +424,14 @@ class SectionNodeXZ(SubSectionHandler):
     """
     xz节点，用于记录舰桥的节点
     """
+
+    def getCopy(self):
+        node = SectionNodeXZ(self._parent)
+        node.x = self.x
+        node.z = self.z
+        node.Col = self.Col
+        return node
+
     idMap = {}
     deleted_s = pyqtSignal()  # noqa
 

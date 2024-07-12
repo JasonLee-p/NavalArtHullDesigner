@@ -4,23 +4,40 @@
 from typing import List, Union, Literal, Optional
 
 import numpy as np
+from GUI.sub_element_edt_widgets import SubSectionShow
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QColor, QVector3D
 from ShipPaint import HullSectionItem, HullSectionGroupItem
 from ShipRead.sectionHandler.baseSH import SectionNodeXY, SectionHandler, SubSectionHandler
 from ShipRead.sectionHandler.bridge import Railing, Handrail
+from operation.section_op import SectionZMoveOperation
 
 
 class HullSection(SubSectionHandler):
     """
     船体截面
+    __init__后仍需调用：
+    init_parent(...)  链接自己的父对象
+    init_paintItem_as_child()  链接绘图对象的父对象
+    setPaintItem(HullSectionItem(...))  设置绘图对象
+    parent._edit_tab.edit_hullSectionGroup_widget.add_section_showButton(section) 往编辑控件添加按钮
     """
     idMap = {}
     deleted_s = pyqtSignal()
 
-    def __init__(self, prj, z, node_datas, colors, armor):
+    def getCopy(self):
+        hullSection = HullSection(self.hullProject, self.z, self.nodes_data, self._parent.Col, self.armor)
+        return hullSection
+
+    def __init__(self, prj, z, node_datas, colors, armor, name=None):
+        """
+        初始化node，_showButton
+        """
         self.hullProject = prj
-        self._parent = None
+        if name is None:
+            name = "未命名"
+        self.name: str = name
+        self._parent: Optional[HullSectionGroup] = None
         self._frontSection = None
         self._backSection = None
         self.z = z
@@ -29,8 +46,11 @@ class HullSection(SubSectionHandler):
         self.load_nodes(node_datas, colors)
         self.armor = armor if armor else 5
         super().__init__()
+        self.maxX = 0
         for node in self.nodes:
             node.init_parent(self)
+            self.maxX = max(self.maxX, node.x)
+        self._showButton = SubSectionShow(SectionHandler._gl_widget, SectionHandler._hsg_bt_scroll_widget, self)
 
     def load_nodes(self, node_datas, colors):
         for node_data, color in zip(node_datas, colors):
@@ -40,11 +60,75 @@ class HullSection(SubSectionHandler):
             self.nodes.append(node)
         self.nodes.sort(key=lambda x: x.y)
 
+    def update_node_data(self, index, x):
+        self.nodes[index].x = x
+        self.maxX = max(self.maxX, x)
+
+    def _add_node(self, node):
+        """
+        用于内部添加节点，由用户直接添加节点属于operation类，不在此类定义。
+        :param node:
+        :return:
+        """
+        for i, n in enumerate(self.nodes):
+            if node.y < n.y:
+                self.nodes.insert(i, node)
+                return
+        self.maxX = max(self.maxX, node.x)
+
+    def _del_node(self, index):
+        """
+        用于内部删除节点，由用户直接删除节点属于operation类，不在此类定义。
+        :param index:
+        :return:
+        """
+        if len(self.nodes) < 3:
+            raise ValueError("Can't delete node, less than 3 nodes")
+        self.nodes.pop(index)
+        self.maxX = max([node.x for node in self.nodes])
+
     def init_node_data(self):
+        """
+        在HullSectionGroup的__init__函数重载前调用
+        从self.nodes（Node对象）初始化节点数据self.nodes_data（数组）
+        :return:
+        """
         self.nodes_data = np.array([[node.x, node.y] for node in self.nodes])
+
+    def setZ(self, z_, undo=False):
+        """
+        设置z值
+        :param z_: z值
+        :param undo: 是否被撤回操作调用，如果是则不对z值进行限制
+        :return:
+        """
+        if not undo:
+            # 限制z在前后两个截面之间
+            if self._frontSection and z_ > self._frontSection.z:
+                z_ = self._frontSection.z - 0.01
+            elif self._backSection and z_ < self._backSection.z:
+                z_ = self._backSection.z + 0.01
+            # 让前后截面无法相互转化（z>0的截面不能变成z<0）
+            if self.z > 0:
+                z_ = max(0.005, z_)
+            elif self.z < 0:
+                z_ = min(0.005, z_)
+        self.z = z_
+        self._showButton.setEditTextZ(self.z)
+        self.paintItem.setZ(self.z)
+        if self._parent._frontSection == self:
+            self._parent.update_front_z_s.emit(self.z)
+            # EditHullSectionGroupWidget.Instance.updateFrontZ()
+        elif self._parent._backSection == self:
+            self._parent.update_back_z_s.emit(self.z)
+            # EditHullSectionGroupWidget.Instance.updateBackZ()
+
+    def delete_in_GUI(self):
+        pass
 
     def to_dict(self):
         return {
+            "name": self.name,
             "z": self.z,
             "nodes": [[node.x, node.y] for node in self.nodes],
             "col": [f"#{node.Col.red():02x}{node.Col.green():02x}{node.Col.blue():02x}" for node in self.nodes],
@@ -59,6 +143,13 @@ class HullSectionGroup(SectionHandler):
     """
     idMap = {}
     deleted_s = pyqtSignal()
+    update_front_z_s = pyqtSignal(float)
+    update_back_z_s = pyqtSignal(float)
+
+    def getCopy(self):
+        hullSections = [section.getCopy() for section in self.__sections]
+        return HullSectionGroup(self.hullProject, self.name, self.Pos, self.Rot, self.Col, self.topCur, self.botCur,
+                                hullSections)
 
     # noinspection PyProtectedMember
     def __init__(self, prj, name, pos, rot, col, topCur, botCur, sections):
@@ -71,7 +162,7 @@ class HullSectionGroup(SectionHandler):
         self.botCur = botCur
         # 截面组
         self.__sections: List[HullSection] = sections
-        self.__sections.sort(key=lambda x: x.z)
+        self.__sections.sort(key=lambda x: x.z)  # 从小到大
         self._frontSection: HullSection = self.__sections[-1]
         self._backSection: HullSection = self.__sections[0]
         for i in range(len(self.__sections) - 1):
@@ -82,14 +173,18 @@ class HullSectionGroup(SectionHandler):
         for section in self.__sections:
             section.init_node_data()
         super().__init__()
+        # 绘制对象
         paint_item = HullSectionGroupItem(self.hullProject, self.__sections)
         self.setPaintItem(paint_item)
         self.setPos(pos)
         self.setRot(rot)
-        for section in self.__sections:
+
+        # 倒过来，从大到小排列
+        for section in self.__sections[::-1]:
             section.init_parent(self)
-            section.init_paintItem_as_child()
             section.setPaintItem(HullSectionItem(section, section.z, section.nodes))
+            # 将截面展示的button控件加入右侧滚动区域
+            self._edit_tab.edit_hullSectionGroup_widget.add_section_showButton(section)
 
     def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
         super()._init_showButton(type_)
@@ -103,6 +198,9 @@ class HullSectionGroup(SectionHandler):
     def get_sections(self):
         return self.__sections
 
+    def getMaxX(self):
+        return max([section.maxX for section in self.__sections])
+
     def create_frontSection(self):
         new_hs = HullSection(self.hullProject,
                              self._frontSection.z + 2,
@@ -115,7 +213,21 @@ class HullSectionGroup(SectionHandler):
         # 根据z值插入
         for i, hs in enumerate(self.__sections):
             if section.z > hs.z:
+                # 初始化前后部分
+                if len(self.__sections) > i + 1:
+                    section._frontSection = self.__sections[i + 1]
+                if i != 0:
+                    section._backSection = self.__sections[i - 1]
+                # 初始化绘制数组
+                section.init_node_data()
+                section.init_parent(self)
+                if section.paintItem:
+                    section.init_paintItems_parent()
+                else:
+                    # section.setPaintItem(HullSectionItem(section,
+                    ...
                 self.__sections.insert(i, section)
+
                 return
         raise ValueError(f"Can't insert {section} into {self.__sections}")
 
@@ -124,6 +236,7 @@ class HullSectionGroup(SectionHandler):
             self.__sections.remove(section)
         else:
             print(f"[WARNING] {section} not in {self.__sections}")
+
 
     def to_dict(self):
         if isinstance(self.Rot, QVector3D):

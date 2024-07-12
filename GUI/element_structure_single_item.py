@@ -1,7 +1,8 @@
 """
-定义了单个元素的显示控件
+定义了单个元素在结构视图的显示控件
 """
 import numpy as np
+from main_logger import Log
 
 from .basic_widgets import *
 
@@ -41,13 +42,22 @@ class ShowButton(Button):
                                           check_color=FG_COLOR1, hover_color=BG_COLOR3, color=BG_COLOR0, radius=8)
         self._font = YAHEI[9]
         self.name_edit = TextEdit(self.item_handler.name, parent=None, font=YAHEI[10], bg=BG_COLOR1)
+        self.name_edit.setFocusPolicy(Qt.ClickFocus)
         self.name_edit.setFixedHeight(27)
+        # 初始化菜单
+        self.menu = Menu(self)
+        self.delete_action = self.menu.addAction("删除")
+        self.delete_action.triggered.connect(self.item_handler.delete_by_user)
         if hasattr(self.item_handler, "init_visibility"):
             self.vis_btn.setChecked(self.item_handler.init_visibility)
         else:
             self.vis_btn.setChecked(True)
 
     def _bind_signal(self):
+        """
+        绑定信号，由子类在初始化时调用
+        :return:
+        """
         self.textChanged = self.name_edit.textChanged
         self.name_edit.textChanged.connect(self.nameTextChanged, Qt.DirectConnection)
         self.vis_btn.clicked.connect(self.visableClicked, Qt.DirectConnection)
@@ -63,13 +73,51 @@ class ShowButton(Button):
         self.item_handler.setVisable(checked)
 
     def mousePressEvent(self, event):
-        self.gl_widget.set_item_selected(self.item_handler.paintItem, not self.isChecked())
+        if event.button() == Qt.LeftButton:
+            self.gl_widget.set_item_selected(self.item_handler.paintItem, not self.isChecked())
+        elif event.button() == Qt.RightButton:
+            # 显示右键菜单
+            self.show_menu(event)
+
+    def show_menu(self, event):
+        """
+        显示右键菜单
+        """
+        self.menu.exec_(self.mapToGlobal(event.pos()))
+
+    def setPos(self, pos):
+        """
+        设置按钮中显示的位置
+        覆写时不要重载
+        """
+        Log().warning(f"无效的操作：为 {self.__class__.__name__} 设置pos")
+
+    def setPosX(self, x):
+        """
+        设置按钮中显示的位置
+        覆写时不要重载
+        """
+        Log().warning(f"无效的操作：为 {self.__class__.__name__} 设置posX")
+
+    def setPosY(self, y):
+        """
+        设置按钮中显示的位置
+        覆写时不要重载
+        """
+        Log().warning(f"无效的操作：为 {self.__class__.__name__} 设置posY")
+
+    def setPosZ(self, z):
+        """
+        设置按钮中显示的位置
+        覆写时不要重载
+        """
+        Log().warning(f"无效的操作：为 {self.__class__.__name__} 设置posZ")
 
 
 class PosShow(ShowButton):
     def __init__(self, gl_widget, scroll_widget, item_handler, height=70):
         """
-        只需要预览位置，并且有名字的元素
+        只需要预览位置，并且有名字的元素的显示按钮
         :param gl_widget:
         :param scroll_widget:
         :param item_handler:
@@ -83,7 +131,7 @@ class PosShow(ShowButton):
         self._bind_signal()
 
     def _setup_ui(self):
-        # 设置自控件样式
+        # 设置控件样式
         _h = 24
         self.pos_text.setFixedHeight(_h)
         self.posX_show.setFixedHeight(_h)
@@ -102,6 +150,9 @@ class PosShow(ShowButton):
 
     # noinspection PyTypeChecker
     def setPos(self, pos):
+        """
+        设置按钮内TextLabel显示的位置
+        """
         if isinstance(pos, np.ndarray):
             self.posX_show.setText(str(round(pos[0], 4)))
             self.posY_show.setText(str(round(pos[1], 4)))
@@ -112,19 +163,28 @@ class PosShow(ShowButton):
             self.posZ_show.setText(str(round(pos.z(), 4)))
 
     def setPosX(self, x):
+        """
+        设置按钮内TextLabel显示的位置
+        """
         self.posX_show.setText(str(x))
 
     def setPosY(self, y):
+        """
+        设置按钮内TextLabel显示的位置
+        """
         self.posY_show.setText(str(y))
 
     def setPosZ(self, z):
+        """
+        设置按钮内TextLabel显示的位置
+        """
         self.posZ_show.setText(str(z))
 
 
 class PosRotShow(ShowButton):
     def __init__(self, gl_widget, scroll_widget, item_handler, height=96):
         """
-        预览位置和旋转角度的元素
+        预览位置和旋转角度的元素的显示按钮
         :param gl_widget:
         :param scroll_widget:
         :param item_handler:

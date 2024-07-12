@@ -1,11 +1,15 @@
 """
 缓冲区对象
 """
+import time
 from ctypes import c_void_p
 from typing import List
 
+import OpenGL
 import OpenGL.GL as gl
 import numpy as np
+from PyQt5.QtCore import QMutex
+from main_logger import Log
 
 GL_Type = {
     np.dtype("f4"): gl.GL_FLOAT,
@@ -14,12 +18,28 @@ GL_Type = {
 }
 
 
+def locker(func):
+    def wrapper(self, *args, **kwargs):
+        self.lock.lock()
+        result = func(self, *args, **kwargs)
+        self.lock.unlock()
+        return result
+
+    return wrapper
+
+
 class MemoryBlock:
     def __init__(
             self,
             blocks: List[np.ndarray],
             dsize,
     ):
+        """
+        初始化内存块对象。
+
+        :param blocks: 内存块的列表，每个元素是一个 ndarray，表示一个数据块。
+        :param dsize: 内存块的大小，可以是整数或整数列表。整数表示基本类型，列表表示复杂类型大小。
+        """
         # 初始化内存块
         self.block_lens = [0 if x is None else x.nbytes for x in blocks]
         self.block_used = np.array(self.block_lens, dtype=np.uint32)
@@ -40,14 +60,15 @@ class MemoryBlock:
                 id_ += 1
 
     def setBlock(self, ids: List[int], blocks: List[int]):
-        """设置内存块大小，返回复制的块和保持的块
+        """
+        设置内存块的大小并返回复制块和保持块的位置信息。
 
-        :param ids: 内存块的id
-        :param blocks: 内存块的新长度
+        :param ids: 内存块的索引列表。
+        :param blocks: 每个索引对应的新块大小列表。
         :return:
-            copy_blocks: 更新数据应该复制到的内存位置，列表形式，每个元素为[写入偏移量, 大小]
-            keep_blocks: 未更新数据应该复制到的内存位置，列表形式，每个元素为[读取偏移量, 大小, 写入偏移量]
-            extend: 缓冲区是否扩展了
+            copy_blocks: 需要复制新数据的内存块位置信息列表，每个元素为[写入偏移量, 大小]。
+            keep_blocks: 保持原数据的内存块位置信息列表，每个元素为[读取偏移量, 大小, 写入偏移量]。
+            extend: 是否扩展了缓冲区。
         """
         extend = False
         keep_blocks = []  # 读取偏移量, 大小, 写入偏移量
@@ -82,20 +103,47 @@ class MemoryBlock:
         return copy_blocks, keep_blocks, extend
 
     def locBlock(self, _id):
+        """
+        获取指定内存块的偏移量和大小。
+
+        :param _id: 内存块的索引。
+        :return: 偏移量和大小。
+        """
         return self.block_offsets[_id], self.block_lens[_id]
 
     @property
     def nblocks(self):
+        """
+        获取内存块的数量。
+
+        :return: 内存块数量。
+        """
         return len(self.block_lens)
 
     @property
     def nbytes(self):
+        """
+        获取所有内存块总共的字节数。
+
+        :return: 总字节数。
+        """
         return self.sum_lens
 
     def __len__(self):
+        """
+        获取所有内存块总共的字节数。
+
+        :return: 总字节数。
+        """
         return self.sum_lens
 
     def __getitem__(self, _id):
+        """
+        获取指定内存块的详细信息。
+
+        :param _id: 内存块的索引。
+        :return: 包含内存块信息的字典，包括偏移量、大小、使用情况、数据类型、属性大小和属性索引。
+        """
         return {
             "offset": self.block_offsets[_id],
             "length": self.block_lens[_id],
@@ -106,6 +154,11 @@ class MemoryBlock:
         }
 
     def __repr__(self) -> str:
+        """
+        获取内存块对象的字符串表示形式。
+
+        :return: 字符串表示形式。
+        """
         _repr = "|"
         for i in range(len(self.block_lens)):
             _repr += f"{self.block_offsets[i]}> {self.block_used[i]}/{self.block_lens[i]}|"
@@ -119,20 +172,36 @@ class VBO:
             size: List[int],  # 3为vec3，16为mat4
             usage=gl.GL_STATIC_DRAW,
     ):
+        """
+        初始化顶点缓冲对象（VBO）。
+
+        :param data: 数据列表，每个元素是一个 ndarray，表示一个数据块。
+        :param size: 每个数据块的大小，可以是整数或整数列表。整数表示基本类型，列表表示复杂类型大小。
+        :param usage: 缓冲区使用模式，默认为 gl.GL_STATIC_DRAW。
+        """
+        self.lock = QMutex()
         self._usage = usage
         self.blocks = MemoryBlock(data, size)
 
         # 缓冲区数据
         self._vbo = gl.glGenBuffers(1)
         if self.blocks.nbytes > 0:
+            self.lock.lock()
             self.bind()
             gl.glBufferData(gl.GL_ARRAY_BUFFER, self.blocks.nbytes, None, self._usage)
+            self.lock.unlock()
         self.updateData([i for i in range(len(data))], data)
 
     def _loadSubDatas(self, block_id: List[int], data: List[np.ndarray]):
-        """加载数据到缓冲区"""
-        self.bind()
+        """
+        将数据加载到缓冲区的子数据块中。
 
+        :param block_id: 子数据块的索引列表。
+        :param data: 数据列表，每个元素是一个 ndarray，表示一个数据块。
+        """
+        if not self.bind():
+            Log().warning("_loadSubDatas函数退出，由于缓冲区绑定失败。")
+            return False
         for _id, da in zip(block_id, data):
             offset = int(self.blocks.block_offsets[_id])
             length = int(self.blocks.block_used[_id])
@@ -140,8 +209,14 @@ class VBO:
 
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
 
+    @locker
     def updateData(self, block_id: List[int], data: List[np.ndarray]):
-        """更新数据到缓冲区，首先检查是否需要扩展缓冲区"""
+        """
+        更新数据到缓冲区，并检查是否需要扩展缓冲区大小。
+
+        :param block_id: 需要更新数据的子数据块索引列表。
+        :param data: 数据列表，每个元素是一个 ndarray，表示一个数据块。
+        """
         self.bind()
         old_nbytes = self.blocks.nbytes
         copy_blocks, keep_blocks, extend = self.blocks.setBlock(
@@ -179,16 +254,37 @@ class VBO:
 
     @property
     def isbind(self):
+        """
+        检查当前缓冲区是否绑定。
+
+        :return: 是否绑定。
+        """
         return self._vbo == gl.glGetIntegerv(gl.GL_ARRAY_BUFFER_BINDING)
 
-    def bind(self):
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self._vbo)
+    def bind(self) -> bool:
+        """
+        绑定缓冲区；
+        """
+        try:
+            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self._vbo)
+            return True
+        except gl.GLError as e:
+            Log().warning("VBO bind error.")
+            return False
 
     def delete(self):
+        """
+        删除缓冲区。
+        """
         gl.glDeleteBuffers(1, [self._vbo])
 
     def getData(self, _id):
-        """从缓冲区获取数据"""
+        """
+        从缓冲区获取数据。
+
+        :param _id: 数据块的索引。
+        :return: 从缓冲区读取的数据。
+        """
         self.bind()
         offset, nbytes = self.blocks.locBlock(_id)  # 读取数据的偏移量和大小
         dtype = self.blocks.dtype[_id]
@@ -204,9 +300,11 @@ class VBO:
 
     def setAttrPointer(self, block_id: List[int], attr_id: List[int] = None, divisor=0):
         """
-        :param block_id:
-        :param attr_id:
-        :param divisor: 属性的除数
+        设置顶点属性指针。
+
+        :param block_id: 子数据块的索引列表。
+        :param attr_id: 属性索引列表，如果为 None，则使用默认属性索引。
+        :param divisor: 属性的除数。
         """
         self.bind()
         if isinstance(block_id, int):
@@ -254,24 +352,37 @@ class VBO:
 class VAO:
 
     def __init__(self):
+        """
+        初始化顶点数组对象（VAO）。
+        """
         self._vao = gl.glGenVertexArrays(1)
         gl.glBindVertexArray(self._vao)
 
     @property
     def isbind(self):
+        """
+        检查当前顶点数组对象是否绑定。
+
+        :return: 是否绑定。
+        """
         return self._vao == gl.glGetIntegerv(gl.GL_VERTEX_ARRAY_BINDING)
 
     def bind(self):
-        # 检查是否有GL错误
-        # error = gl.glGetError()
-        # if error != gl.GL_NO_ERROR:
-        #     raise RuntimeError(f"OpenGL error: {error}")
+        """
+        绑定顶点数组对象。
+        """
         gl.glBindVertexArray(self._vao)
 
     def unbind(self):
+        """
+        解绑顶点数组对象。
+        """
         gl.glBindVertexArray(0)
 
     def delete(self):
+        """
+        删除顶点数组对象。
+        """
         gl.glDeleteVertexArrays(1, [self._vao])
 
 
@@ -282,15 +393,31 @@ class EBO:
             indices: np.ndarray,
             usage=gl.GL_STATIC_DRAW
     ):
+        """
+        初始化索引缓冲对象（EBO）。
+
+        :param indices: 索引数据，一个 ndarray。
+        :param usage: 缓冲区使用模式，默认为 gl.GL_STATIC_DRAW。
+        """
         self._ebo = gl.glGenBuffers(1)
         self._usage = usage
         self.updateData(indices)
 
     @property
     def isbind(self):
+        """
+        检查当前索引缓冲对象是否绑定。
+
+        :return: 是否绑定。
+        """
         return self._ebo == gl.glGetIntegerv(gl.GL_ELEMENT_ARRAY_BUFFER_BINDING)
 
     def updateData(self, indices: np.ndarray):
+        """
+        更新索引数据到缓冲区。
+
+        :param indices: 索引数据，一个 ndarray。
+        """
         if indices is None:
             self._size = 0
             return
@@ -306,10 +433,21 @@ class EBO:
 
     @property
     def size(self):
+        """
+        获取索引缓冲对象的大小。
+
+        :return: 索引缓冲对象的大小。
+        """
         return self._size
 
     def bind(self):
+        """
+        绑定索引缓冲对象。
+        """
         gl.glBindBuffer(gl.GL_ELEMENT_ARRAY_BUFFER, self._ebo)
 
     def delete(self):
+        """
+        删除索引缓冲对象。
+        """
         gl.glDeleteBuffers(1, [self._ebo])

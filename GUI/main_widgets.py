@@ -7,6 +7,7 @@ import os
 from typing import Optional
 
 from GUI.element_structure_widgets import *
+from PyQt5 import QtCore
 from ShipRead.na_project import ShipProject
 from funcs_utils import not_implemented
 from path_vars import CURRENT_PATH, DESKTOP_PATH
@@ -115,10 +116,14 @@ class ElementStructureTab(MutiDirectionTab):
     def setCurrentTab(self, tab: QWidget):
         self.tab_widget.setCurrentWidget(tab)
 
-    def add_hullSectionGroup(self, hull_section_group):
+    """
+    下面这些函数必须使用蛇形命名法：
+    """
+
+    def add_hull_section_group(self, hull_section_group):
         self.hullSectionGroup_tab.add_item(hull_section_group)
 
-    def add_armorSectionGroup(self, armor_section_group):
+    def add_armor_section_group(self, armor_section_group):
         self.armorSectionGroup_tab.add_item(armor_section_group)
 
     def add_bridge(self, bridge):
@@ -130,10 +135,10 @@ class ElementStructureTab(MutiDirectionTab):
     def add_model(self, model):
         self.model_tab.add_item(model)
 
-    def del_hullSectionGroup(self, hull_section_group):
+    def del_hull_section_group(self, hull_section_group):
         self.hullSectionGroup_tab.del_item(hull_section_group)
 
-    def del_armorSectionGroup(self, armor_section_group):
+    def del_armor_section_group(self, armor_section_group):
         self.armorSectionGroup_tab.del_item(armor_section_group)
 
     def del_bridge(self, bridge):
@@ -347,9 +352,12 @@ class GLWidgetGUI(GLViewWidget):
     after_selection = pyqtSignal()  # noqa
 
     def __init__(self):
+        """
+        """
         self.main_editor = None
         camera_sensitivity = configHandler.get_config("Sensitivity")
         super().__init__(Vector3(100., 20., 40.), cam_sensitivity=camera_sensitivity)
+        self.menu = Menu()
         self.__init_GUI()
 
         # 主光照
@@ -386,30 +394,11 @@ class GLWidgetGUI(GLViewWidget):
         #     drawLine=True,
         #     material=self.GRAY_material
         # ).translate(0, 0, 0)
-        #
-        sp_ver, sp_idx, _, sp_norm = sphere(20, 128, 128, calc_uv_norm=True)
-
-        self.sphere_r = GLMeshItem(
-            vertexes=sp_ver, indices=sp_idx, normals=sp_norm,
-            lights=[self.light],
-            material=self.R_material,
-            glOptions='translucent',
-            selectable=True
-        ).translate(-60, 0, 0)
-        self.sphere_l = GLMeshItem(
-            vertexes=sp_ver, indices=sp_idx, normals=sp_norm,
-            lights=[self.light],
-            material=self.G_material,
-            glOptions='translucent',
-            selectable=True
-        ).translate(60, 0, 0)
 
         self.addItem(self.__axis)
         self.addItem(self.__grid)
         # self.addItem(self.model)
         # self.addItem(self.text)
-        # self.addItem(self.sphere_r)
-        # self.addItem(self.sphere_l)
 
         # 动画
         # self.frame_rate = 30
@@ -528,6 +517,15 @@ class GLWidgetGUI(GLViewWidget):
             else:
                 item.setSelected(False)
         self._after_selection()
+
+    def keyPressEvent(self, event) -> None:
+        key_ = event.key()
+        ctrl_down = event.modifiers() == Qt.ControlModifier
+        alt_down = event.modifiers() == Qt.AltModifier
+        shift_down = event.modifiers() == Qt.ShiftModifier
+
+    def _rightButtonReleased(self, ev):
+        self.menu.popup(ev.globalPos())
 
     def _clear_selected_items(self):
         self.clear_selected_items.emit()

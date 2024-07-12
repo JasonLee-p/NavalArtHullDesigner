@@ -10,6 +10,15 @@ class Railing(SubSectionHandler):
     """
     栏杆
     """
+
+    def getCopy(self):
+        railing = Railing(self.hullProject, self._parent)
+        railing.height = self.height
+        railing.interval = self.interval
+        railing.thickness = self.thickness
+        railing.Col = self.Col
+        return railing
+
     idMap = {}
     deleted_s = pyqtSignal()  # noqa
 
@@ -37,6 +46,14 @@ class Handrail(SubSectionHandler):
     """
     栏板
     """
+
+    def getCopy(self):
+        handrail = Handrail(self.hullProject, self._parent)
+        handrail.height = self.height
+        handrail.thickness = self.thickness
+        handrail.Col = self.Col
+        return handrail
+
     idMap = {}
     deleted_s = pyqtSignal()  # noqa
 
@@ -61,6 +78,17 @@ class Bridge(SectionHandler):
     """
     舰桥
     """
+
+    def getCopy(self):
+        bridge = Bridge(self.hullProject, self.name, self.rail_only)
+        bridge.Pos = self.Pos
+        bridge.Col = self.Col
+        bridge.armor = self.armor
+        bridge.nodes = [node.getCopy() for node in self.nodes]
+        if self.rail:
+            bridge.rail = self.rail.getCopy()
+        return bridge
+
     idMap = {}
     deleted_s = pyqtSignal()  # noqa
 

@@ -1,8 +1,8 @@
 {
-  "check_code": "bd466c9cd9d8bbaf9dc317ff7751343186e63fb3",
+  "check_code": "f60f84118b9d71594ed7a7b58106d75b8fd64050",
   "project_name": "SampleProject",
   "author": "JasonLee",
-  "edit_time": "2024-4-18 2:27:50",
+  "edit_time": "2024-7-12 18:14:39",
   "hull_section_group": [
     {
       "name": "\u4e3b\u4f53",
@@ -22,7 +22,8 @@
       "bot_cur": 1.0,
       "sections": [
         {
-          "z": -9,
+          "name": "\u540e2",
+          "z": -18.0,
           "nodes": [
             [
               1,
@@ -50,7 +51,8 @@
           "armor": 5
         },
         {
-          "z": -3,
+          "name": "\u540e1",
+          "z": -4.0,
           "nodes": [
             [
               3,
@@ -78,7 +80,8 @@
           "armor": 5
         },
         {
-          "z": 3,
+          "name": "\u524d1",
+          "z": 4.0,
           "nodes": [
             [
               3,
@@ -106,7 +109,8 @@
           "armor": 5
         },
         {
-          "z": 9,
+          "name": "\u524d2",
+          "z": 18.0,
           "nodes": [
             [
               1,
@@ -203,7 +207,7 @@
       "name": "\u4e00\u5c42",
       "pos": [
         0.0,
-        -20.0,
+        10.0,
         0.0
       ],
       "col": "#888889",

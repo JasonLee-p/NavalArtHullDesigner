@@ -40,6 +40,9 @@ class EditTabWidget(QWidget):
             widget = widget.parent()
         return widget
 
+    def currentItem(self):
+        return self._current_item
+
     def _init_ui(self):
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
@@ -57,13 +60,13 @@ class EditTabWidget(QWidget):
         self.basic_info_layout.setHorizontalSpacing(6)
         self.basic_info_layout.setVerticalSpacing(1)
         _font = YAHEI[9]
-        self.basic_info_layout.addWidget(ColoredTextLabel(None, "中心位置", _font, bg=BG_COLOR1), 0, 0,
-                                         alignment=Qt.AlignLeft | Qt.AlignVCenter)
+        self.basic_info_layout.addWidget(ColoredTextLabel(
+            None, "中心位置", _font, bg='transparent'), 0, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
         self.basic_info_layout.addWidget(self.posX_edit, 0, 1)
         self.basic_info_layout.addWidget(self.posY_edit, 0, 2)
         self.basic_info_layout.addWidget(self.posZ_edit, 0, 3)
-        self.basic_info_layout.addWidget(ColoredTextLabel(None, "旋转角度", _font, bg=BG_COLOR1), 1, 0,
-                                         alignment=Qt.AlignLeft | Qt.AlignVCenter)
+        self.basic_info_layout.addWidget(ColoredTextLabel(
+            None, "旋转角度", _font, bg='transparent'), 1, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
         self.basic_info_layout.addWidget(self.rotX_edit, 1, 1)
         self.basic_info_layout.addWidget(self.rotY_edit, 1, 2)
         self.basic_info_layout.addWidget(self.rotZ_edit, 1, 3)
@@ -123,6 +126,8 @@ class EditTabWidget(QWidget):
 
 
 class EditHullSectionGroupWidget(EditTabWidget):
+    Instance: Optional['EditHullSectionGroupWidget'] = None
+
     def __init__(self):
         """
         一次只显示一个船体截面组的编辑控件
@@ -139,8 +144,8 @@ class EditHullSectionGroupWidget(EditTabWidget):
                                           bd_radius=(12, 12, 0, 0), align=Qt.AlignLeft | Qt.AlignTop, size=None)
         self.back_addSection_bt = Button(None, "向后添加截面", bg=(BG_COLOR0, BG_COLOR3, BG_COLOR2, BG_COLOR3),
                                          bd_radius=(0, 0, 12, 12), align=Qt.AlignLeft | Qt.AlignTop, size=None)
-        self.hullSections_widget = QWidget()
-        self.hullSections_layout = QVBoxLayout()
+        self.hullSections_widget = QWidget()  # 截面的ShowButton将会被添加到这个widget中
+        self.hullSections_layout = QVBoxLayout(self.hullSections_widget)
         self.hullSections_scroll = ScrollArea(
             None, self.hullSections_widget, Qt.Vertical, bd_radius=0, bg=BG_COLOR0, bar_bg=BG_COLOR1)
         self._init_ui()
@@ -148,6 +153,7 @@ class EditHullSectionGroupWidget(EditTabWidget):
 
     def _init_ui(self):
         super()._init_ui()
+        self.hullSections_layout.setAlignment(Qt.AlignTop)
         self.sizeX_show.setFixedHeight(24)
         self.sizeY_show.setFixedHeight(24)
         self.sizeZ_show.setFixedHeight(24)
@@ -160,12 +166,12 @@ class EditHullSectionGroupWidget(EditTabWidget):
     def _init_basic_info_ui(self):
         super()._init_basic_info_ui()
         _font = QFont(YAHEI[9])
-        self.basic_info_layout.addWidget(ColoredTextLabel(None, "船体大小", _font, bg=BG_COLOR1), 2, 0,
+        self.basic_info_layout.addWidget(ColoredTextLabel(None, "船体大小", _font, bg='transparent'), 2, 0,
                                          alignment=Qt.AlignLeft | Qt.AlignVCenter)
         self.basic_info_layout.addWidget(self.sizeX_show, 2, 1)
         self.basic_info_layout.addWidget(self.sizeY_show, 2, 2)
         self.basic_info_layout.addWidget(self.sizeZ_show, 2, 3)
-        self.basic_info_layout.addWidget(ColoredTextLabel(None, "截面数量", _font, bg=BG_COLOR1), 3, 0,
+        self.basic_info_layout.addWidget(ColoredTextLabel(None, "截面数量", _font, bg='transparent'), 3, 0,
                                          alignment=Qt.AlignLeft | Qt.AlignVCenter)
         self.basic_info_layout.addWidget(self.section_num_show, 3, 1)
 
@@ -185,16 +191,72 @@ class EditHullSectionGroupWidget(EditTabWidget):
         super()._bind_signals()
 
     def add_front_section(self):
+        """
+        检测当前被选择的section，在该section的前面添加一个section
+        :return:
+        """
         ...
 
     def add_back_section(self):
+        """
+        检测当前被选择的section，在该section的后面添加一个section
+        :return:
+        """
         ...
 
+    def add_section_showButton(self, section):
+        """
+        添加一个section的showButton到界面中
+        在sectironGroup初始化中被调用
+        最终所有sectionGroup的所有section的showButton都会被添加到控件中，
+        但是只有当前被选择的sectionGroup的showButton是可见的。
+        :param section:
+        :return:
+        """
+        self.hullSections_layout.addWidget(section.showButton())
+
     def updateSectionHandler(self, item):
+        """
+        当item被选择时，更新界面
+        :param item: HullSectionGroup
+        :return:
+        """
+        if self._current_item:
+            for section in self._current_item.get_sections():
+                section.showButton().hide()
         super().updateSectionHandler(item)
+        for section in item.get_sections():
+            section.showButton().show()
+        # 链接前后截面z值修改信号
+        if hasattr(item, 'update_front_z_s'):
+            print(f"connect {item} update_front_z_s")
+            item.update_front_z_s.connect(self.updateFrontZ)
+            item.update_back_z_s.connect(self.updateBackZ)
         self.rotX_edit.setValue(item.Rot[0])
         self.rotY_edit.setValue(item.Rot[1])
         self.rotZ_edit.setValue(item.Rot[2])
+        self.updateSize()
+        self.updateNum()
+        self.updateSections()
+
+    def updateSize(self):
+        _frontSection = self._current_item._frontSection
+        _backSection = self._current_item._backSection
+        self.sizeX_show.setText(str(round(2 * self._current_item.getMaxX(), 4)))
+        self.sizeY_show.setText(str(round(_frontSection.nodes[-1].y - _frontSection.nodes[0].y, 4)))
+        self.sizeZ_show.setText(str(round(_frontSection.z - _backSection.z, 4)))
+
+    def updateFrontZ(self):
+        self.sizeZ_show.setText(str(round(self._current_item._frontSection.z - self._current_item._backSection.z, 4)))
+
+    def updateBackZ(self):
+        self.sizeZ_show.setText(str(round(self._current_item._frontSection.z - self._current_item._backSection.z, 4)))
+
+    def updateNum(self):
+        self.section_num_show.setText(str(len(self._current_item.get_sections())))
+
+    def updateSections(self):
+        ...
 
 
 class EditArmorSectionGroupWidget(EditTabWidget):
