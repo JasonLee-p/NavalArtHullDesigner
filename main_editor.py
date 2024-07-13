@@ -200,19 +200,23 @@ class MainEditor(MainEditorGUI):
         self.memoryThread.start()
         # 绑定信号和函数
         self._glWidget_menu_actions = {
-            "全选": self.gl_widget.selectAll,
-            "复制": self.gl_widget.copy,
-            "粘贴": self.paste,
-            "删除": self.gl_widget.delete_selected,
+            '全选': self.gl_widget.selectAll,
+            '复制': self.gl_widget.copy,
+            '粘贴': self.paste,
+            '删除': self.gl_widget.delete_selected,
         }
         self._bind_glWidget_menu()
         self._bind_signal()
         # 绑定快捷方式
         self._bind_shortcut({
-            "Ctrl+S": self.save_prj,
-            "Ctrl+Shift+S": self.save_as_prj,
-            "Ctrl+Z": self.undo,
-            "Ctrl+Shift+Z": self.redo,
+            'Ctrl+S': self.save_prj,
+            'Ctrl+Shift+S': self.save_as_prj,
+            'Ctrl+Z': self.undo,
+            'Ctrl+Shift+Z': self.redo,
+            'Ctrl+C': self.gl_widget.copy,
+            'Ctrl+X': self.gl_widget.cut,
+            'Ctrl+V': self.paste,
+            'Ctrl+A': self.gl_widget.selectAll,
         })
         # 子成员对自己的引用
         EditTabWidget.main_editor = self

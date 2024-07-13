@@ -50,13 +50,21 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
     clipboard = []
 
     def selectAll(self):
+        self.selected_items.clear()
         for item in self.items:
             item.setSelected(True)
-            self.selected_items.append(item)
+            # 如果item有handler属性，将其添加到self.selected_items中
+            # 有handler的item才是真正的工程文件组件
+            if hasattr(item, 'handler'):
+                self.selected_items.append(item)
         self._after_selection()
 
     def copy(self):
         GLViewWidget.clipboard = self.selected_items.copy()
+
+    def cut(self):
+        self.copy()
+        self.delete_selected()
 
     def delete_selected(self):
         prj = self.selected_items[0].handler.prj
@@ -505,13 +513,15 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
                 self.selected_items.clear()
                 for it in new_s_items:
                     it.setSelected(True)
-                    self.selected_items.append(it)
+                    if hasattr(it, 'handler'):
+                        self.selected_items.append(it)
             # 如果按下ctrl键，取两集合相加
             else:
                 for it in new_s_items:
                     if it not in self.selected_items:
                         it.setSelected(True)
-                        self.selected_items.append(it)
+                        if hasattr(it, 'handler'):
+                            self.selected_items.append(it)
             self._after_selection()
         elif ev.button() == QtCore.Qt.MouseButton.RightButton and alt_down:
             self._rightButtonReleased(ev)

@@ -71,19 +71,20 @@ class TextLabel(QLabel):
 
 class ColoredTextLabel(QLabel):
     def __init__(self, parent, text, font=YAHEI[10], color=FG_COLOR0, bg=BG_COLOR0, bd_radius=5, bd=0, bd_color=GRAY,
-                 align=Qt.AlignCenter, padding=6):
+                 align=Qt.AlignCenter, padding: Union[int, Tuple[int, int, int, int]] = 6):
         super().__init__(parent=parent, text=text)
         self.text = text
         self.setFont(font)
+        padding = [padding] * 4 if isinstance(padding, int) else padding
         self.setStyleSheet(f"""
             QLabel{{
                 background-color: {bg}; color: {color}; 
                 border: {bd}px solid {bd_color}; 
                 border-radius: {bd_radius}px;
-                padding-top: {padding}px;
-                padding-bottom: {padding}px;
-                padding-left: {padding}px;
-                padding-right: {padding}px;
+                padding-top: {padding[0]}px;
+                padding-bottom: {padding[1]}px;
+                padding-left: {padding[2]}px;
+                padding-right: {padding[3]}px;
             }}
         """)
         self.setAlignment(align)
