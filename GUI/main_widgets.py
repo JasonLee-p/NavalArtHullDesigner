@@ -511,6 +511,13 @@ class GLWidgetGUI(GLViewWidget):
     #         item.setSelected(False)
 
     def set_item_selected(self, item, selected):
+        """
+        设置item的选中状态
+        之后将会更新右侧编辑窗口
+        :param item: GLGraphicsItem
+        :param selected: bool
+        :return:
+        """
         if selected and item not in self.selected_items:
             self.selected_items.append(item)
             if hasattr(item, "handler"):

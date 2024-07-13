@@ -2,8 +2,8 @@
 """
 main_editor的功能性子控件，例如专门显示船体截面组的控件
 """
-from .basic_widgets import *
 
+from .basic_widgets import *
 from operation import *
 
 
@@ -44,6 +44,10 @@ class EditTabWidget(QWidget):
         return self._current_item
 
     def _init_ui(self):
+        """
+        仅初始化基础界面，具体界面请重载_init_sub_elements_ui
+        :return:
+        """
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(10)
@@ -150,6 +154,7 @@ class EditHullSectionGroupWidget(EditTabWidget):
             None, self.hullSections_widget, Qt.Vertical, bd_radius=0, bg=BG_COLOR0, bar_bg=BG_COLOR1)
         self._init_ui()
         self._bind_signals()
+        EditHullSectionGroupWidget.Instance = self
 
     def _init_ui(self):
         super()._init_ui()
@@ -218,19 +223,25 @@ class EditHullSectionGroupWidget(EditTabWidget):
     def updateSectionHandler(self, item):
         """
         当item被选择时，更新界面
+        函数内将会链接item的值修改信号到界面的槽函数
         :param item: HullSectionGroup
         :return:
         """
         if self._current_item:
             for section in self._current_item.get_sections():
                 section.showButton().hide()
+        # 解绑原信号
+        if self._current_item:
+            self._current_item.update_front_z_s.disconnect(self.updateFrontZ)
+            self._current_item.update_back_z_s.disconnect(self.updateBackZ)
+        # 链接信号：
+        if hasattr(item, 'update_front_z_s'):
+            # 前后截面z值修改信号
+            item.update_front_z_s.connect(self.updateFrontZ)
+            item.update_back_z_s.connect(self.updateBackZ)
         super().updateSectionHandler(item)
         for section in item.get_sections():
             section.showButton().show()
-        # 链接前后截面z值修改信号
-        if hasattr(item, 'update_front_z_s'):
-            item.update_front_z_s.connect(self.updateFrontZ)
-            item.update_back_z_s.connect(self.updateBackZ)
         self.rotX_edit.setValue(item.Rot[0])
         self.rotY_edit.setValue(item.Rot[1])
         self.rotZ_edit.setValue(item.Rot[2])
@@ -259,10 +270,13 @@ class EditHullSectionGroupWidget(EditTabWidget):
 
 
 class EditArmorSectionGroupWidget(EditTabWidget):
+    Instance: Optional['EditArmorSectionGroupWidget'] = None
+
     def __init__(self):
         super().__init__()
         self._init_ui()
         self._bind_signals()
+        EditArmorSectionGroupWidget.Instance = self
 
     def updateSectionHandler(self, item):
         super().updateSectionHandler(item)
@@ -272,20 +286,26 @@ class EditArmorSectionGroupWidget(EditTabWidget):
 
 
 class EditBridgeWidget(EditTabWidget):
+    Instance: Optional['EditBridgeWidget'] = None
+
     def __init__(self):
         super().__init__()
         self._init_ui()
         self._bind_signals()
+        EditBridgeWidget.Instance = self
 
     def updateSectionHandler(self, item):
         super().updateSectionHandler(item)
 
 
 class EditLadderWidget(EditTabWidget):
+    Instance: Optional['EditLadderWidget'] = None
+
     def __init__(self):
         super().__init__()
         self._init_ui()
         self._bind_signals()
+        EditLadderWidget.Instance = self
 
     def updateSectionHandler(self, item):
         super().updateSectionHandler(item)
@@ -295,16 +315,53 @@ class EditLadderWidget(EditTabWidget):
 
 
 class EditModelWidget(EditTabWidget):
+    Instance: Optional['EditModelWidget'] = None
+
     def __init__(self):
         super().__init__()
+        self.pathButton = Button(None, "单击以重新选择模型路径", bg=('transparent', BG_COLOR3, BG_COLOR2, BG_COLOR3),
+                                 bd_radius=5, size=None,
+                                 font=YAHEI[9], bd=1, padding=3)
         self._init_ui()
         self._bind_signals()
+        EditModelWidget.Instance = self
 
     def updateSectionHandler(self, item):
+        # 解绑原信号
+        if self._current_item:
+            self._current_item.update_path_s.disconnect(self.updatePath)
+        # 链接路径修改信号
+        if hasattr(item, 'update_path_s'):
+            item.update_path_s.connect(self.updatePath)
         super().updateSectionHandler(item)
+        self.pathButton.setText(item.file_path)
         self.rotX_edit.setValue(item.Rot[0])
         self.rotY_edit.setValue(item.Rot[1])
         self.rotZ_edit.setValue(item.Rot[2])
 
+    def updatePath(self, path):
+        self.pathButton.setText(path)
+
+    def _init_basic_info_ui(self):
+        super()._init_basic_info_ui()
+        _font = YAHEI[9]
+        self.basic_info_layout.addWidget(ColoredTextLabel(
+            None, "模型路径", _font, bg='transparent'), 2, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
+        self.basic_info_layout.addWidget(self.pathButton, 2, 1, 1, 3)
+        self.pathButton.setFixedHeight(24)
+        self.pathButton.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
+        self.pathButton.setIcon(QIcon(QPixmap(FOLDER_IMAGE)))
+        self.pathButton.clicked.connect(self.selectModelPath)
+
     def _bind_signals(self):
         super()._bind_signals()
+
+    def selectModelPath(self):
+        """
+        选择模型路径
+        :return:
+        """
+        # 打开文件选择对话框，路径就是当前button的text
+        path = QFileDialog.getOpenFileName(self, "选择模型文件", "", "模型文件 (*.obj *.fbx *.3ds *.stl *.ply *.off)")[0]
+        op = ChangeModelPathOperation(self._current_item, path, self.pathButton.text())
+        self.operationStack.execute(op)

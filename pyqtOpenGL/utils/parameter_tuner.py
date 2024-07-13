@@ -1,6 +1,5 @@
 import sys
 
-import cv2
 import numpy as np
 from time import time
 from pathlib import Path
@@ -8,6 +7,7 @@ from typing import Callable, Union, Optional
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QWidget, QApplication
 from PyQt5.QtCore import pyqtSignal, QTimer, Qt, pyqtSlot
+from cv2_replacements import *
 
 # from .video_utils import VirableRateVideoWriter, VideoReader
 from ..functions import Filter, increment_path
@@ -50,7 +50,7 @@ class InputSource:
             if isinstance(source, np.ndarray):
                 self.input_source = source
             else:
-                self.input_source = cv2.imread(str(source))
+                self.input_source = imread(str(source))
             assert self.input_source is not None, "[ERROR] Reading image failed"
             self.height, self.width = self.input_source.shape[0:2]
 
@@ -395,7 +395,7 @@ class ParameterTuner(QWidget):
             self.vc_widget.pause_toggle()
         elif a0.key() == Qt.Key.Key_J:
             img, stamp = self.video.get_frame()
-            cv2.imwrite("./sample.jpg", img)
+            imwrite("./sample.jpg", img)
             print("save sample.jpg")
 
     def closeEvent(self, a0):

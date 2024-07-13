@@ -1,8 +1,8 @@
 {
-  "check_code": "f60f84118b9d71594ed7a7b58106d75b8fd64050",
+  "check_code": "d9726ec1310aa7b43da97210cb2eed5f4def196d",
   "project_name": "SampleProject",
   "author": "JasonLee",
-  "edit_time": "2024-7-12 18:14:39",
+  "edit_time": "2024-7-13 19:15:5",
   "hull_section_group": [
     {
       "name": "\u4e3b\u4f53",
@@ -284,7 +284,7 @@
       "name": "Missouri",
       "pos": [
         0.0,
-        0.0,
+        -3.0,
         0.0
       ],
       "rot": [
@@ -297,7 +297,7 @@
         1,
         1
       ],
-      "file_path": "E:\\JasonLee\\python_projects\\NavalArtPluginNew\\resources\/models\/BB-63.obj"
+      "file_path": "E:\\JasonLee\\python_projects\\NavalArtPluginNew\\resources\\models\\KMS-Hindenburg.obj"
     }
   ]
 }

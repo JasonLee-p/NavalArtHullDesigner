@@ -71,7 +71,7 @@ class SectionHandler(QObject):
         """
         初始化绘制对象，连接到主绘制窗口
         paintItem被初始化为None，若需要则调用setPaintItem
-        _showButton被初始化为None，若需要则调用_init_showButton
+        :param showButton_type: _showButton被初始化为showButton_typel类型，若需要修改行为则覆写_init_showButton
         """
         self.paintItem: Optional[GLGraphicsItem] = None
         self._showButton: Optional[Union[NoneShow, ShowButton]] = None
@@ -178,7 +178,10 @@ class SectionHandler(QObject):
     def setPos(self, pos: QVector3D):
         self.Pos = pos
         self._showButton.setPos(pos)
-        self.paintItem.moveTo(pos.x(), pos.y(), pos.z())
+        if self.paintItem:
+            self.paintItem.moveTo(pos.x(), pos.y(), pos.z())
+        else:
+            Log().warning(self.TAG, f"{self} 没有paintItem")
 
     def setPosX(self, x: float):
         self.Pos.setX(x)
@@ -201,7 +204,8 @@ class SectionHandler(QObject):
 
     def setRot(self, rot: List[float]):
         self.Rot = rot
-        self.paintItem.setEuler(rot[0], rot[1], rot[2])
+        if self.paintItem:
+            self.paintItem.setEuler(rot[0], rot[1], rot[2])
 
     def setRotX(self, x: float):
         self.Rot[0] = x

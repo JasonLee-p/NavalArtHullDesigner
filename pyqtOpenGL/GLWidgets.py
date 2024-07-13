@@ -1,4 +1,4 @@
-import cv2
+from cv2_replacements import *
 import numpy as np
 from PyQt5.QtCore import Qt
 from matplotlib import cm
@@ -240,7 +240,7 @@ class QGelSlimWidget(GLViewWidget):
         zmap = zmap.astype(np.float32)
         h, w = zmap.shape[0:2]
         if h > 400:
-            zmap = cv2.resize(zmap, (480, 360), interpolation=cv2.INTER_NEAREST)
+            zmap = resize(zmap, (480, 360), interpolation='INTER_NEAREST')
         zmap = np.pad(zmap, ((1, 1), (1, 1)), mode='constant', constant_values=0)
         # noinspection PyProtectedMember
         scale = self.gelslim_model.gelslim_gel._x_size / w

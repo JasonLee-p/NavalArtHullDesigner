@@ -82,8 +82,8 @@ class ColoredTextLabel(QLabel):
                 border-radius: {bd_radius}px;
                 padding-top: {padding}px;
                 padding-bottom: {padding}px;
-                padding-left: {padding + 5}px;
-                padding-right: {padding + 5}px;
+                padding-left: {padding}px;
+                padding-right: {padding}px;
             }}
         """)
         self.setAlignment(align)
@@ -214,6 +214,21 @@ class NumberEdit(TextEdit):
             tool_tip: str = None,
             padding=3
     ):
+        """
+        数字编辑器
+        :param parent: 父对象
+        :param root_parent: 根部件
+        :param size: 尺寸
+        :param num_type: 数字类型
+        :param num_range: 数字范围
+        :param rounding: 保留小数位数
+        :param default_value: 默认值
+        :param step: 步长
+        :param font: 字体
+        :param bg: 背景颜色
+        :param tool_tip: 提示
+        :param padding: 内边距
+        """
         super().__init__(str(default_value), parent, tool_tip, font, bg, padding)
         self.update_mutex = QMutex()
         self.root_parent = root_parent

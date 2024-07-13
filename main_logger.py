@@ -63,7 +63,7 @@ class Log:
     @mutexLock("write_mutex")
     def warning(self, tag, info):
         warn_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        string = f"{warn_time}\t\t[WARNING]\t\t{getTagStr(tag)}{getInfoStr(info)}\n"
+        string = f"{warn_time}\t\t[WARNING]\t{getTagStr(tag)}{getInfoStr(info)}\n"
         self.addString += string
         self._stdout.write(string)
         self._stdout.flush()

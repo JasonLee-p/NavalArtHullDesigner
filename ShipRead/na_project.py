@@ -277,8 +277,6 @@ class ShipProject(QObject):
         name = name[:name.rfind(".")]
         path = os.path.abspath(path)
         model_ = Model(self, name, QVector3D(0, 0, 0), [0, 0, 0], [1, 1, 1], path)
-        if hasattr(model_, "load_failed") and model_.load_failed:
-            return
         self.add_model(model_)
 
     def del_section(self, prjsection: Union[HullSectionGroup, ArmorSectionGroup, Bridge, Ladder, Railing, Handrail]):
@@ -476,8 +474,10 @@ class NaPrjReader:
                     self.hullProject, model_['name'], QVector3D(*model_['pos']), model_['rot'], model_['scl'], m_p)
                 # 加载失败的模型不添加
                 if hasattr(model_handler, "load_failed") and model_handler.load_failed:
-                    QMessageBox.warning(None, "警告", f"模型 {model_['name']} 加载失败，若您仍希望保留模型，请直接关闭程序！", QMessageBox.Ok)
-                    continue
+                    QMessageBox.warning(None, "警告",
+                                        f"模型 {model_['name']} 加载失败，文件路径：{m_p}\n"
+                                        f"请检查该路径是否正确，或者重新绑定路径！",
+                                        QMessageBox.Ok)
             except KeyError:
                 raise KeyError(f"模型 {model_['name']} 的数据不完整")
             self.hullProject.add_model(model_handler)

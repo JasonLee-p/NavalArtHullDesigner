@@ -85,6 +85,15 @@ class ShowButton(Button):
         """
         self.menu.exec_(self.mapToGlobal(event.pos()))
 
+    def enable(self, enable):
+        """
+        设置按钮状态，如果该按钮链接的组件处于非激活模式，例如资源加载失败，则禁用按钮
+        :param enable:
+        :return:
+        """
+        self.setEnabled(enable)
+        self.setToolTip("资源加载失败，无法编辑" if not enable else "")
+
     def setPos(self, pos):
         """
         设置按钮中显示的位置

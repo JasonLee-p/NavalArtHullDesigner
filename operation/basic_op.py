@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-操作类的基类
+操作类基类，以及操作栈类
 """
 from abc import abstractmethod
 from typing import List, Union, Optional

@@ -5,3 +5,4 @@
 
 from .basic_op import OperationStack
 from .modelMatrix_op import MoveOperation, MoveToOperation, RotateOperation
+from .path_op import ChangeModelPathOperation
