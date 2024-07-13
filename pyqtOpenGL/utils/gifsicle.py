@@ -2,14 +2,14 @@ from typing import List, Optional, Union
 import subprocess
 import os
 from pathlib import Path
-from .video_utils import VideoReader
+# from .video_utils import VideoReader
 
-try:
-    import av
-except ImportError:
-    pass
+# try:
+#     import av
+# except ImportError:
+#     pass
 
-__all__ = ["optimize_gif", "video2gif"]
+# __all__ = ["optimize_gif", "video2gif"]
 
 
 def optimize_gif(
@@ -102,70 +102,70 @@ def crop_img(img, rect):
     return img[y:y + h, x:x + w]
 
 
-def video2gif(
-        video_path,
-        save_path=None,
-        speed=1,
-        fps=12,
-        shape_scale=1.,
-        img_shape=None,
-        optimize_options=None,
-        crop_rect=(0, 0, 1, 1),
-):
-    """
-    :param video_path: 视频路径
-    :param save_path: 保存路径
-    :param speed: 速度
-    :param fps: 帧率
-    :param shape_scale: 图片缩放比例
-    :param img_shape: 图片大小：(h, w)
-    :param optimize_options: 优化选项：['--colors', '128']
-    :param crop_rect: 裁剪区域：(x, y, w, h)
-    :return:
-    """
-    if optimize_options is None:
-        optimize_options = ['-O3']
-    _video = VideoReader(video_path)
-
-    # calculate img shape
-    img = _video.get_frame()[0]
-    img = crop_img(img, crop_rect)
-    if img_shape is None:
-        img_shape = (int(img.shape[0] * shape_scale), int(img.shape[1] * shape_scale))
-    else:
-        img_shape = (int(img_shape[0] * shape_scale), int(img_shape[1] * shape_scale))
-
-    # create gif container
-    if save_path is None:
-        save_path = str(video_path).replace('.mp4', '.gif')
-
-    gif_container = av.open(str(save_path), mode='w')
-    stream = gif_container.add_stream('gif', rate=fps)
-    stream.height = img_shape[0]
-    stream.width = img_shape[1]
-    stream.pix_fmt = 'rgb8'
-
-    # write gif
-    duration = _video.duration
-    pbar_width = 20
-    cnt = 0
-    for img, stamp in _video.get_generator(fps=fps / speed):
-        img = crop_img(img, crop_rect)
-        frame = av.VideoFrame.from_ndarray(img, format='bgr24')
-        frame = frame.reformat(format='rgb8')
-        gif_container.mux(stream.encode(frame))
-
-        percent = stamp / duration
-        done = int(percent * pbar_width) * '█'
-        todo = (pbar_width - int(percent * pbar_width)) * ' '
-        print(f'Converting to gif: |{done}{todo}| {percent * 100:.2f}%', end='\r')
-        cnt += 1
-
-    print(f'Converting to gif: |{done}| {100:.2f}%, frames: {cnt:d}', end='\n')
-    gif_container.close()
-
-    print('Optimizing gif...')
-    optimize_gif(save_path, options=optimize_options)
+# def video2gif(
+#         video_path,
+#         save_path=None,
+#         speed=1,
+#         fps=12,
+#         shape_scale=1.,
+#         img_shape=None,
+#         optimize_options=None,
+#         crop_rect=(0, 0, 1, 1),
+# ):
+#     """
+#     :param video_path: 视频路径
+#     :param save_path: 保存路径
+#     :param speed: 速度
+#     :param fps: 帧率
+#     :param shape_scale: 图片缩放比例
+#     :param img_shape: 图片大小：(h, w)
+#     :param optimize_options: 优化选项：['--colors', '128']
+#     :param crop_rect: 裁剪区域：(x, y, w, h)
+#     :return:
+#     """
+#     if optimize_options is None:
+#         optimize_options = ['-O3']
+#     _video = VideoReader(video_path)
+#
+#     # calculate img shape
+#     img = _video.get_frame()[0]
+#     img = crop_img(img, crop_rect)
+#     if img_shape is None:
+#         img_shape = (int(img.shape[0] * shape_scale), int(img.shape[1] * shape_scale))
+#     else:
+#         img_shape = (int(img_shape[0] * shape_scale), int(img_shape[1] * shape_scale))
+#
+#     # create gif container
+#     if save_path is None:
+#         save_path = str(video_path).replace('.mp4', '.gif')
+#
+#     gif_container = av.open(str(save_path), mode='w')
+#     stream = gif_container.add_stream('gif', rate=fps)
+#     stream.height = img_shape[0]
+#     stream.width = img_shape[1]
+#     stream.pix_fmt = 'rgb8'
+#
+#     # write gif
+#     duration = _video.duration
+#     pbar_width = 20
+#     cnt = 0
+#     for img, stamp in _video.get_generator(fps=fps / speed):
+#         img = crop_img(img, crop_rect)
+#         frame = av.VideoFrame.from_ndarray(img, format='bgr24')
+#         frame = frame.reformat(format='rgb8')
+#         gif_container.mux(stream.encode(frame))
+#
+#         percent = stamp / duration
+#         done = int(percent * pbar_width) * '█'
+#         todo = (pbar_width - int(percent * pbar_width)) * ' '
+#         print(f'Converting to gif: |{done}{todo}| {percent * 100:.2f}%', end='\r')
+#         cnt += 1
+#
+#     print(f'Converting to gif: |{done}| {100:.2f}%, frames: {cnt:d}', end='\n')
+#     gif_container.close()
+#
+#     print('Optimizing gif...')
+#     optimize_gif(save_path, options=optimize_options)
 
 
 def avalible_codecs():
@@ -174,6 +174,6 @@ def avalible_codecs():
         print(codec)
 
 
-if __name__ == '__main__':
-    video = 'J:\\test_imgs\\video.mp4'
-    video2gif(video, fps=7, shape_scale=0.5)
+# if __name__ == '__main__':
+#     video = 'J:\\test_imgs\\video.mp4'
+#     video2gif(video, fps=7, shape_scale=0.5)

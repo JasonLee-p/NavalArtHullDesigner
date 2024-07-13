@@ -9,7 +9,7 @@ from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QWidget, QApplication
 from PyQt5.QtCore import pyqtSignal, QTimer, Qt, pyqtSlot
 
-from .video_utils import VirableRateVideoWriter, VideoReader
+# from .video_utils import VirableRateVideoWriter, VideoReader
 from ..functions import Filter, increment_path
 
 from .QtTools import (QTablePanel,
@@ -41,12 +41,12 @@ class InputSource:
         return self.input_source is not None
 
     def update_source(self, source: Union[str, Path, np.ndarray], _type: str):
-        if _type == InputType.VIDEO:
-            assert not str(source).split('.')[-1] in ("jpg", "png")
-            self.input_source = VideoReader(source)
-            self.height, self.width = self.input_source.height, self.input_source.width
+        # if _type == InputType.VIDEO:
+        #     assert not str(source).split('.')[-1] in ("jpg", "png")
+        #     self.input_source = VideoReader(source)
+        #     self.height, self.width = self.input_source.height, self.input_source.width
 
-        elif _type == InputType.IMAGE:
+        if _type == InputType.IMAGE:
             if isinstance(source, np.ndarray):
                 self.input_source = source
             else:
@@ -305,71 +305,71 @@ class ParameterTuner(QWidget):
         if self.video.paused:
             self.update()
 
-    def update(self):
-        # 原图或处理后的图片
-        img, stamp = self.video.get_frame()
+    # def update(self):
+    #     # 原图或处理后的图片
+    #     img, stamp = self.video.get_frame()
+    #
+    #     if self.preprocess is not None:
+    #         img = self.preprocess(img)
+    #
+    #     if self.panel["Show Source Image"]:
+    #         self.src_img_widget.setVisible(True)
+    #         self.src_img_widget.setData(img)
+    #     else:
+    #         self.src_img_widget.setVisible(False)
+    #
+    #     t0 = time()
+    #     ret = self.func(img, **(self._get_params()))
+    #     self.fps.update(1 / (time() - t0 + 1e-5))  # 计算 fps
+    #
+    #     # 更新图片
+    #     if isinstance(ret, tuple):
+    #         self.vis_widget.set_data(*ret)
+    #     else:
+    #         self.vis_widget.set_data(ret)
+    #
+    #     # 视频更新状态栏
+    #     self.status_label.setText(
+    #         f"fps:{self.fps.data:>8.3f} \
+    #         frame time:{1000 / self.fps.data:>8.3f}ms"
+    #     )
+    #     self.vc_widget.update_stamp()
+    #
+    #     self._record_video(img, stamp)
 
-        if self.preprocess is not None:
-            img = self.preprocess(img)
-
-        if self.panel["Show Source Image"]:
-            self.src_img_widget.setVisible(True)
-            self.src_img_widget.setData(img)
-        else:
-            self.src_img_widget.setVisible(False)
-
-        t0 = time()
-        ret = self.func(img, **(self._get_params()))
-        self.fps.update(1 / (time() - t0 + 1e-5))  # 计算 fps
-
-        # 更新图片
-        if isinstance(ret, tuple):
-            self.vis_widget.set_data(*ret)
-        else:
-            self.vis_widget.set_data(ret)
-
-        # 视频更新状态栏
-        self.status_label.setText(
-            f"fps:{self.fps.data:>8.3f} \
-            frame time:{1000 / self.fps.data:>8.3f}ms"
-        )
-        self.vc_widget.update_stamp()
-
-        self._record_video(img, stamp)
-
-    def _record_video(self, img, stamp):
-        if self.record_flag == 0:
-            return
-
-        elif self.record_flag == 1:
-            print("[INFO] Start recording video")
-            save_path = increment_path(Path.cwd() / "video.mp4")
-            if self.panel["Record Source Image"]:
-                w, h = img.shape[1], img.shape[0]
-            else:
-                qrect = self.vis_widget.qrect
-                w, h = qrect.width(), qrect.height()
-
-            self.video_writer = VirableRateVideoWriter(
-                save_path,
-                (w - w % 2, h - h % 2),
-                bit_rate=2048000,
-                auto_incr_stamp=True,
-            )
-            self.record_flag = 2
-
-        elif self.record_flag == 2:
-            if self.panel["Record Source Image"]:
-                self.video_writer.write(img, stamp)
-            else:
-                img = self.vis_widget.grab_frame()
-                self.video_writer.write(img, stamp)
-
-        elif self.record_flag == 3:
-            self.video_writer.release()
-            print(f"[INFO] Video saved at {self.video_writer.video_path}")
-            self.video_writer = None
-            self.record_flag = 0
+    # def _record_video(self, img, stamp):
+    #     if self.record_flag == 0:
+    #         return
+    #
+    #     elif self.record_flag == 1:
+    #         print("[INFO] Start recording video")
+    #         save_path = increment_path(Path.cwd() / "video.mp4")
+    #         if self.panel["Record Source Image"]:
+    #             w, h = img.shape[1], img.shape[0]
+    #         else:
+    #             qrect = self.vis_widget.qrect
+    #             w, h = qrect.width(), qrect.height()
+    #
+    #         self.video_writer = VirableRateVideoWriter(
+    #             save_path,
+    #             (w - w % 2, h - h % 2),
+    #             bit_rate=2048000,
+    #             auto_incr_stamp=True,
+    #         )
+    #         self.record_flag = 2
+    #
+    #     elif self.record_flag == 2:
+    #         if self.panel["Record Source Image"]:
+    #             self.video_writer.write(img, stamp)
+    #         else:
+    #             img = self.vis_widget.grab_frame()
+    #             self.video_writer.write(img, stamp)
+    #
+    #     elif self.record_flag == 3:
+    #         self.video_writer.release()
+    #         print(f"[INFO] Video saved at {self.video_writer.video_path}")
+    #         self.video_writer = None
+    #         self.record_flag = 0
 
     def tune(func, params: dict, video: InputSource, **kwargs):
         """对外接口"""
