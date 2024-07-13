@@ -73,6 +73,16 @@ class ESW(QObject):
         if not self._items:
             self.none_show.show()
 
+    def clear(self):
+        """
+        清空所有元素
+        在更换项目时调用
+        :return:
+        """
+        for item in self._items:
+            self.del_item(item)
+        self._items.clear()
+
 
 class HullSectionGroupESW(ESW):
     def __init__(self, main_editor, tab_widget):

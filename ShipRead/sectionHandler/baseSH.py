@@ -11,6 +11,7 @@ from pyqtOpenGL import GLMeshItem, sphere, cube, EditItemMaterial, GLGraphicsIte
 
 
 class SectionHandler(QObject):
+    TAG = "SectionHandler"
     SPHERE_VER, SHPERE_IDX, SPHERE_UV, SPHERE_NORM = sphere(2, 16, 16, calc_uv_norm=True)
     CUBE_VER, CUBE_NORM, CUBE_TEX = cube(1, 1, 1)
 
@@ -114,7 +115,7 @@ class SectionHandler(QObject):
             self.paintItem.set_selected_s.disconnect(self.set_showButton_checked)
             self.paintItem.handler = None
             self.paintItem = None
-            print(f"[INFO] {self} remove paintItem")
+            Log().info(self.TAG, f"{self} remove paintItem")
         if paintItem == "default":
             paintItem = GLMeshItem(
                 vertexes=SectionHandler.SPHERE_VER, indices=SectionHandler.SHPERE_IDX,
@@ -340,7 +341,8 @@ class SubSectionHandler(QObject):
             self._parent.paintItem.removeChildItem(self.paintItem)
             self.paintItem.handler = None
             self.paintItem = None
-            print(f"[INFO] {self} remove paintItem")
+            # print(f"[INFO] {self} remove paintItem")
+            Log().info(self.TAG, f"{self} remove paintItem")
         if paintItem == "default":
             paintItem = GLMeshItem(
                 vertexes=SectionHandler.CUBE_VER, indices=SectionHandler.CUBE_NORM,

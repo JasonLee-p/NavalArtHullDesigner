@@ -12,7 +12,7 @@ from PyQt5.QtGui import QVector3D, QColor
 from PyQt5.QtWidgets import QMessageBox
 from ShipPaint import *
 from ShipRead.sectionHandler import *
-from path_vars import CURRENT_PATH
+from path_lib import CURRENT_PATH
 
 
 class ShipProject(QObject):

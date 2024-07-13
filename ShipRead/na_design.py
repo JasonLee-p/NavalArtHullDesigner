@@ -27,6 +27,7 @@ from typing import List, Dict
 
 import numpy as np
 from PyQt5.QtCore import pyqtSignal
+from main_logger import Log
 
 
 class NaPart:
@@ -120,6 +121,7 @@ class MainWeapon(NaPart):
 
 
 class NaDesignReader:
+    TAG = "NaDesignReader"
     progress = pyqtSignal(str, str)
 
     def __init__(self, filepath):
@@ -138,7 +140,7 @@ class NaDesignReader:
         try:
             self.root = ET.parse(filepath).getroot()
         except ET.ParseError:
-            print("警告：该文件已损坏")
+            Log().warning(self.TAG, f"文件{filepath}读取失败")
         self.ShipName = self.filename[:-3]
         # ship
         self._ship = self.root.find('ship')

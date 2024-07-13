@@ -5,12 +5,14 @@ from typing import List, Literal
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QColor, QVector3D
 from ShipRead.sectionHandler.baseSH import SectionHandler
+from main_logger import Log
 
 
 class Ladder(SectionHandler):
     """
     直梯
     """
+    TAG = "Ladder"
 
     def getCopy(self):
         ladder = Ladder(self.hullProject, self.name, self.shape)
@@ -55,7 +57,7 @@ class Ladder(SectionHandler):
     def to_dict(self):
         if isinstance(self.Rot, QVector3D):
             self.Rot = [self.Rot.x(), self.Rot.y(), self.Rot.z()]
-            print(f"[WARNING] {self} Rot is QVector3D, change to list")
+            Log().warning(self.TAG, f"{self.name} 函数to_dict：Rot 的类型为 QVector3D，已转换为 List[float]")
         return {
             "name": f"{self.name}",
             "pos": [self.Pos.x(), self.Pos.y(), self.Pos.z()],

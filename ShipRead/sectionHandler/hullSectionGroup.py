@@ -10,6 +10,7 @@ from PyQt5.QtGui import QColor, QVector3D
 from ShipPaint import HullSectionItem, HullSectionGroupItem
 from ShipRead.sectionHandler.baseSH import SectionNodeXY, SectionHandler, SubSectionHandler
 from ShipRead.sectionHandler.bridge import Railing, Handrail
+from main_logger import Log
 from operation.section_op import SectionZMoveOperation
 
 
@@ -22,6 +23,7 @@ class HullSection(SubSectionHandler):
     setPaintItem(HullSectionItem(...))  设置绘图对象
     parent._edit_tab.edit_hullSectionGroup_widget.add_section_showButton(section) 往编辑控件添加按钮
     """
+    TAG = "HullSection"
     idMap = {}
     deleted_s = pyqtSignal()
 
@@ -123,7 +125,7 @@ class HullSection(SubSectionHandler):
             self._parent.update_back_z_s.emit(self.z)
             # EditHullSectionGroupWidget.Instance.updateBackZ()
 
-    def delete_in_GUI(self):
+    def delete_by_user(self):
         pass
 
     def to_dict(self):
@@ -141,6 +143,7 @@ class HullSectionGroup(SectionHandler):
     船体截面组
     不进行整体绘制（因为要分截面进行选中操作），绘制交给截面对象
     """
+    TAG = "HullSectionGroup"
     idMap = {}
     deleted_s = pyqtSignal()
     update_front_z_s = pyqtSignal(float)
@@ -235,13 +238,12 @@ class HullSectionGroup(SectionHandler):
         if section in self.__sections:
             self.__sections.remove(section)
         else:
-            print(f"[WARNING] {section} not in {self.__sections}")
-
+            Log().warning(self.TAG, f"{section} not in {self.__sections}")
 
     def to_dict(self):
         if isinstance(self.Rot, QVector3D):
             self.Rot = [self.Rot.x(), self.Rot.y(), self.Rot.z()]
-            print(f"[WARNING] {self} Rot is QVector3D, change to list")
+            Log().warning(self.TAG, f"{self.name} Rot 的类型为 QVector3D，已转换为 List[float]")
         return {
             "name": f"{self.name}",
             "center": [self.Pos.x(), self.Pos.y(), self.Pos.z()],

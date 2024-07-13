@@ -11,6 +11,7 @@ class ArmorSection(SubSectionHandler):
     """
     装甲截面
     """
+    TAG = "ArmorSection"
 
     def getCopy(self):
         armor = ArmorSection(self.hullProject, self.z, [[node.x, node.y] for node in self.nodes])
@@ -54,6 +55,7 @@ class ArmorSectionGroup(SectionHandler):
     """
     装甲截面组
     """
+    TAG = "ArmorSectionGroup"
     idMap = {}
     deleted_s = pyqtSignal()  # noqa
 
@@ -100,12 +102,12 @@ class ArmorSectionGroup(SectionHandler):
         if section in self.__sections:
             self.__sections.remove(section)
         else:
-            color_print(f"[WARNING] {section} not in {self.__sections}", "red")
+            Log().warning(self.TAG, f"{section} not in {self.__sections}")
 
     def to_dict(self):
         if isinstance(self.Rot, QVector3D):
             self.Rot = [self.Rot.x(), self.Rot.y(), self.Rot.z()]
-            print(f"[WARNING] {self} Rot is QVector3D, change to list")
+            Log().warning(self.TAG, f"{self.name} 函数to_dict：Rot 的类型为 QVector3D，已转换为 List[float]")
         return {
             "name": f"{self.name}",
             "center": [self.Pos.x(), self.Pos.y(), self.Pos.z()],

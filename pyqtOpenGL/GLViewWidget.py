@@ -27,21 +27,23 @@ from .functions import mkColor
 from .items.light import PointLight
 from .transform3d import Vector3
 
+__TAG = "GLViewWidget"
+
 
 def _draw_item(item):
     try:
         item.drawItemTree()
     except np_core_exc._ArrayMemoryError as _:  # noqa
         QMessageBox().warning(None, "严重错误", "申请内存错误，程序即将退出")
-        Log().error(traceback.format_exc(), "申请内存错误，程序即将退出")
+        Log().error(traceback.format_exc(), __TAG, "申请内存错误，程序即将退出")
         sys.exit(1)
     except Exception as e:  # noqa
         printExc()
-        Log().error(traceback.format_exc(), "Error while drawing item %s." % str(item))
-        print("Error while drawing item %s." % str(item))
+        Log().error(traceback.format_exc(), __TAG, "Error while drawing item %s." % str(item))
 
 
 class GLViewWidget(QtWidgets.QOpenGLWidget):
+    TAG = "GLViewWidget"
     gl_initialized = pyqtSignal()
 
     # 剪贴板
@@ -318,7 +320,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         """
         if ratio > 5:
             ratio = 5
-            print("[Warning] ratio should be less than 5.")
+            Log().warning(self.TAG, "ratio should be less than 5")
         # 防止拾取区域超出窗口范围
         if w < 0:
             x_, w = max(0, x_ + w), -w
@@ -362,11 +364,11 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
                     it.drawItemTree_pickMode()
                 except np_core_exc._ArrayMemoryError as _:  # noqa
                     QMessageBox().warning(None, "严重错误", "申请内存错误，程序即将退出")
-                    Log().error(traceback.format_exc(), "申请内存错误，程序即将退出")
+                    Log().error(traceback.format_exc(), self.TAG, "申请内存错误，程序即将退出")
                     sys.exit(1)
                 except Exception as e:  # noqa
                     printExc()
-                    print("Error while drawing item %s in pick mode." % str(it))
+                    Log().error(traceback.format_exc(), self.TAG, "Error while drawing item %s in pick mode." % str(it))
         else:
             for it in self.items:  # 正常模式
                 if it.selected():

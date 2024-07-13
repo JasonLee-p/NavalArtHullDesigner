@@ -11,6 +11,7 @@ class Model(SectionHandler):
     """
     模型
     """
+    TAG = "Model"
 
     def getCopy(self):
         model = Model(self.hullProject, self.name, self.Pos, self.Rot, self.Scl, self.file_path)
@@ -28,20 +29,21 @@ class Model(SectionHandler):
         self.file_path = file_path
         super().__init__('PosShow')
         modelRenderConfig = configHandler.get_config("ModelRenderSetting")
-        modelItem = GLModelItem(file_path, lights=[],
-                                selectable=True,
-                                glOptions="translucent",
-                                drawLine=modelRenderConfig["ModelDrawLine"],
-                                lineWidth=modelRenderConfig["ModelLineWith"],
-                                lineColor=modelRenderConfig["ModelLineColor"])
-        # 如果加载失败，不继续
-        if hasattr(modelItem, "load_failed") and modelItem.load_failed:
-            self.load_failed = True
-            self.delete()
-            return
-        self.setPaintItem(modelItem)
-        self.setPos(pos)
-        self.setRot(rot)
+        with Log().redirectOutput(self.TAG):  # 模型加载时，库内会有输出，这里重定向到日志
+            modelItem = GLModelItem(file_path, lights=[],
+                                    selectable=True,
+                                    glOptions="translucent",
+                                    drawLine=modelRenderConfig["ModelDrawLine"],
+                                    lineWidth=modelRenderConfig["ModelLineWith"],
+                                    lineColor=modelRenderConfig["ModelLineColor"])
+            # 如果加载失败，不继续
+            if hasattr(modelItem, "load_failed") and modelItem.load_failed:
+                self.load_failed = True
+                self.delete()
+                return
+            self.setPaintItem(modelItem)
+            self.setPos(pos)
+            self.setRot(rot)
 
     def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
         super()._init_showButton(type_)
@@ -69,10 +71,10 @@ class Model(SectionHandler):
     def to_dict(self):
         if isinstance(self.Rot, QVector3D):
             self.Rot = [self.Rot.x(), self.Rot.y(), self.Rot.z()]
-            print(f"[WARNING] {self} Rot is QVector3D, change to list")
+            Log().warning(self.TAG, f"{self.name} 函数to_dict：Rot 的类型为 QVector3D，已转换为 List[float]")
         if isinstance(self.Scl, QVector3D):
             self.Scl = [self.Scl.x(), self.Scl.y(), self.Scl.z()]
-            print(f"[WARNING] {self} Scl is QVector3D, change to list")
+            Log().warning(self.TAG, f"{self.name} 函数to_dict：Scl 的类型为 QVector3D，已转换为 List[float]")
         return {
             "name": f"{self.name}",
             "pos": [self.Pos.x(), self.Pos.y(), self.Pos.z()],

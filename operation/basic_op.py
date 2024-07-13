@@ -6,6 +6,7 @@ from abc import abstractmethod
 from typing import List, Union, Optional
 
 from PyQt5.QtCore import QMutex
+from funcs_utils import operationMutexLock
 
 
 class Operation:
@@ -66,6 +67,7 @@ class OperationStack:
         self.stateStack[0] = Operation()
         self.current_index = 0  # 当前状态的索引
 
+    @operationMutexLock
     def execute(self, operation: Operation):
         """
         调用该函数以执行命令，执行完命令后，命令会被添加到栈中。
@@ -74,7 +76,6 @@ class OperationStack:
         """
         if self.current_index is None:
             raise Exception("OperationStack not initialized, please call init_stack() first")
-        self.operationMutex.lock()
         operation.execute()
         if self.current_index == self.max_length - 1:
             self.stateStack = self.stateStack[1:] + [operation]
@@ -84,13 +85,12 @@ class OperationStack:
             self.stateStack[self.current_index] = operation
             self.main_editor.show_statu_(f"{operation.name}\t{self.current_index + 1}", "process")
         self.main_editor.gl_widget.paintGL_outside()
-        self.operationMutex.unlock()
 
+    @operationMutexLock
     def undo(self):
         """
         撤回
         """
-        self.operationMutex.lock()
         if self.current_index > 0:
             try:
                 self.stateStack[self.current_index].undo()
@@ -103,13 +103,12 @@ class OperationStack:
             self.main_editor.show_statu_("Ctrl+Z 没有更多的历史记录", "warning")
             ...
         self.main_editor.gl_widget.paintGL_outside()
-        self.operationMutex.unlock()
 
+    @operationMutexLock
     def redo(self):
         """
         重做命令
         """
-        self.operationMutex.lock()
         if self.current_index is not None and self.stateStack[self.current_index + 1] is not None:
             self.current_index += 1
             try:
@@ -122,7 +121,6 @@ class OperationStack:
         else:
             self.main_editor.show_statu_("Ctrl+Shift+Z 没有更多的历史记录", "warning")
         self.main_editor.gl_widget.paintGL_outside()
-        self.operationMutex.unlock()
 
     def update_size(self, size: int):
         if size < 5 or size > 2 ** 16:
@@ -135,8 +133,8 @@ class OperationStack:
             self.max_length = size
         self.current_index = size - 1
 
+    @operationMutexLock
     def clear(self, length: Optional[int] = None):
-        self.operationMutex.lock()
         if length is None:
             self.stateStack = [None] * self.max_length
             self.init_stack()
@@ -150,4 +148,3 @@ class OperationStack:
             for i in range(length):
                 self.stateStack[self.current_index + i + 1] = None
             self.main_editor.show_statu_(f"撤回栈已清空 {length} 个操作", "warning")
-        self.operationMutex.unlock()

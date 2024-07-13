@@ -229,7 +229,6 @@ class EditHullSectionGroupWidget(EditTabWidget):
             section.showButton().show()
         # 链接前后截面z值修改信号
         if hasattr(item, 'update_front_z_s'):
-            print(f"connect {item} update_front_z_s")
             item.update_front_z_s.connect(self.updateFrontZ)
             item.update_back_z_s.connect(self.updateBackZ)
         self.rotX_edit.setValue(item.Rot[0])

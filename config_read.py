@@ -5,8 +5,7 @@
 
 import ujson
 from funcs_utils import merge_dict
-# from main_logger import Log
-from path_vars import *
+from path_lib import *
 
 
 class ConfigHandler:

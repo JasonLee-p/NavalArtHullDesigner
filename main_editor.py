@@ -14,7 +14,7 @@ from funcs_utils import not_implemented, snake_to_camel
 from main_logger import Log, StatusBarHandler
 from operation import OperationStack
 from operation.basic_op import Operation
-from path_vars import DESKTOP_PATH
+from path_lib import DESKTOP_PATH
 
 
 def update_structure(action):
@@ -25,23 +25,27 @@ def update_structure(action):
     """
 
     def decorator(func):
-        # snake_case
-        snake_component_type = func.__name__[4:-2]  # 去除add_/del_四个字符以及_s结尾
+        # 蛇形命名
+        snake_component_type = func.__name__[4:-2]  # 去除开头add_/del_四个字符以及_s结尾
 
         def wrapper(self, component_id):
-            # 将下划线改为大驼峰，作为类名
+            # 将蛇形命名改为大驼峰，作为类名
             camel_component_type = snake_to_camel(snake_component_type)
+            # 类名转为类对象
             component_class = globals()[camel_component_type]
+            # 获取组件对象
             component = component_class.get_by_id(component_id)
-            getattr(self.structure_tab, f'{action}_{snake_component_type.lower()}')(component)
+            # 调用structure_tab（GUI.main_widgets.ElementStructureTab）对应的函数
+            getattr(self.structure_tab, f'{action}_{snake_component_type}')(component)
 
-        f"""
-        通过对象ID，将{snake_component_type} {'添加到' if action == 'add' else '从'} structure_tab（结构视图）中{'添加' if action == 'add' else '删除'}。
-        该函数将会链接到ShipProject对象的同名pyqtSignal，
-        以在通过ShipProject执行{'添加' if action == 'add' else '删除'}该组件的操作时{'往' if action == 'add' else '从'}structure_tab{'添加' if action == 'add' else '删除'}该组件的显示控件。
-        :param component_id: {snake_component_type} ID
-        :return: None
-        """
+        if not func.__doc__:
+            func.__doc__ = f"""
+            通过对象ID，将{snake_component_type} {'添加到' if action == 'add' else '从'} structure_tab（结构视图）中{'添加' if action == 'add' else '删除'}。
+            该函数将会链接到ShipProject对象的同名pyqtSignal，
+            以在通过ShipProject执行{'添加' if action == 'add' else '删除'}该组件的操作时{'往' if action == 'add' else '从'}structure_tab{'添加' if action == 'add' else '删除'}该组件的显示控件。
+            :param component_id: {snake_component_type} ID
+            :return: None
+            """
         return wrapper
 
     return decorator
@@ -69,6 +73,7 @@ class MemoryThread(QThread):
 
 
 class MainEditor(MainEditorGUI):
+    TAG = "MainEditor"
 
     def excute(self, operation: Operation):
         """
@@ -100,8 +105,9 @@ class MainEditor(MainEditorGUI):
         prj = ShipProject(self, self.gl_widget, path)
         loader = NaPrjReader(path, prj)
         if not loader.successed:
-            Log().info(f"打开工程失败：{prj.project_name}")
+            Log().info(self.TAG, f"打开工程失败：{prj.project_name}")
             return False
+        # 设置顶部按钮文本
         self.currentPrj_button.setText(prj.project_name)
         configHandler.add_prj(prj.project_name, path)
         StatusBarHandler().info(f"打开工程：{prj.project_name}")
@@ -342,5 +348,5 @@ class MainEditor(MainEditorGUI):
             self.edit_tab.edit_model(item)
 
     def __del__(self):
-        print("MainEditor对象已销毁")
+        Log().info(self.TAG, "MainEditor对象已销毁")
         super().__del__()

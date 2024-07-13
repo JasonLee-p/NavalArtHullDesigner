@@ -7,6 +7,7 @@ from .basic_widgets import *
 
 
 class SubElementShow(Button):
+    TAG = "SubElementShow"
     operationStack = None  # main_editor在初始化的时候会将其赋值为OperationStack对象
 
     def __init__(self, gl_widget, scroll_widget, item_handler, height=32):

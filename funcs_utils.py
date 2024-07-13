@@ -4,7 +4,10 @@
 """
 
 import ctypes
+import time
 from typing import Literal
+
+from PyQt5.QtCore import QMutexLocker
 from PyQt5.QtWidgets import QMessageBox
 
 
@@ -166,9 +169,13 @@ def color_print(text, color: Literal["red", "green", "yellow", "blue", "magenta"
     print(f"\033[{color_dict[color]}m{text}\033[0m")
 
 
-def func_run_time(func):
+def time_it(func):
+    """
+    计算函数运行时间
+    :param func:
+    :return:
+    """
     def wrapper(*args, **kwargs):
-        import time
         start = time.time()
         result = func(*args, **kwargs)
         end = time.time()
@@ -177,27 +184,31 @@ def func_run_time(func):
     return wrapper
 
 
-def bool_protection(attr_name=None):
+def operationMutexLock(func):
     """
-    当实例对象有状态布尔属性用来标记是否正在操作时，
-    保护其不被多线程同时操作
-    :param attr_name:
+    用于给类的方法加锁，保护其不被多线程同时操作
+    类一定要有operationMutex属性
+    :param func:
     :return:
     """
+
+    def wrapper(self, *args, **kwargs):
+        with QMutexLocker(self.operationMutex):
+            return func(self, *args, **kwargs)
+    return wrapper
+
+
+def mutexLock(mutexName):
+    """
+    用于给类的方法加锁，保护其不被多线程同时操作
+    :param mutexName: 互斥锁的名称
+    :return:
+    """
+
     def decorator(func):
         def wrapper(self, *args, **kwargs):
-            if attr_name is None:
-                attr_name_ = f"__{func.__name__}_bool_protection__"
-            else:
-                attr_name_ = attr_name
-            if not hasattr(self, attr_name_):  # 如果没有该属性，则创建该属性
-                setattr(self, attr_name_, False)
-            if getattr(self, attr_name_):  # 如果正在操作，则返回
-                return
-            setattr(self, attr_name_, True)
-            result = func(self, *args, **kwargs)
-            setattr(self, attr_name_, False)
-            return result
+            with QMutexLocker(getattr(self, mutexName)):
+                return func(self, *args, **kwargs)
         return wrapper
-    return decorator
 
+    return decorator

@@ -10,7 +10,7 @@ from GUI.element_structure_widgets import *
 from PyQt5 import QtCore
 from ShipRead.na_project import ShipProject
 from funcs_utils import not_implemented
-from path_vars import CURRENT_PATH, DESKTOP_PATH
+from path_lib import CURRENT_PATH, DESKTOP_PATH
 from pyqtOpenGL import *
 from pyqtOpenGL.camera import Camera
 from pyqtOpenGL.items.MeshData import EditItemMaterial
@@ -149,6 +149,13 @@ class ElementStructureTab(MutiDirectionTab):
 
     def del_model(self, model):
         self.model_tab.del_item(model)
+
+    def clear(self):
+        self.hullSectionGroup_tab.clear()
+        self.armorSectionGroup_tab.clear()
+        self.bridge_tab.clear()
+        self.ladder_tab.clear()
+        self.model_tab.clear()
 
 
 class ElementEditTab(MutiDirectionTab):

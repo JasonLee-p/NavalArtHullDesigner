@@ -19,6 +19,7 @@ try:
     from GUI import *
     from main_logger import Log, StatusBarHandler
     from funcs_utils import singleton
+    from path_lib import *
     from main_editor import MainEditor
     from startWindow import StartWindow
 except Exception as e:
@@ -33,6 +34,8 @@ TESTING = False
 
 @singleton
 class MainEditorHandler(list):
+    TAG = "MainEditorHandler"
+
     def __init__(self, logger_):
         super().__init__()
         self.configHandler = configHandler
@@ -84,55 +87,52 @@ class MainEditorHandler(list):
         global startWindow
         # 将窗口从数组删除
         self.remove(main_editor)
+        # Log().info(self.TAG, f"unref: {gc.collect()}")  # 手动垃圾回收
+        Log().info(self.TAG, f"MainEditor引用计数：{sys.getrefcount(main_editor)}")
         del main_editor
-        print(f"unref: {gc.collect()}")  # 手动垃圾回收
         # 保存配置
         self.configHandler.save_config()
-        # # 如果没有窗口了，关闭程序
-        # 没有窗口了，打开开始界面
-        if len(self) == 0:
-            # sys.exit(QApp.exec_())
-            startWindow = StartWindow(None)
-            linkSignal(startWindow)
-            startWindow.show()
+        # 如果没有窗口了，关闭程序
+        Log().save()
 
 
 def lastEdit():
-    print("[INFO] 最近编辑")
+    Log().info(GLOBAL_TAG, "最近编辑")
     _mainEditor = mainEditors.new("lastEdit")
     if not _mainEditor:
         return
 
 
 def newPrj():
-    print("[INFO] 新建项目")
+    Log().info(GLOBAL_TAG, "新建项目")
     _mainEditor = mainEditors.new()
     if not _mainEditor:
         return
 
 
 def openPrj():
-    print("[INFO] 打开项目")
+    Log().info(GLOBAL_TAG, "打开项目")
     _mainEditor = mainEditors.new()
     if not _mainEditor:
         return
 
 
 def setting():
-    print("[INFO] 设置")
+    Log().info(GLOBAL_TAG, "设置")
     _mainEditor = mainEditors.new()
     if not _mainEditor:
         return
 
 
 def _help():
-    print("[INFO] 帮助")
+    Log().info(GLOBAL_TAG, "帮助")
     _mainEditor = mainEditors.new()
     if not _mainEditor:
         return
 
 
 def about():
+    Log().info(GLOBAL_TAG, "关于")
     webbrowser.open("http://naval_plugins.e.cn.vc/")
 
 
@@ -148,6 +148,16 @@ def linkSignal(startwindow: StartWindow):
 
 if __name__ == '__main__':
     Log()  # 初始化日志
+    GLOBAL_TAG = "GLOBAL"
+    print()
+    Log().info(GLOBAL_TAG, f"""初始化路径：
+DESKTOP_PATH: {DESKTOP_PATH}
+PTB_PATH: {PTB_PATH}
+NA_SHIP_PATH: {NA_SHIP_PATH}
+NA_ROOT_PATH: {NA_ROOT_PATH}
+CONFIG_PATH: {CONFIG_PATH}
+CURRENT_PATH: {CURRENT_PATH}
+""")
     try:
         # 读取命令行参数
         opened_file_path = sys.argv[1] if len(sys.argv) > 1 else None
@@ -174,5 +184,4 @@ if __name__ == '__main__':
         sys.exit(QApp.exec_())
     except Exception as e:
         QMessageBox().critical(None, "错误", f"发生未知错误：{e}", QMessageBox.Ok)
-        Log().error(traceback.format_exc(), f"发生错误：{e}")
-    Log().save()
+        Log().error(traceback.format_exc(), GLOBAL_TAG, f"发生错误：{e}")

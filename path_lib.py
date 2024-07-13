@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 寻找游戏目录，如果找不到就返回桌面位置
+不可导入Log模块，会造成循环导入
 """
 import os
 import sys
@@ -60,13 +61,3 @@ def __find_na_root_path():
 PTB_PATH = __find_ptb_path()
 NA_SHIP_PATH = __find_na_ship_path()
 NA_ROOT_PATH = __find_na_root_path()
-
-print(f"""
-初始化路径：
-\tDESKTOP_PATH: {DESKTOP_PATH}
-\tPTB_PATH: {PTB_PATH}
-\tNA_SHIP_PATH: {NA_SHIP_PATH}
-\tNA_ROOT_PATH: {NA_ROOT_PATH}
-\tCONFIG_PATH: {CONFIG_PATH}
-\tCURRENT_PATH: {CURRENT_PATH}
-""")

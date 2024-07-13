@@ -8,7 +8,7 @@ from typing import Literal, Optional, List, Dict
 from .buttons import *
 
 
-from funcs_utils import CONST, color_print, bool_protection
+from funcs_utils import CONST, color_print, operationMutexLock
 
 
 def get_distance(pos1: QPoint, pos2: QPoint) -> float:
@@ -106,7 +106,7 @@ class ButtonGroup:
         :param buttons:
         :param default_index:
         """
-        self.is_operating = False
+        self.operationMutex = QMutex()
         if buttons:
             self.buttons = buttons
             for button in buttons:
@@ -123,7 +123,7 @@ class ButtonGroup:
     def __str__(self):
         return f"ButtonGroup: {len(self.buttons)} buttons, current: {self.current}"
 
-    @bool_protection("is_operating")
+    @operationMutexLock
     def button_clicked(self, button: QPushButton):
         """
         按钮被点击时，更新当前按钮
@@ -139,7 +139,7 @@ class ButtonGroup:
         self.current = button
         self.current.setChecked(True)
 
-    @bool_protection("is_operating")
+    @operationMutexLock
     def add(self, button: QPushButton, setChecked=True):
         """
         添加按钮
@@ -161,7 +161,7 @@ class ButtonGroup:
             self.current = button
             self.current.setChecked(True)
 
-    @bool_protection("is_operating")
+    @operationMutexLock
     def remove(self, button: QPushButton):
         """
         移除按钮
