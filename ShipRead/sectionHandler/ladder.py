@@ -71,7 +71,8 @@ class Ladder(SectionHandler):
         }
 
     def delete(self):
-        Ladder.idMap.pop(self.getId())
-        # noinspection PyProtectedMember
-        SectionHandler._ladder_tab._items.pop(self)
         super().delete()
+        try:
+            Ladder.idMap.pop(self.getId())
+        except KeyError:
+            Log().warning(self.TAG, f"{self.name} 不在 Ladder.idMap 中")

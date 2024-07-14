@@ -29,6 +29,9 @@ def update_structure(action):
         snake_component_type = func.__name__[4:-2]  # 去除开头add_/del_四个字符以及_s结尾
 
         def wrapper(self, component_id):
+            """
+            链接工程文件组件的信号，到ElementStructureTab的对应函数
+            """
             # 将蛇形命名改为大驼峰，作为类名
             camel_component_type = snake_to_camel(snake_component_type)
             # 类名转为类对象
@@ -102,11 +105,17 @@ class MainEditor(MainEditorGUI):
 
     def open_prj(self, path):
         # 打开path路径的工程文件
-        prj = ShipProject(self, self.gl_widget, path)
-        loader = NaPrjReader(path, prj)
+        prj = ShipProject(self.gl_widget, path)
+        # 加载工程文件
+        loader = NaPrjReader(self, path, prj)
         if not loader.successed:
             Log().info(self.TAG, f"打开工程失败：{prj.project_name}")
             return False
+        self.structure_tab.clear()
+        self.edit_tab.clear_editing_widget()
+        # 初始化到主编辑器界面
+        prj.bind_signal_to_editor(self)
+        prj.init_in_main_editor()
         # 设置顶部按钮文本
         self.currentPrj_button.setText(prj.project_name)
         configHandler.add_prj(prj.project_name, path)
@@ -223,6 +232,9 @@ class MainEditor(MainEditorGUI):
         EditTabWidget.gl_widget = gl_widget
         EditTabWidget.operationStack = self.operationStack
         SubElementShow.operationStack = self.operationStack
+        # 绑定其他类对mainEditor的引用
+        SectionHandler.init_ref(self)
+        SubSectionHandler.init_ref(self)
 
     def _bind_glWidget_menu(self):
         for action_name, func in self._glWidget_menu_actions.items():
@@ -275,6 +287,13 @@ class MainEditor(MainEditorGUI):
             self.addAction(action)
 
     def setCurrentPrj(self, prj):
+        """
+        清空元素视图和结构视图的所有内容，然后设置当前工程为prj
+        :param prj:
+        :return:
+        """
+        if self._current_prj:
+            self._current_prj.unbind_signal_to_handler(self)
         self._current_prj = prj
 
     def getCurrentPrj(self):

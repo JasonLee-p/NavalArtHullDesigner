@@ -32,9 +32,9 @@ class Shader:
                 shaders.compileShader(_load(fragment_str), gl.GL_FRAGMENT_SHADER),
             )
         if uniform_data is None:
-            self.uniform_data = dict()
+            self.uniform_data: dict = dict()
         else:
-            self.uniform_data = uniform_data
+            self.uniform_data: dict = uniform_data
         self._in_use = False
 
     def set_uniform(self, name, data, type_: str):

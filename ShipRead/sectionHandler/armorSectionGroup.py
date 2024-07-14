@@ -118,6 +118,8 @@ class ArmorSectionGroup(SectionHandler):
         }
 
     def delete(self):
-        ArmorSectionGroup.idMap.pop(self.getId())
-        SectionHandler._asg_tab._items.pop(self)  # noqa
         super().delete()
+        try:
+            ArmorSectionGroup.idMap.pop(self.getId())
+        except KeyError:
+            Log().warning(self.TAG, f"{self.name} 不在 ArmorSectionGroup.idMap 中")

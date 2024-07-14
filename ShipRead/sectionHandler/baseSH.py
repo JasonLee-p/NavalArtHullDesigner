@@ -7,7 +7,7 @@ from GUI.element_structure_widgets import *
 from GUI.sub_element_edt_widgets import SubElementShow
 from PyQt5.QtGui import QVector3D
 
-from pyqtOpenGL import GLMeshItem, sphere, cube, EditItemMaterial, GLGraphicsItem, GLModelItem
+from pyqtOpenGL import GLMeshItem, sphere, cube, EditItemMaterial, GLGraphicsItem, GLViewWidget
 
 
 class SectionHandler(QObject):
@@ -15,7 +15,7 @@ class SectionHandler(QObject):
     SPHERE_VER, SHPERE_IDX, SPHERE_UV, SPHERE_NORM = sphere(2, 16, 16, calc_uv_norm=True)
     CUBE_VER, CUBE_NORM, CUBE_TEX = cube(1, 1, 1)
 
-    _main_handler = None
+    _main_editor = None
     _gl_widget = None
     _structure_tab = None
     _edit_tab = None
@@ -35,11 +35,11 @@ class SectionHandler(QObject):
         cls.SPHERE_VER, cls.SHPERE_IDX, cls.SPHERE_UV, cls.SPHERE_NORM = sphere(radius, rows, cols, calc_uv_norm=True)
 
     @classmethod
-    def init_widgets(cls, hullPrj):
-        cls._main_handler = hullPrj.main_handler
-        cls._gl_widget = cls._main_handler.gl_widget
-        cls._structure_tab = cls._main_handler.structure_tab
-        cls._edit_tab = cls._main_handler.edit_tab
+    def init_ref(cls, main_editor):
+        cls._main_editor = main_editor
+        cls._gl_widget = cls._main_editor.gl_widget
+        cls._structure_tab = cls._main_editor.structure_tab
+        cls._edit_tab = cls._main_editor.edit_tab
         cls._hsg_tab = cls._structure_tab.hullSectionGroup_tab
         cls._asg_tab = cls._structure_tab.armorSectionGroup_tab
         cls._bridge_tab = cls._structure_tab.bridge_tab
@@ -53,7 +53,7 @@ class SectionHandler(QObject):
 
     @classmethod
     def clear_widgets(cls):
-        cls._main_handler = None
+        cls._main_editor = None
         cls._gl_widget = None
         cls._structure_tab = None
         cls._hsg_tab = None
@@ -82,8 +82,6 @@ class SectionHandler(QObject):
                 self.hullProject = self._parent.hullProject
             else:
                 raise AttributeError("No hullProject attribute or parent attribute")
-        # 初始化供子类使用的控件的引用
-        SectionHandler.init_widgets(self.hullProject)
         # 初始化基础属性
         if not hasattr(self, "Pos"):
             self.Pos = QVector3D(0, 0, 0)
@@ -237,12 +235,12 @@ class SectionHandler(QObject):
         若需要用操作栈，则再operation中新建操作类然后调用。
         :return:
         """
-        _d = QMessageBox.warning(self._main_handler, "提示", "删除后无法撤回，并清空历史操作记录，是否继续？",
+        _d = QMessageBox.warning(self._main_editor, "提示", "删除后无法撤回，并清空历史操作记录，是否继续？",
                                  buttons=QMessageBox.Yes | QMessageBox.No)
         if _d == QMessageBox.No:
             return
         self.delete()
-        self._main_handler.clearOperationStack()
+        self._main_editor.clearOperationStack()
 
     @abstractmethod
     def delete(self):
@@ -269,18 +267,17 @@ class SectionHandler(QObject):
 
 
 class SubSectionHandler(QObject):
-    _main_handler = None
-    _gl_widget: Optional[QObject] = None
+    _main_editor = None
+    _gl_widget: Optional[GLViewWidget] = None
 
     @classmethod
-    def init_widgets(cls, parent):
+    def init_ref(cls, main_editor):
         """
         初始化供子类使用的控件的引用
-        :param parent:
         :return:
         """
-        cls._main_handler = parent.hullProject.main_handler
-        cls._gl_widget = cls._main_handler.gl_widget
+        cls._main_editor = main_editor
+        cls._gl_widget = cls._main_editor.gl_widget
 
     def __init__(self):
         """
@@ -321,8 +318,6 @@ class SubSectionHandler(QObject):
         :return:
         """
         self._parent = parent
-        # 获取主绘制窗口，使其能够连接到主窗口及其下属控件
-        SubSectionHandler.init_widgets(self._parent)
 
     def init_paintItems_parent(self):
         """

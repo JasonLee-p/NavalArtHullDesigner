@@ -104,7 +104,7 @@ class Model(SectionHandler):
         try:
             Model.idMap.pop(self.getId())
         except KeyError:
-            pass
+            Log().warning(self.TAG, f"{self.name} 不在 Model.idMap 中")
 
     def to_dict(self):
         if isinstance(self.Rot, QVector3D):

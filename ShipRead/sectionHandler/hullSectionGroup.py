@@ -257,5 +257,8 @@ class HullSectionGroup(SectionHandler):
         }
 
     def delete(self):
-        HullSectionGroup.idMap.pop(self.getId())
-        SectionHandler._hsg_tab._items.pop(self)  # noqa
+        super().delete()
+        try:
+            HullSectionGroup.idMap.pop(self.getId())
+        except KeyError:
+            Log().warning(self.TAG, f"{self.name} 不在 HullSectionGroup.idMap 中")

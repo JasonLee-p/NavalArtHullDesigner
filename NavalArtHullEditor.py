@@ -22,6 +22,7 @@ try:
     from path_lib import *
     from main_editor import MainEditor
     from startWindow import StartWindow
+    from ShipRead import *
 except Exception as e:
     traceback.print_exc()
     print(f"[ERROR] {e}")
@@ -149,6 +150,7 @@ def linkSignal(startwindow: StartWindow):
 if __name__ == '__main__':
     Log()  # 初始化日志
     GLOBAL_TAG = "GLOBAL"
+    Log().info(GLOBAL_TAG, f"启动应用：命令行参数：{sys.argv}")
     print()
     Log().info(GLOBAL_TAG, f"""初始化路径：
 DESKTOP_PATH: {DESKTOP_PATH}

@@ -41,9 +41,12 @@ class ESW(QObject):
     def _bind_signal(self):
         self.add_button.clicked.connect(self.create_item)
 
-    def create_item(self):
+    def create_item(self) -> bool:
         """
-        新建一个元素
+        新建一个元素，需要在子类中覆写：
+        覆写示例：
+        if not super().create_item():
+            return False
         :return: 是否可以添加
         """
         if self.main_editor.getCurrentPrj() is None:
@@ -61,7 +64,7 @@ class ESW(QObject):
             self.none_show.hide()
         self._items.append(item)
 
-    def del_item(self, item):
+    def del_item(self, item, temp=True):
         """
         删除元素后更新界面，并且如果当前没有元素则显示none_show
         :param item: 元素（不是控件，而是实际的元素）
@@ -69,7 +72,10 @@ class ESW(QObject):
         """
         self._items.remove(item)
         if hasattr(item, "_showButton"):
-            item._showButton.deleteLater()  # noqa
+            if temp:
+                item._showButton.hide()
+            else:
+                item._showButton.deleteLater()
         if not self._items:
             self.none_show.show()
 
@@ -82,6 +88,8 @@ class ESW(QObject):
         for item in self._items:
             self.del_item(item)
         self._items.clear()
+        # 刷新界面
+        self.none_show.show()
 
 
 class HullSectionGroupESW(ESW):

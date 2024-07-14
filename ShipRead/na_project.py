@@ -135,19 +135,18 @@ class ShipProject(QObject):
     del_ladder_s = pyqtSignal(str)  # noqa  # 删除梯子的信号，传出梯子id
     del_model_s = pyqtSignal(str)  # noqa  # 删除模型的信号，传出模型id
 
-    def __init__(self, main_handler, gl_widget: 'GLWidgetGUI', path: str):  # noqa
+    def __init__(self, gl_widget: 'GLWidgetGUI', path: str):  # noqa
         """
 
-        :param main_handler: 主处理器
         :param gl_widget: 用于绘制的GLWidget
         :param path: 含文件名的路径
         """
         super().__init__(None)
+        self.main_editor = None
         # 锁
         self.prj_file_mutex = QMutex()
         self.locker = QMutexLocker(self.prj_file_mutex)
         # 绑定主处理器
-        self.main_handler = main_handler
         self.gl_widget = gl_widget
         self.path = path
         self.__check_code = None
@@ -159,20 +158,58 @@ class ShipProject(QObject):
         self.__bridge: List[Bridge] = []
         self.__ladder: List[Ladder] = []
         self.__model: List[Model] = []
-        # 必须提前绑定信号，否则会出现读取阶段信号无法传出的问题
-        self.bind_signal_to_handler()
 
-    def bind_signal_to_handler(self):
-        self.add_hull_section_group_s.connect(self.main_handler.add_hull_section_group_s)
-        self.add_armor_section_group_s.connect(self.main_handler.add_armor_section_group_s)
-        self.add_bridge_s.connect(self.main_handler.add_bridge_s)
-        self.add_ladder_s.connect(self.main_handler.add_ladder_s)
-        self.add_model_s.connect(self.main_handler.add_model_s)
-        self.del_hull_section_group_s.connect(self.main_handler.del_hull_section_group_s)
-        self.del_armor_section_group_s.connect(self.main_handler.del_armor_section_group_s)
-        self.del_bridge_s.connect(self.main_handler.del_bridge_s)
-        self.del_ladder_s.connect(self.main_handler.del_ladder_s)
-        self.del_model_s.connect(self.main_handler.del_model_s)
+    def bind_signal_to_editor(self, main_editor):
+        """
+        将信号绑定到主处理器
+        随后当添加或删除元素时，会发出信号，通知mainEditor控件更新
+        :return:
+        """
+        self.add_hull_section_group_s.connect(main_editor.add_hull_section_group_s)
+        self.add_armor_section_group_s.connect(main_editor.add_armor_section_group_s)
+        self.add_bridge_s.connect(main_editor.add_bridge_s)
+        self.add_ladder_s.connect(main_editor.add_ladder_s)
+        self.add_model_s.connect(main_editor.add_model_s)
+        self.del_hull_section_group_s.connect(main_editor.del_hull_section_group_s)
+        self.del_armor_section_group_s.connect(main_editor.del_armor_section_group_s)
+        self.del_bridge_s.connect(main_editor.del_bridge_s)
+        self.del_ladder_s.connect(main_editor.del_ladder_s)
+        self.del_model_s.connect(main_editor.del_model_s)
+        self.main_editor = main_editor
+
+    def unbind_signal_to_handler(self, main_editor):
+        """
+        解绑信号，在切换工程时使用
+        :return:
+        """
+        self.add_hull_section_group_s.disconnect(main_editor.add_hull_section_group_s)
+        self.add_armor_section_group_s.disconnect(main_editor.add_armor_section_group_s)
+        self.add_bridge_s.disconnect(main_editor.add_bridge_s)
+        self.add_ladder_s.disconnect(main_editor.add_ladder_s)
+        self.add_model_s.disconnect(main_editor.add_model_s)
+        self.del_hull_section_group_s.disconnect(main_editor.del_hull_section_group_s)
+        self.del_armor_section_group_s.disconnect(main_editor.del_armor_section_group_s)
+        self.del_bridge_s.disconnect(main_editor.del_bridge_s)
+        self.del_ladder_s.disconnect(main_editor.del_ladder_s)
+        self.del_model_s.disconnect(main_editor.del_model_s)
+        self.main_editor = None
+
+    def init_in_main_editor(self):
+        """
+        在main_editor的ElementStructureWidget中初始化
+        遍历组件，触发信号，更新界面
+        :return:
+        """
+        for hs_group in self.__hull_section_group:
+            self.add_hull_section_group_s.emit(hs_group.getId())
+        for as_group in self.__armor_section_group:
+            self.add_armor_section_group_s.emit(as_group.getId())
+        for bridge_ in self.__bridge:
+            self.add_bridge_s.emit(bridge_.getId())
+        for ladder_ in self.__ladder:
+            self.add_ladder_s.emit(ladder_.getId())
+        for model_ in self.__model:
+            self.add_model_s.emit(model_.getId())
 
     def new_hullSectionGroup(self):
         """
@@ -234,35 +271,39 @@ class ShipProject(QObject):
         for prjsection in prjsections:
             self.add_section(prjsection)
 
-    def add_hullSectionGroup(self, prjsection: HullSectionGroup):
+    def add_hullSectionGroup(self, prjsection: HullSectionGroup, init=False):
         if prjsection in self.__hull_section_group:
             self.__hull_section_group.append(prjsection.getCopy())
         else:
             self.__hull_section_group.append(prjsection)
-        self.add_hull_section_group_s.emit(str(id(prjsection)))
+        if not init:
+            self.add_hull_section_group_s.emit(str(id(prjsection)))
 
-    def add_armorSectionGroup(self, prjsection: ArmorSectionGroup):
+    def add_armorSectionGroup(self, prjsection: ArmorSectionGroup, init=False):
         if prjsection in self.__armor_section_group:
             self.__armor_section_group.append(prjsection.getCopy())
         else:
             self.__armor_section_group.append(prjsection)
-        self.add_armor_section_group_s.emit(str(id(prjsection)))
+        if not init:
+            self.add_armor_section_group_s.emit(str(id(prjsection)))
 
-    def add_bridge(self, prjsection: Bridge):
+    def add_bridge(self, prjsection: Bridge, init=False):
         if prjsection in self.__bridge:
             self.__bridge.append(prjsection.getCopy())
         else:
             self.__bridge.append(prjsection)
-        self.add_bridge_s.emit(str(id(prjsection)))
+        if not init:
+            self.add_bridge_s.emit(str(id(prjsection)))
 
-    def add_ladder(self, prjsection: Ladder):
+    def add_ladder(self, prjsection: Ladder, init=False):
         if prjsection in self.__ladder:
             self.__ladder.append(prjsection.getCopy())
         else:
             self.__ladder.append(prjsection)
-        self.add_ladder_s.emit(str(id(prjsection)))
+        if not init:
+            self.add_ladder_s.emit(str(id(prjsection)))
 
-    def add_model(self, prjsection: Model):
+    def add_model(self, prjsection: Model, init=False):
         """
         将模型添加到工程中，同时发出信号，通知视图更新
         """
@@ -270,9 +311,10 @@ class ShipProject(QObject):
             self.__model.append(prjsection.getCopy())
         else:
             self.__model.append(prjsection)
-        self.add_model_s.emit(prjsection.getId())
+        if not init:
+            self.add_model_s.emit(prjsection.getId())
 
-    def add_model_byPath(self, path: str):
+    def add_model_byPath(self, path: str, init=False):
         name = os.path.basename(path)
         name = name[:name.rfind(".")]
         path = os.path.abspath(path)
@@ -343,7 +385,8 @@ class ShipProject(QObject):
 
 
 class NaPrjReader:
-    def __init__(self, path, shipProject):
+    def __init__(self, main_editor, path, shipProject: ShipProject):
+        self.main_editor = main_editor
         self.path = path
         self.hullProject = shipProject
         self.successed = self.load()
@@ -396,7 +439,7 @@ class NaPrjReader:
                 QVector3D(*section_group['center']), section_group['rot'], QColor(section_group['col']),
                 round(float(section_group['top_cur']), 1), round(float(section_group['bot_cur']), 1),
                 self.load_hull_section(section_group['sections']))
-            self.hullProject.add_hullSectionGroup(hull_section_group)
+            self.hullProject.add_hullSectionGroup(hull_section_group, True)
             if "rail" in section_group:
                 self.load_rail(section_group['rail'], hull_section_group)
 
@@ -418,7 +461,7 @@ class NaPrjReader:
                 self.hullProject, section_group['name'],
                 QVector3D(*section_group['center']), section_group['rot'], QColor(section_group['col']),
                 self.load_armor_section(section_group['sections']))
-            self.hullProject.add_armorSectionGroup(armor_section_group)
+            self.hullProject.add_armorSectionGroup(armor_section_group, True)
 
     def load_armor_section(self, data):
         sections = []
@@ -434,7 +477,7 @@ class NaPrjReader:
             bridge_handler.Col = QColor(bridge_['col'])
             bridge_handler.armor = bridge_['armor']
             bridge_handler.nodes = self.load_bridge_node(bridge_['nodes'], bridge_handler)
-            self.hullProject.add_bridge(bridge_handler)
+            self.hullProject.add_bridge(bridge_handler, True)
             if "rail" in bridge_:
                 self.load_rail(bridge_['rail'], bridge_handler)
 
@@ -457,7 +500,7 @@ class NaPrjReader:
             ladder_handler.width = ladder_['width']
             ladder_handler.interval = ladder_['interval']
             ladder_handler.material_width = ladder_['material_width']
-            self.hullProject.add_ladder(ladder_handler)
+            self.hullProject.add_ladder(ladder_handler, True)
 
     def load_model(self, data):
         """
@@ -480,7 +523,7 @@ class NaPrjReader:
                                         QMessageBox.Ok)
             except KeyError:
                 raise KeyError(f"模型 {model_['name']} 的数据不完整")
-            self.hullProject.add_model(model_handler)
+            self.hullProject.add_model(model_handler, True)
 
     def check_checkCode(self, data: dict):
         data.pop("check_code")
