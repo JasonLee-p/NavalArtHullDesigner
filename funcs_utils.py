@@ -28,12 +28,12 @@ class CONST:
     RIGHT = "right"
     SAME = "same"
 
-    FRONT_NORMAL = (0., 0., 1.)
-    BACK_NORMAL = (0., 0., -1.)
-    LEFT_NORMAL = (-1., 0., 0.)
-    RIGHT_NORMAL = (1., 0., 0.)
-    UP_NORMAL = (0., 1., 0.)
-    DOWN_NORMAL = (0., -1., 0.)
+    FRONT_NORMAL: tuple = (0., 0., 1.)
+    BACK_NORMAL: tuple = (0., 0., -1.)
+    LEFT_NORMAL: tuple = (-1., 0., 0.)
+    RIGHT_NORMAL: tuple = (1., 0., 0.)
+    UP_NORMAL: tuple = (0., 1., 0.)
+    DOWN_NORMAL: tuple = (0., -1., 0.)
 
     # 方位组合
     FRONT_BACK = "front_back"
@@ -151,6 +151,10 @@ def empty_func(*args, **kwargs):  # pragma: no cover
 
 
 def is_admin():
+    """
+    判断是否是管理员权限
+    :return:
+    """
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except Exception as _e:
@@ -186,7 +190,7 @@ def time_it(func):
 
 def operationMutexLock(func):
     """
-    用于给类的方法加锁，保护其不被多线程同时操作
+    用于给类的方法加锁
     类一定要有operationMutex属性
     :param func:
     :return:
@@ -200,7 +204,7 @@ def operationMutexLock(func):
 
 def mutexLock(mutexName):
     """
-    用于给类的方法加锁，保护其不被多线程同时操作
+    用于给类的方法加锁
     :param mutexName: 互斥锁的名称
     :return:
     """

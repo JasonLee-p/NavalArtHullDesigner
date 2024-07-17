@@ -128,6 +128,14 @@ class HullSection(SubSectionHandler):
     def delete_by_user(self):
         pass
 
+    def get_array(self) -> np.ndarray:
+        """
+        返回二维numpy float32数组：
+        [节点数，3]
+        :return:
+        """
+        return np.array([[node.x, node.y, self.z] for node in self.nodes])
+
     def to_dict(self):
         return {
             "name": self.name,
@@ -200,6 +208,14 @@ class HullSectionGroup(SectionHandler):
 
     def get_sections(self):
         return self.__sections
+
+    def get_array(self) -> np.ndarray:
+        """
+        返回三维numpy float32数组，可以用于mlp预测
+        [截面数，节点数，3]
+        :return:
+        """
+        return np.array([section.get_array() for section in self.__sections])
 
     def getMaxX(self):
         return max([section.maxX for section in self.__sections])

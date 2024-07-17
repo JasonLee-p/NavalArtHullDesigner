@@ -1,5 +1,5 @@
 """
-cv2打包过大，因此将cv2的部分功能替换为PIL和numpy
+cv2打包过大，因此将cv2的部分功能替换为PIL和numpy实现
 """
 from PIL import Image as PILImage
 import numpy as np
