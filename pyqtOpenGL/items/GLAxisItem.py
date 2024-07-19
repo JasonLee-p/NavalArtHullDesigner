@@ -129,7 +129,7 @@ class GLAxisItem(GLGraphicsItem):
     def proj_view_matrix(self):
         if self.__fix_to_corner:
             view = self.view()
-            proj = Matrix4x4.create_projection(
+            proj = Matrix4x4.create_perspective_proj(
                 20, 1 / view.deviceRatio(), 1, 80.0
             )
             # 计算在这个投影矩阵下, 窗口右上角点在相机坐标系下的坐标

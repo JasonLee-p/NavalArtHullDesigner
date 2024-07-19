@@ -365,6 +365,8 @@ class GLWidgetGUI(GLViewWidget):
         camera_sensitivity = configHandler.get_config("Sensitivity")
         super().__init__(Vector3(100., 20., 40.), cam_sensitivity=camera_sensitivity)
         self.menu = Menu()
+        # 切换视图模式的按钮
+        self.camera_mode_button = Button(self, "切换视图模式", bd_radius=6, size=None, font=YAHEI[9])
         self.__init_GUI()
 
         # 主光照
@@ -422,7 +424,13 @@ class GLWidgetGUI(GLViewWidget):
         ...
 
     def __init_GUI(self):
+        self.__init_top_buttons()
         self.__init_fps_label()
+
+    def __init_top_buttons(self):
+        self.camera_mode_button.setGeometry(10, 10, 100, 30)
+        self.camera_mode_button.clicked.connect(self.switch_camera_mode)
+        self.camera_mode_button.setText("正交投影")
 
     def __init_fps_label(self):
         self.fps_label.setGeometry(10, 10, 100, 20)
@@ -431,6 +439,16 @@ class GLWidgetGUI(GLViewWidget):
             f"background-color: rgba(0, 0, 0, 0);"
         )
         self.fps_label.setStyleSheet(style)
+
+    def switch_camera_mode(self):
+        if self.camera_mode_button.text() == "正交投影":
+            self.camera_mode_button.setText("透视投影")
+            self.set_proj_mode("ortho")
+        else:
+            self.camera_mode_button.setText("正交投影")
+            self.set_proj_mode("perspective")
+        # 刷新
+        self.update()
 
     # noinspection PyUnresolvedReferences
     # def __init_mode_toolButton(self):

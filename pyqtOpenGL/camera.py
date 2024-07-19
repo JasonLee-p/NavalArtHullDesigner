@@ -22,14 +22,11 @@ class Camera:
             "平移": 50,
             "缩放": 50
         }
-        self.proj_mode: Literal["perspective", "ortho"] = "perspective"
+        self._proj_mode: Literal["perspective", "ortho"] = "perspective"
+        self.zoom_factor = 0.1
 
-    def change_proj_mode(self, mode: Literal["perspective", "ortho"]):
-        self.proj_mode = mode
-        if mode == "ortho":
-            self.fov = 45
-        else:
-            self.fov = 1
+    def set_proj_mode(self, mode: Literal["perspective", "ortho"]):
+        self._proj_mode = mode
 
     def get_view_matrix(self) -> Matrix4x4:
         return self.lookAt.copy()
@@ -38,7 +35,12 @@ class Camera:
         return self.pos.copy()
 
     def get_projection_matrix(self, width, height):
-        return Matrix4x4.create_projection(self.fov, width / height, max(0.1, self.distance * 0.05), max(self.distance * 2, 1000))
+        if self._proj_mode == "perspective":
+            return Matrix4x4.create_perspective_proj(self.fov, width / height, max(0.1, self.distance * 0.05), max(self.distance * 2, 1000))
+        else:
+            ortho_width = width / 2 * self.zoom_factor
+            ortho_height = height / 2 * self.zoom_factor
+            return Matrix4x4.create_ortho_proj(-ortho_width, ortho_width, -ortho_height, ortho_height, max(0.1, self.distance * 0.05), max(self.distance * 2, 1000))
 
     def get_proj_view_matrix(self, width, height):
         return self.get_projection_matrix(width, height) * self.lookAt
@@ -74,6 +76,9 @@ class Camera:
         self.pos *= rate
         self.distance *= rate
         self.pos += self.tar
+
+        self.zoom_factor *= rate
+
         self.lookAt.setToIdentity()  # 重置lookAt
         self.lookAt.lookAt(self.pos, self.tar, Vector3(0, 1, 0))
 
@@ -104,3 +109,20 @@ class Camera:
 
     def get_lookAt(self):
         return self.lookAt
+
+    # 设置看向X轴负方向：
+    def look_at_negative_direction(self, direction: Vector3, right: Vector3, up: Vector3):
+        self.pos = self.tar + direction * self.distance
+        self.right = right
+        self.up = up
+        self.lookAt.setToIdentity()
+        self.lookAt.lookAt(Qvec3(*self.pos), Qvec3(*self.tar), Qvec3(0, 1, 0))
+
+    def lookAtXNegative(self):
+        self.look_at_negative_direction(Vector3(-1, 0, 0), Vector3(0, 0, -1), Vector3(0, 1, 0))
+
+    def lookAtYNegative(self):
+        self.look_at_negative_direction(Vector3(0, -1, 0), Vector3(1, 0, 0), Vector3(0, 0, 1))
+
+    def lookAtZNegative(self):
+        self.look_at_negative_direction(Vector3(0, 0, -1), Vector3(1, 0, 0), Vector3(0, 1, 0))

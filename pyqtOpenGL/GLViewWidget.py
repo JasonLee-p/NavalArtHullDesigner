@@ -127,8 +127,8 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         # self.setUpdateBehavior(QOpenGLWidget.DoubleBuffer)
         self.frameSwapped.connect(self.parent().update) if self.parent() else None  # noqa
 
-    def change_proj_mode(self, proj_mode: Literal['ortho', 'perspective']):
-        self.camera.change_proj_mode(proj_mode)
+    def set_proj_mode(self, proj_mode: Literal['ortho', 'perspective']):
+        self.camera.set_proj_mode(proj_mode)
 
     def get_proj_view_matrix(self):
         return self.camera.get_proj_view_matrix(
