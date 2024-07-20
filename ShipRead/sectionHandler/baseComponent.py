@@ -1,17 +1,23 @@
 """
+程文件组件基类，定义了组件的基本属性和方法，包括渲染，GUI控制，相关操作等。
 
+这个模块包含以下类：
+    SectionHandler：管理和渲染船体模型的主要部分。
+    SubSectionHandler：主要部分内的子部分的基类，提供常见功能。
+    SectionNodeXY：表示XY平面中的节点，用于定义船体或装甲截面。
+    SectionNodeXZ：表示XZ平面中的节点，用于定义舰桥截面。
 """
 import traceback
 
 from GUI.element_structure_widgets import *
-from GUI.sub_element_edt_widgets import SubElementShow
+from GUI.sub_component_edt_widgets import SubElementShow
 from PyQt5.QtGui import QVector3D
 
 from pyqtOpenGL import GLMeshItem, sphere, cube, EditItemMaterial, GLGraphicsItem, GLViewWidget
 
 
-class SectionHandler(QObject):
-    TAG = "SectionHandler"
+class PrjComponent(QObject):
+    TAG = "PrjComponent"
     SPHERE_VER, SHPERE_IDX, SPHERE_UV, SPHERE_NORM = sphere(2, 16, 16, calc_uv_norm=True)
     CUBE_VER, CUBE_NORM, CUBE_TEX = cube(1, 1, 1)
 
@@ -81,6 +87,8 @@ class SectionHandler(QObject):
             if hasattr(self, "_parent"):
                 self.hullProject = self._parent.hullProject
             else:
+                trace = traceback.extract_stack()[-2]
+                Log().error(trace, self.TAG, "No hullProject attribute or parent attribute")
                 raise AttributeError("No hullProject attribute or parent attribute")
         # 初始化基础属性
         if not hasattr(self, "Pos"):
@@ -113,24 +121,25 @@ class SectionHandler(QObject):
             self.paintItem.set_selected_s.disconnect(self.set_showButton_checked)
             self.paintItem.handler = None
             self.paintItem = None
-            Log().info(self.TAG, f"{self} remove paintItem")
+            Log().info(self.TAG, f"{self} 移除原有paintItem")
         if paintItem == "default":
+            Log().info(self.TAG, f"{self} 将paintItem设置为默认球体")
             paintItem = GLMeshItem(
-                vertexes=SectionHandler.SPHERE_VER, indices=SectionHandler.SHPERE_IDX,
-                normals=SectionHandler.SPHERE_NORM,
-                lights=[SectionHandler._gl_widget.light],
+                vertexes=PrjComponent.SPHERE_VER, indices=PrjComponent.SHPERE_IDX,
+                normals=PrjComponent.SPHERE_NORM,
+                lights=[PrjComponent._gl_widget.light],
                 # 随机颜色
                 material=EditItemMaterial(color=np.random.randint(128, 255, 3).tolist()),
                 glOptions='translucent',
                 selectable=True
             ).translate(self.Pos.x(), self.Pos.y(), self.Pos.z())
         else:
-            paintItem.addLight([SectionHandler._gl_widget.light])
+            paintItem.addLight([PrjComponent._gl_widget.light])
         self.paintItem = paintItem
         # 绑定handler
         self.paintItem.set_selected_s.connect(self.set_showButton_checked)
         self.paintItem.handler = self
-        SectionHandler._gl_widget.addItem(self.paintItem)
+        PrjComponent._gl_widget.addItem(self.paintItem)
         self.setSelected(False, set_button=True)
 
     def getId(self):
@@ -144,12 +153,12 @@ class SectionHandler(QObject):
             self._showButton = PosRotShow(self.hullProject.gl_widget, self._model_bt_scroll_widget, self)
         else:
             trace = traceback.extract_stack()[-2]
-            Log().error(trace, f"未知的showButton类型: {type_}")
+            Log().error(trace, self.TAG, f"未知的showButton类型: {type_}")
             raise ValueError(f"未知的showButton类型: {type_}")
 
     @abstractmethod
     def getCopy(self):
-        return SectionHandler()
+        return PrjComponent()
 
     def addLight(self, lights: list):
         self.paintItem.addLight(lights)
@@ -265,8 +274,12 @@ class SectionHandler(QObject):
     def to_dict(self):
         ...
 
+    def __str__(self):
+        return f"<{self.__class__.__name__}:{self._custom_id} at {self.Pos}>"
 
-class SubSectionHandler(QObject):
+
+class SubPrjComponent(QObject):
+    TAG = "SubPrjComponent"
     _main_editor = None
     _gl_widget: Optional[GLViewWidget] = None
 
@@ -284,7 +297,7 @@ class SubSectionHandler(QObject):
         初始化id，尝试初始化_parent
         """
         if not hasattr(self, "_parent"):
-            self._parent: Union[SectionHandler, SubSectionHandler, None] = None
+            self._parent: Union[PrjComponent, SubPrjComponent, None] = None
         elif self._parent is not None:
             self.init_parent(self._parent)
         self.paintItem: Optional[GLGraphicsItem] = None
@@ -344,15 +357,15 @@ class SubSectionHandler(QObject):
             Log().info(self.TAG, f"{self} remove paintItem")
         if paintItem == "default":
             paintItem = GLMeshItem(
-                vertexes=SectionHandler.CUBE_VER, indices=SectionHandler.CUBE_NORM,
-                normals=SectionHandler.CUBE_NORM,
-                lights=[SubSectionHandler._gl_widget.light],
+                vertexes=PrjComponent.CUBE_VER, indices=PrjComponent.CUBE_NORM,
+                normals=PrjComponent.CUBE_NORM,
+                lights=[SubPrjComponent._gl_widget.light],
                 material=EditItemMaterial(color=(128, 128, 128)),
                 glOptions='translucent',
                 selectable=True
             )
         else:
-            paintItem.addLight([SubSectionHandler._gl_widget.light])
+            paintItem.addLight([SubPrjComponent._gl_widget.light])
         self.paintItem = paintItem
         # 绑定handler
         self.paintItem.handler = self
@@ -382,7 +395,7 @@ class SubSectionHandler(QObject):
 
     @abstractmethod
     def getCopy(self):
-        return SubSectionHandler()
+        return SubPrjComponent()
 
     @abstractmethod
     def delete_by_user(self):
@@ -393,16 +406,17 @@ class SubSectionHandler(QObject):
         pass
 
 
-class SectionNodeXY(SubSectionHandler):
+class ComponentNodeXY(SubPrjComponent):
     """
     xy节点，用于记录船体或装甲截面的节点
     """
+    TAG = "ComponentNodeXY"
 
-    def delete_in_GUI(self):
-        pass
+    def delete_by_user(self):
+        super().delete_by_user()
 
     def getCopy(self):
-        node = SectionNodeXY(self._parent)
+        node = ComponentNodeXY(self._parent)
         node.x = self.x
         node.y = self.y
         node.y_index = self.y_index
@@ -425,13 +439,17 @@ class SectionNodeXY(SubSectionHandler):
         return QVector3D(self.x, self.y, self._parent.z)
 
 
-class SectionNodeXZ(SubSectionHandler):
+class ComponentNodeXZ(SubPrjComponent):
     """
     xz节点，用于记录舰桥的节点
     """
+    TAG = "ComponentNodeXZ"
+
+    def delete_by_user(self):
+        super().delete_by_user()
 
     def getCopy(self):
-        node = SectionNodeXZ(self._parent)
+        node = ComponentNodeXZ(self._parent)
         node.x = self.x
         node.z = self.z
         node.Col = self.Col

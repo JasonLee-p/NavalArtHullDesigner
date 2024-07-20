@@ -1,13 +1,13 @@
 """
-
+工程文件组件：装甲截面组
 """
 from GUI.element_structure_widgets import *
 from PyQt5.QtGui import QColor, QVector3D
 from ShipPaint import ArmorSectionGroupItem
-from ShipRead.sectionHandler.baseSH import SectionNodeXY, SectionHandler, SubSectionHandler
+from .baseComponent import ComponentNodeXY, PrjComponent, SubPrjComponent
 
 
-class ArmorSection(SubSectionHandler):
+class ArmorSection(SubPrjComponent):
     """
     装甲截面
     """
@@ -25,7 +25,7 @@ class ArmorSection(SubSectionHandler):
         self.hullProject = prj
         self._parent = None
         self.z = z
-        self.nodes: List[SectionNodeXY] = []
+        self.nodes: List[ComponentNodeXY] = []
         self.load_nodes(node_datas)
         self.armor = None
         super().__init__()
@@ -34,7 +34,7 @@ class ArmorSection(SubSectionHandler):
 
     def load_nodes(self, node_datas):
         for node_data in node_datas:
-            node = SectionNodeXY()
+            node = ComponentNodeXY()
             node.x, node.y = node_data
             self.nodes.append(node)
         self.nodes.sort(key=lambda x: x.y)
@@ -42,6 +42,9 @@ class ArmorSection(SubSectionHandler):
     def set_parentGroup(self, parent):
         self._parent = parent
         self.paintItem.sectionGroup = parent
+
+    def delete_by_user(self):
+        pass
 
     def to_dict(self):
         return {
@@ -51,7 +54,7 @@ class ArmorSection(SubSectionHandler):
         }
 
 
-class ArmorSectionGroup(SectionHandler):
+class ArmorSectionGroup(PrjComponent):
     """
     装甲截面组
     """

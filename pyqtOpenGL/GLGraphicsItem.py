@@ -5,6 +5,7 @@ from OpenGL import GL
 from OpenGL.GL import *  # noqa
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
+from funcs_utils import singleton
 
 from .transform3d import Matrix4x4
 
@@ -53,22 +54,6 @@ GLOptions = {
 }
 
 __all__ = ['GLGraphicsItem', 'GLOptions', 'PickColorManager']
-
-
-def singleton(cls):
-    """
-    单例装饰器
-    :param cls:
-    :return:
-    """
-    instances = {}
-
-    def get_instance(*args, **kwargs):
-        if cls not in instances:
-            instances[cls] = cls(*args, **kwargs)
-        return instances[cls]
-
-    return get_instance
 
 
 @singleton

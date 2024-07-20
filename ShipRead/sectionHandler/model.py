@@ -1,15 +1,15 @@
 """
-模型
+工程文件组件：模型
 """
 from pathlib import Path
 
 from GUI.element_structure_widgets import *
 from PyQt5.QtGui import QVector3D
-from ShipRead.sectionHandler.baseSH import SectionHandler
+from .baseComponent import PrjComponent
 from pyqtOpenGL import GLModelItem
 
 
-class Model(SectionHandler):
+class Model(PrjComponent):
     """
     模型
     """

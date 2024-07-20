@@ -1,20 +1,20 @@
 """
-船体截面组
+工程文件组件：船体截面组
 """
 from typing import List, Union, Literal, Optional
 
 import numpy as np
-from GUI.sub_element_edt_widgets import SubSectionShow
+from GUI.sub_component_edt_widgets import SubSectionShow
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QColor, QVector3D
 from ShipPaint import HullSectionItem, HullSectionGroupItem
-from ShipRead.sectionHandler.baseSH import SectionNodeXY, SectionHandler, SubSectionHandler
-from ShipRead.sectionHandler.bridge import Railing, Handrail
+from .baseComponent import ComponentNodeXY, PrjComponent, SubPrjComponent
+from .bridge import Railing, Handrail
 from main_logger import Log
 from operation.section_op import SectionZMoveOperation
 
 
-class HullSection(SubSectionHandler):
+class HullSection(SubPrjComponent):
     """
     船体截面
     __init__后仍需调用：
@@ -44,7 +44,7 @@ class HullSection(SubSectionHandler):
         self._frontSection = None
         self._backSection = None
         self.z = z
-        self.nodes: List[SectionNodeXY] = []
+        self.nodes: List[ComponentNodeXY] = []
         self.nodes_data: Optional[np.ndarray] = None
         self.load_nodes(node_datas, colors)
         self.armor = armor if armor else 5
@@ -53,11 +53,11 @@ class HullSection(SubSectionHandler):
         for node in self.nodes:
             node.init_parent(self)
             self.maxX = max(self.maxX, node.x)
-        self._showButton = SubSectionShow(SectionHandler._gl_widget, SectionHandler._hsg_bt_scroll_widget, self)
+        self._showButton = SubSectionShow(PrjComponent._gl_widget, PrjComponent._hsg_bt_scroll_widget, self)
 
     def load_nodes(self, node_datas, colors):
         for node_data, color in zip(node_datas, colors):
-            node = SectionNodeXY()
+            node = ComponentNodeXY()
             node.x, node.y = node_data
             node.Col = QColor(color)
             self.nodes.append(node)
@@ -147,7 +147,7 @@ class HullSection(SubSectionHandler):
         }
 
 
-class HullSectionGroup(SectionHandler):
+class HullSectionGroup(PrjComponent):
     """
     船体截面组
     不进行整体绘制（因为要分截面进行选中操作），绘制交给截面对象

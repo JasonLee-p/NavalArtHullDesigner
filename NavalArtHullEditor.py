@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-NavalArt Hull Editor
-NavalArt 船体编辑器
-Author: @JasonLee
-Date: 2024-2-26
+NavalArt船体编辑器 主程序
+作者: JasonLee-p
 """
 # 系统库
 import sys
@@ -30,7 +28,6 @@ except Exception as e:
     sys.exit(1)
 
 VERSION = "1.0.0.0"
-TESTING = False
 
 
 @singleton
@@ -105,35 +102,35 @@ def lastEdit():
 
 
 def newPrj():
-    Log().info(GLOBAL_TAG, "新建项目")
+    Log().info(GLOBAL_TAG, "单击：新建项目")
     _mainEditor = mainEditors.new()
     if not _mainEditor:
         return
 
 
 def openPrj():
-    Log().info(GLOBAL_TAG, "打开项目")
+    Log().info(GLOBAL_TAG, "单击：打开项目")
     _mainEditor = mainEditors.new()
     if not _mainEditor:
         return
 
 
 def setting():
-    Log().info(GLOBAL_TAG, "设置")
+    Log().info(GLOBAL_TAG, "单击：设置")
     _mainEditor = mainEditors.new()
     if not _mainEditor:
         return
 
 
 def _help():
-    Log().info(GLOBAL_TAG, "帮助")
+    Log().info(GLOBAL_TAG, "单击：帮助")
     _mainEditor = mainEditors.new()
     if not _mainEditor:
         return
 
 
 def about():
-    Log().info(GLOBAL_TAG, "关于")
+    Log().info(GLOBAL_TAG, "单击：关于")
     webbrowser.open("http://naval_plugins.e.cn.vc/")
 
 
@@ -150,16 +147,16 @@ def linkSignal(startwindow: StartWindow):
 if __name__ == '__main__':
     Log()  # 初始化日志
     GLOBAL_TAG = "GLOBAL"
-    Log().info(GLOBAL_TAG, f"启动应用：命令行参数：{sys.argv}")
+    Log().info(GLOBAL_TAG, f"启动NavalArt船体编辑器 V{VERSION}")
+    Log().info(GLOBAL_TAG, f"命令行参数：{sys.argv}")
     print()
-    Log().info(GLOBAL_TAG, f"""初始化路径：
+    Log().info(GLOBAL_TAG, f"""初始化路径常量：
 DESKTOP_PATH: {DESKTOP_PATH}
 PTB_PATH: {PTB_PATH}
 NA_SHIP_PATH: {NA_SHIP_PATH}
 NA_ROOT_PATH: {NA_ROOT_PATH}
 CONFIG_PATH: {CONFIG_PATH}
-CURRENT_PATH: {CURRENT_PATH}
-""")
+CURRENT_PATH: {CURRENT_PATH}""")
     try:
         # 读取命令行参数
         opened_file_path = sys.argv[1] if len(sys.argv) > 1 else None
@@ -170,6 +167,7 @@ CURRENT_PATH: {CURRENT_PATH}
         QApp.setApplicationVersion(VERSION)
         QApp.setOrganizationName("JasonLee")
         QApp.setAttribute(Qt.AA_DisableHighDpiScaling)
+        Log().info(GLOBAL_TAG, f"QApp初始化完成")
         # 打开欢迎界面
         startWindow = StartWindow()
         mainEditors: MainEditorHandler = MainEditorHandler(Log())

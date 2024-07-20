@@ -1,12 +1,12 @@
 """
-
+工程文件组件：舰桥
 """
 from PyQt5.QtGui import QVector3D, QColor
 from GUI.element_structure_widgets import *
-from ShipRead.sectionHandler.baseSH import SectionHandler, SubSectionHandler, SectionNodeXZ
+from .baseComponent import PrjComponent, SubPrjComponent, ComponentNodeXZ
 
 
-class Railing(SubSectionHandler):
+class Railing(SubPrjComponent):
     """
     栏杆
     """
@@ -45,7 +45,7 @@ class Railing(SubSectionHandler):
         }
 
 
-class Handrail(SubSectionHandler):
+class Handrail(SubPrjComponent):
     """
     栏板
     """
@@ -80,7 +80,7 @@ class Handrail(SubSectionHandler):
         }
 
 
-class Bridge(SectionHandler):
+class Bridge(PrjComponent):
     """
     舰桥
     """
@@ -105,7 +105,7 @@ class Bridge(SectionHandler):
         self.Pos: QVector3D = QVector3D(0, 0, 0)
         self.Col = QColor(128, 128, 129)  # 颜色
         self.armor = None
-        self.nodes: List[SectionNodeXZ] = []
+        self.nodes: List[ComponentNodeXZ] = []
         self.rail: Union[Railing, Handrail, None] = None
         super().__init__('PosShow')
         self.setPaintItem("default")
@@ -133,5 +133,5 @@ class Bridge(SectionHandler):
 
     def delete(self):
         Bridge.idMap.pop(self.getId())
-        SectionHandler._bridge_tab._items.pop(self)  # noqa
+        PrjComponent._bridge_tab._items.pop(self)  # noqa
         super().delete()

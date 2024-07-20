@@ -1,5 +1,9 @@
 """
-记录程序运行日志
+日志模块
+包括：
+1. 日志类Log，用于记录日志信息，包括info、warning、error等
+2. 状态栏处理类StatusBarHandler，用于处理状态栏信息
+
 """
 import sys
 import time
@@ -14,12 +18,18 @@ def getTagStr(tag):
     return f"[{tag}]".ljust(24, " ")  # width最好是4的倍数
 
 
+def getLevelStr(level):
+    return f"[{level}]".ljust(12, " ")
+
+
+# 信息前的空格数
+EMPTY_STR = ' ' * 55
+
+
 def getInfoStr(info):
-    # 如果有换行符，则在每行前加上制表符
-    TAG_NUM = 15
     info = info.split("\n")
     for i in range(1, len(info)):
-        info[i] = "\t" * TAG_NUM + info[i]
+        info[i] = EMPTY_STR + info[i]
     return "\n".join(info)
 
 
@@ -27,6 +37,11 @@ def getInfoStr(info):
 class Log:
     write_mutex = QMutex()
     FILE_MAX_SIZE = 1024 * 1024  # 1MB
+    LINE_LENGTH = 150
+    SEPARATOR = "=" * LINE_LENGTH
+    INFO = "[INFO]    "
+    WARNING = "[WARNING] "
+    ERROR = "[ERROR]   "
 
     def __init__(self, path="logging.txt"):
         self._stdout = sys.stdout
@@ -34,8 +49,8 @@ class Log:
         self.path = path
         self._init_log_file()
         logging_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        self.addString = (f"\n{'=' * 100}\n"
-                          f"{logging_time}\t\t[INFO]\t\t{getTagStr('Log')}程序启动，日志启动\n")
+        self.addString = (f"\n{self.SEPARATOR}\n"
+                          f"{logging_time}  {self.INFO}{getTagStr('Log')}程序启动，日志启动\n")
 
     @mutexLock("write_mutex")
     def _init_log_file(self):
@@ -47,13 +62,13 @@ class Log:
                 f.truncate(0)  # 清空文件
                 # TODO: 可以尝试上传
                 truncate_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-                f.write(f"{truncate_time}\t\t[INFO]\t\t{getTagStr('Log')}日志文件超过1MB，已清空\n")
+                f.write(f"{truncate_time}  {self.INFO}{getTagStr('Log')}日志文件超过1MB，已清空\n")
 
     @mutexLock("write_mutex")
     def error(self, trace, tag, info):
         err_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         infoString = getInfoStr(trace + '\n' + info)
-        string = f"{err_time}\t\t[ERROR]\t\t{getTagStr(tag)}{infoString}\n"
+        string = f"{err_time}  {self.ERROR}{getTagStr(tag)}{infoString}\n"
         self.addString += string
         # 使用sys.stderr输出
         self._stderr.write(string)
@@ -63,7 +78,7 @@ class Log:
     @mutexLock("write_mutex")
     def warning(self, tag, info):
         warn_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        string = f"{warn_time}\t\t[WARNING]\t{getTagStr(tag)}{getInfoStr(info)}\n"
+        string = f"{warn_time}  {self.WARNING}{getTagStr(tag)}{getInfoStr(info)}\n"
         self.addString += string
         self._stdout.write(string)
         self._stdout.flush()
@@ -71,7 +86,7 @@ class Log:
     @mutexLock("write_mutex")
     def info(self, tag, info):
         log_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        string = f"{log_time}\t\t[INFO]\t\t{getTagStr(tag)}{getInfoStr(info)}\n"
+        string = f"{log_time}  {self.INFO}{getTagStr(tag)}{getInfoStr(info)}\n"
         self.addString += string
         self._stdout.write(string)
         self._stdout.flush()
@@ -81,14 +96,14 @@ class Log:
         self._stdout.flush()
         self._stderr.flush()
         log_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        self.addString += (f"{log_time}\t\t[INFO]\t\t{getTagStr('Log')}保存日志，程序退出\n"
-                           f"{'=' * 100}\n")
+        self.addString += (f"{log_time}  {self.INFO}{getTagStr('Log')}保存日志，程序退出\n"
+                           f"{self.SEPARATOR}\n")
         try:
             with open(self.path, "a", encoding="utf-8") as f:
                 f.write(self.addString)
                 self.addString = ''
         except Exception as e:
-            self._stderr.write(f"[ERROR]\t\t{getTagStr('Log')}{log_time}\t\t关闭logging.txt失败: {e}")
+            self._stderr.write(f"{log_time}  {self.ERROR}{getTagStr('Log')}保存日志失败：{e}\n")
 
     @contextmanager
     def redirectOutput(self, tag):
@@ -140,5 +155,3 @@ class StatusBarHandler(QObject):
 
     def progress(self, message):
         self.message.emit(message, GRAY.__str__())
-
-

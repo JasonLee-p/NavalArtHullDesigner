@@ -373,6 +373,7 @@ class _BasicDialog(QDialog):
 
 
 class StartWindow(_BasicDialog):
+    TAG = "StartWindow"
     lastEdit_signal = pyqtSignal()  # noqa
     newPrj_signal = pyqtSignal()  # noqa
     openPrj_signal = pyqtSignal()  # noqa
@@ -425,6 +426,7 @@ class StartWindow(_BasicDialog):
         self.animation_geometry.setStartValue(QRect(self.x() + 100, self.y() + 100, 0, 0))
         self.animation_geometry.setEndValue(QRect(self.x(), self.y(), self.Wid, self.Hei))
         self.animations = [self.animation_opacity, self.animation_geometry]
+        Log().info(self.TAG, "初始化完成")
 
     def show(self):
         super().show()

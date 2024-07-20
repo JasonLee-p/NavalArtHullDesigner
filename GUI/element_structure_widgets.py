@@ -1,7 +1,7 @@
 """
 左侧结构树中的元素结构窗口
 """
-from .element_structure_single_item import *
+from .element_structure_single_component import *
 from .basic_widgets import *
 
 

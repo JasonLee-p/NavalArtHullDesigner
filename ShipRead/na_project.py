@@ -4,6 +4,7 @@
 """
 import os
 import time
+import traceback
 from hashlib import sha1
 
 import ujson
@@ -377,7 +378,10 @@ class ShipProject(QObject):
         try:
             with open(self.path, 'w', encoding='utf-8') as f:
                 ujson.dump(dict_data, f, indent=2)
+            Log().info(self.TAG, f"工程文件 {self.path} 保存成功")
         except TypeError as e_:
+            trace = traceback.format_exc()
+            Log().error(trace, self.TAG, f"数据转换时出现错误，无法正常保存！请联系作者修复尝试图纸{e_}")
             QMessageBox.warning(None, "严重错误", f"数据转换时出现错误，无法正常保存！请联系作者修复尝试图纸{e_}",
                                 QMessageBox.Ok)
             with open(self.path, 'w', encoding='utf-8') as f:
@@ -385,6 +389,8 @@ class ShipProject(QObject):
 
 
 class NaPrjReader:
+    TAG = "NaPrjReader"
+
     def __init__(self, main_editor, path, shipProject: ShipProject):
         self.main_editor = main_editor
         self.path = path
@@ -400,6 +406,7 @@ class NaPrjReader:
             return False
         self.hullProject.__check_code = data['check_code']
         if not self.check_checkCode(dict(data)):
+            Log().warning(self.TAG, f"工程文件 {self.path} 已损坏")
             QMessageBox.warning(None, "警告", f"工程文件 {self.path} 已损坏", QMessageBox.Ok)
             return False
         self.hullProject.project_name = data['project_name']
@@ -485,7 +492,7 @@ class NaPrjReader:
     def load_bridge_node(self, data, parent):
         nodes = []
         for node in data:
-            section_node = SectionNodeXZ(parent)
+            section_node = ComponentNodeXZ(parent)
             section_node.x, section_node.z = node
             nodes.append(section_node)
         return nodes

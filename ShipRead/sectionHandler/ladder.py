@@ -1,14 +1,14 @@
 """
-
+工程文件组件：直梯
 """
 from typing import List, Literal
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QColor, QVector3D
-from ShipRead.sectionHandler.baseSH import SectionHandler
+from .baseComponent import PrjComponent
 from main_logger import Log
 
 
-class Ladder(SectionHandler):
+class Ladder(PrjComponent):
     """
     直梯
     """

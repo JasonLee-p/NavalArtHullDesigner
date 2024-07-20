@@ -1,5 +1,5 @@
 """
-定义了单个元素在结构视图的显示控件
+定义了单个组件在结构视图的显示控件
 """
 import numpy as np
 from main_logger import Log

@@ -1,5 +1,5 @@
 """
-定义了子元素在父元素的编辑窗口的显示控件
+定义了子组件在父组件的编辑窗口的显示控件
 """
 from main_logger import Log
 from operation.section_op import SectionZMoveOperation

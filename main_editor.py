@@ -6,7 +6,7 @@ import webbrowser
 
 import psutil
 from GUI import MainEditorGUI, EditTabWidget
-from GUI.sub_element_edt_widgets import SubElementShow
+from GUI.sub_component_edt_widgets import SubElementShow
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QFileDialog
 from ShipRead.na_project import *
@@ -58,6 +58,7 @@ class MemoryThread(QThread):
     """
     内存监控线程
     """
+    TAG = "MemoryThread"
     memory_updated_s = pyqtSignal(int)  # noqa
     cpu_updated_s = pyqtSignal(float)  # noqa
 
@@ -73,6 +74,9 @@ class MemoryThread(QThread):
             self.memory_updated_s.emit(memory_mb)
             self.cpu_updated_s.emit(cpu_percent)
             self.sleep(2)
+
+    def __del__(self):
+        Log().info(self.TAG, "MemoryThread已销毁")
 
 
 class MainEditor(MainEditorGUI):
@@ -102,6 +106,7 @@ class MainEditor(MainEditorGUI):
 
     def clearOperationStack(self):
         self.operationStack.clear()
+        Log().info(self.TAG, "操作栈已清空")
 
     def open_prj(self, path):
         # 打开path路径的工程文件
@@ -109,7 +114,7 @@ class MainEditor(MainEditorGUI):
         # 加载工程文件
         loader = NaPrjReader(self, path, prj)
         if not loader.successed:
-            Log().info(self.TAG, f"打开工程失败：{prj.project_name}")
+            Log().warning(self.TAG, f"打开工程失败：{prj.project_name}")
             return False
         self.structure_tab.clear()
         self.edit_tab.clear_editing_widget()
@@ -119,6 +124,7 @@ class MainEditor(MainEditorGUI):
         # 设置顶部按钮文本
         self.currentPrj_button.setText(prj.project_name)
         configHandler.add_prj(prj.project_name, path)
+        Log().info(self.TAG, f"打开工程：{prj.project_name}")
         StatusBarHandler().info(f"打开工程：{prj.project_name}")
         self.setCurrentPrj(prj)
         return True
@@ -158,6 +164,7 @@ class MainEditor(MainEditorGUI):
         pass
 
     def about(self):
+        Log().info(self.TAG, "打开关于页面")
         webbrowser.open("http://naval_plugins.e.cn.vc/")
 
     def save_prj(self):
@@ -233,8 +240,8 @@ class MainEditor(MainEditorGUI):
         EditTabWidget.operationStack = self.operationStack
         SubElementShow.operationStack = self.operationStack
         # 绑定其他类对mainEditor的引用
-        SectionHandler.init_ref(self)
-        SubSectionHandler.init_ref(self)
+        PrjComponent.init_ref(self)
+        SubPrjComponent.init_ref(self)
 
     def _bind_glWidget_menu(self):
         for action_name, func in self._glWidget_menu_actions.items():

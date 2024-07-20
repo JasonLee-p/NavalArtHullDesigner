@@ -16,8 +16,8 @@ NavalArtHullEditor/
 ├── path_lib.py（初始化路径）
 ├── cv2_replacements.py（OpenCV 替代品）
 ├── ship_read/（读取和解析工程文件）
-│   ├── SectionHandler/（工程文件组件）
-│   │   ├── baseSH.py（组件基类）
+│   ├── PrjComponent/（工程文件组件）
+│   │   ├── baseComponent.py（组件基类）
 │   │   ├── model.py（模型组件）
 │   │   ├── ladder.py（梯子组件）
 │   │   ├── armorSectionGroup.py（装甲组件）

@@ -1,5 +1,6 @@
 """
-cv2打包过大，因此将cv2的部分功能替换为PIL和numpy实现
+opencv的部分功能替换
+由于cv2打包后体积过大，因此该项目将cv2的部分功能替换为PIL和numpy实现。
 """
 from PIL import Image as PILImage
 import numpy as np
