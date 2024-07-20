@@ -17,6 +17,7 @@ class NoneShow(Button):
 
 
 class ShowButton(Button):
+    TAG = "ShowButton"
 
     def __init__(self, gl_widget, scroll_widget, item_handler, height=70):
         """
@@ -99,28 +100,28 @@ class ShowButton(Button):
         设置按钮中显示的位置
         覆写时不要重载
         """
-        Log().warning(f"无效的操作：为 {self.__class__.__name__} 设置pos")
+        Log().warning(self.TAG, f"无效的操作：为 {self.__class__.__name__} 设置pos")
 
     def setPosX(self, x):
         """
         设置按钮中显示的位置
         覆写时不要重载
         """
-        Log().warning(f"无效的操作：为 {self.__class__.__name__} 设置posX")
+        Log().warning(self.TAG, f"无效的操作：为 {self.__class__.__name__} 设置posX")
 
     def setPosY(self, y):
         """
         设置按钮中显示的位置
         覆写时不要重载
         """
-        Log().warning(f"无效的操作：为 {self.__class__.__name__} 设置posY")
+        Log().warning(self.TAG, f"无效的操作：为 {self.__class__.__name__} 设置posY")
 
     def setPosZ(self, z):
         """
         设置按钮中显示的位置
         覆写时不要重载
         """
-        Log().warning(f"无效的操作：为 {self.__class__.__name__} 设置posZ")
+        Log().warning(self.TAG, f"无效的操作：为 {self.__class__.__name__} 设置posZ")
 
 
 class PosShow(ShowButton):

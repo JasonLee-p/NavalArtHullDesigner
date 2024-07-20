@@ -123,7 +123,7 @@ class PrjComponent(QObject):
             self.paintItem = None
             Log().info(self.TAG, f"{self} 移除原有paintItem")
         if paintItem == "default":
-            Log().info(self.TAG, f"{self} 将paintItem设置为默认球体")
+            Log().warning(self.TAG, f"{self} 将paintItem设置为默认球体")
             paintItem = GLMeshItem(
                 vertexes=PrjComponent.SPHERE_VER, indices=PrjComponent.SHPERE_IDX,
                 normals=PrjComponent.SPHERE_NORM,
@@ -275,7 +275,7 @@ class PrjComponent(QObject):
         ...
 
     def __str__(self):
-        return f"<{self.__class__.__name__}:{self._custom_id} at {self.Pos}>"
+        return f"<{self.__class__.__name__}:{self._custom_id} at ({self.Pos.x()}, {self.Pos.y()}, {self.Pos.z()})>"
 
 
 class SubPrjComponent(QObject):

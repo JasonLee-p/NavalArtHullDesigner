@@ -9,7 +9,6 @@ import sys
 import time
 from contextlib import contextmanager
 
-from GUI import GRAY, LIGHTER_RED, FG_COLOR0
 from PyQt5.QtCore import QMutex, pyqtSignal, QObject
 from funcs_utils import singleton, mutexLock
 
@@ -145,13 +144,17 @@ class StatusBarHandler(QObject):
     message = pyqtSignal(str, str)
 
     def __init__(self):
+        from GUI import GRAY, LIGHTER_RED, FG_COLOR0
+        self.GRAY = GRAY
+        self.LIGHTER_RED = LIGHTER_RED
+        self.FG_COLOR0 = FG_COLOR0
         super().__init__()
 
     def info(self, message):
-        self.message.emit(message, FG_COLOR0.__str__())
+        self.message.emit(message, self.FG_COLOR0.__str__())
 
     def warning(self, message):
-        self.message.emit(message, LIGHTER_RED.__str__())
+        self.message.emit(message, self.LIGHTER_RED.__str__())
 
     def progress(self, message):
-        self.message.emit(message, GRAY.__str__())
+        self.message.emit(message, self.GRAY.__str__())
