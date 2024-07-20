@@ -6,6 +6,7 @@ from typing import Union, Literal
 import numpy as np
 # from main_logger import Log
 import OpenGL.GL as gl
+from main_logger import Log
 from pyqtOpenGL import Matrix4x4, GLGraphicsItem, GLMeshItem, Quaternion
 from pyqtOpenGL.items.MeshData import SymetryCylinderMesh, EditItemMaterial
 
@@ -182,6 +183,8 @@ class HullSectionItem(GLMeshItem):
                          # drawLine=True,
                          glOptions='translucent',
                          glUsage=gl.GL_DYNAMIC_DRAW)
+        # 用于判断整个截面组是否被选中
+        self.parentSelected = True
 
     def getCurPoints(self, direction: Literal['up', 'bot'], p0: np.ndarray, p1: np.ndarray):
         """
@@ -375,8 +378,16 @@ class HullSectionItem(GLMeshItem):
         ...  # TODO: Implement this function
         self.update()
 
+    def setParentSelected(self, selected):
+        """
+        当父项被选中时
+        """
+        self.parentSelected = selected
+
 
 class HullSectionGroupItem(GLGraphicsItem):
+    TAG = "HullSectionGroupItem"
+
     def __init__(self, prj, hullSections):
         """
         设置船体截面组整体的变换，不负责具体绘制。
@@ -390,6 +401,18 @@ class HullSectionGroupItem(GLGraphicsItem):
         self.hullSections = hullSections
         self._front_item: HullSectionGroupItem = self.hullSections[-1]
         self._back_item: HullSectionGroupItem = self.hullSections[0]
+
+    def setSelected(self, s, children=False) -> bool:
+        """
+        默认选中时不修改子项的选中状态
+        :param s:
+        :param children:
+        :return:
+        """
+        for item in self.childItems():
+            if hasattr(item, 'setParentSelected'):
+                item.setParentSelected(s)
+        return super().setSelected(s, children)
 
     def addLight(self, light):
         for item in self.childItems():

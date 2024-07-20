@@ -230,6 +230,7 @@ class EditHullSectionGroupWidget(EditTabWidget):
         if self._current_item:
             for section in self._current_item.get_sections():
                 section.showButton().hide()
+                section.showButton().setChecked(False)
         # 解绑原信号
         if self._current_item:
             self._current_item.update_front_z_s.disconnect(self.updateFrontZ)

@@ -371,7 +371,11 @@ class SubSectionHandler(QObject):
         :param selected:
         :return:
         """
+        self.set_showButton_checked(selected)
         self.paintItem.setSelected(selected)
+
+    def set_showButton_checked(self, selected: bool):
+        self.showButton().setChecked(selected)
 
     def selected(self):
         return self.paintItem.selected()

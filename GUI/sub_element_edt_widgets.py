@@ -1,6 +1,7 @@
 """
 定义了子元素在父元素的编辑窗口的显示控件
 """
+from main_logger import Log
 from operation.section_op import SectionZMoveOperation
 
 from .basic_widgets import *
@@ -73,8 +74,11 @@ class SubElementShow(Button):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            # self.gl_widget.set_item_selected(self.item_handler.paintItem, not self.isChecked())
-            ...
+            # 设置选中状态
+            self.gl_widget.set_item_selected(self.item_handler.paintItem, not self.isChecked())
+            # 不需要调用父类的mousePressEvent，因为gl_widget已经处理了
+            # super().mousePressEvent(event)
+            Log().info(self.TAG, f"点击了{self.item_handler.name}")
         elif event.button() == Qt.RightButton:
             # 显示右键菜单
             self.show_menu(event)
@@ -118,10 +122,14 @@ class SubSectionShow(SubElementShow):
     def _bind_signal(self):
         super()._bind_signal()
         self.posZ_edit.value_changed.connect(self.setPosZOperation)
+        self.editNodes_btn.mousePressEvent = self.editNodes_btn_clicked
 
     def _init_values(self):
         super()._init_values()
         self.posZ_edit.setValue(self.item_handler.z)
+
+    def editNodes_btn_clicked(self, event):
+        self.mousePressEvent(event)
 
     def setEditTextZ(self, z_):
         self.posZ_edit.setValue(z_)
