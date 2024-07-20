@@ -118,6 +118,23 @@ class Button(QPushButton):
             show_indicator: Union[bool, str] = False,
             focus_policy=None
     ):
+        """
+
+        :param parent: 父控件
+        :param tool_tip: 提示
+        :param bd: 边框宽度
+        :param bd_color: 边框颜色
+        :param bd_radius: 边框圆角
+        :param padding: 内边距
+        :param bg: 背景颜色：[正常，悬停，按下，焦点]
+        :param fg: 字体颜色：[正常，悬停，按下，焦点]
+        :param font: 字体
+        :param align: 对齐
+        :param size: 大小
+        :param alpha: 透明度
+        :param show_indicator: 是否显示指示器
+        :param focus_policy: 焦点策略
+        """
         super().__init__(parent)
         # 处理参数
         if bd != 0:

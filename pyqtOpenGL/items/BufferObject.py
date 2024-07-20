@@ -11,6 +11,7 @@ import numpy as np
 from PyQt5.QtCore import QMutex
 from main_logger import Log
 
+
 GL_Type = {
     np.dtype("f4"): gl.GL_FLOAT,
     np.dtype("u4"): gl.GL_UNSIGNED_INT,
@@ -29,6 +30,8 @@ def locker(func):
 
 
 class MemoryBlock:
+    TAG = "MemoryBlock"
+
     def __init__(
             self,
             blocks: List[np.ndarray],
@@ -352,6 +355,7 @@ class VBO:
 
 
 class VAO:
+    TAG = "VAO"
 
     def __init__(self):
         """
@@ -389,6 +393,7 @@ class VAO:
 
 
 class EBO:
+    TAG = "EBO"
 
     def __init__(
             self,
