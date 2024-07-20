@@ -406,6 +406,10 @@ class GLWidgetGUI(GLViewWidget):
 
         self.addItem(self.__axis)
         self.addItem(self.__grid)
+
+        # 信号连接
+        self.__bind_axis_signal()
+
         # self.addItem(self.model)
         # self.addItem(self.text)
 
@@ -439,6 +443,15 @@ class GLWidgetGUI(GLViewWidget):
             f"background-color: rgba(0, 0, 0, 0);"
         )
         self.fps_label.setStyleSheet(style)
+
+    def __bind_axis_signal(self):
+        """
+        绑定坐标轴点击事件
+        :return:
+        """
+        self.__axis.axisX_clicked_s.connect(self.camera.lookAtXNegative)
+        self.__axis.axisY_clicked_s.connect(self.camera.lookAtYNegative)
+        self.__axis.axisZ_clicked_s.connect(self.camera.lookAtZNegative)
 
     def switch_camera_mode(self):
         if self.camera_mode_button.text() == "正交投影":
@@ -530,6 +543,7 @@ class GLWidgetGUI(GLViewWidget):
 
     def set_item_selected(self, item, selected):
         """
+        由item的组件的控件触发，
         设置item的选中状态
         之后将会更新右侧编辑窗口
         :param item: GLGraphicsItem
@@ -549,6 +563,17 @@ class GLWidgetGUI(GLViewWidget):
             else:
                 item.setSelected(False)
         self._after_selection()
+
+    def selected_items_handler(self):
+        """
+        返回当前被选择绘图对象所对应的工程对象
+        :return:
+        """
+        items = []
+        for item in self.selected_items:
+            if hasattr(item, 'handler'):
+                items.append(item.handler)
+        return items
 
     def keyPressEvent(self, event) -> None:
         key_ = event.key()

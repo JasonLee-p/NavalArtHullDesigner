@@ -167,11 +167,17 @@ class GLGraphicsItem(QtCore.QObject):
             item.setSelectable(self.__selectable)
             item.setSelected(self.__selected)
             item.setView(self.__view)
+            # remove from old parent
             if item.__parent is not None:
                 item.__parent.__children.remove(item)
             item.__parent = self
 
     def removeChildItem(self, item: 'GLGraphicsItem'):
+        """
+        Remove the child item from this item's list of children.
+        :param item:
+        :return:
+        """
         if item in self.__children:
             self.__children.remove(item)
             item.__parent = None
@@ -258,8 +264,10 @@ class GLGraphicsItem(QtCore.QObject):
         # unselectable items are only selected if their selectable parent is selected
         return self.parent() is not None and self.parent().selected(parent=True) if parent else False
 
-    def setSelected(self, s, children=True):
-        """Set the selected state of this item."""
+    def setSelected(self, s, children=True) -> bool:
+        """Set the selected state of this item, return True if selectable."""
+        if not self.__selectable:
+            return False
         if self.__selected != s:
             self.set_selected_s.emit(s)
         self.__selected = s
@@ -267,6 +275,7 @@ class GLGraphicsItem(QtCore.QObject):
             for child in self.__children:
                 if child.selectable():
                     child.setSelected(s)
+        return True
 
     def pickColor(self, parent=True):
         """Return the color assigned to this item for picking.
@@ -524,8 +533,3 @@ class GLGraphicsItem(QtCore.QObject):
         for child in self.__children:
             child.__parent = None
         self.__children.clear()
-
-
-class Material:
-    def __init__(self):
-        pass

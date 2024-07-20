@@ -3,6 +3,7 @@
 """
 from typing import Literal
 
+import numpy as np
 from PyQt5.QtGui import QVector3D as Qvec3
 from .transform3d import Matrix4x4, Vector3
 
@@ -47,6 +48,9 @@ class Camera:
 
     def orbit(self, dx, dy):
         self.right = (self.tar - self.pos).cross(Vector3(0, 1, 0)).normalized()
+        # 判断right是否为nan
+        if self.right.x != self.right.x:
+            self.right = Vector3(1, 0, 0)
 
         right_angle = - dx * self.sensitivity["旋转"] * 0.005
         up_angle = - dy * self.sensitivity["旋转"] * 0.005
@@ -54,21 +58,28 @@ class Camera:
         self.pos -= self.tar
         # 绕y轴旋转
         self.pos.rotateByAxisAndAngle(0, 1, 0, right_angle)
-        # 绕right向量旋转
-        self.pos.rotateByAxisAndAngle(self.right.x, 0, self.right.z, up_angle)
+        # 计算当前pos仰角，限制仰角在-90到90度之间
+        angle = self.pos.angle(Vector3(0, 1, 0))
+        # 转单位为角度
+        angle = angle * 180 / np.pi
+        print(angle)
+        if 0 < angle + up_angle < 180:
+            # 绕right向量旋转
+            self.pos.rotateByAxisAndAngle(self.right.x, 0, self.right.z, up_angle)
         # self.pos = Vector3(self.pos)
         self.pos += self.tar
+        self.up = self.right.cross(self.tar - self.pos).normalized()
         self.lookAt.setToIdentity()  # 重置lookAt
         self.lookAt.lookAt(Qvec3(*self.pos), Qvec3(*self.tar), Qvec3(0, 1, 0))
 
     def pan(self, dx, dy):
         rate = self.sensitivity["平移"] * self.distance * 0.00002
-        self.up = (self.tar - self.pos).cross(self.right).normalized()
-        _pan = Vector3(self.right * dx * rate + self.up * dy * rate)
+        self.up = self.right.cross(self.tar - self.pos).normalized()
+        _pan = Vector3(self.right * dx * rate - self.up * dy * rate)
         self.pos -= _pan
         self.tar -= _pan
         self.lookAt.setToIdentity()  # 重置lookAt
-        self.lookAt.lookAt(self.pos, self.tar, Vector3(0, 1, 0))
+        self.lookAt.lookAt(self.pos, self.tar, self.up)
 
     def zoom(self, delta):
         self.pos -= self.tar
@@ -80,7 +91,7 @@ class Camera:
         self.zoom_factor *= rate
 
         self.lookAt.setToIdentity()  # 重置lookAt
-        self.lookAt.lookAt(self.pos, self.tar, Vector3(0, 1, 0))
+        self.lookAt.lookAt(self.pos, self.tar, self.up)
 
     @property
     def quat(self):
@@ -116,13 +127,13 @@ class Camera:
         self.right = right
         self.up = up
         self.lookAt.setToIdentity()
-        self.lookAt.lookAt(Qvec3(*self.pos), Qvec3(*self.tar), Qvec3(0, 1, 0))
+        self.lookAt.lookAt(Qvec3(*self.pos), Qvec3(*self.tar), Qvec3(*self.up))
 
     def lookAtXNegative(self):
-        self.look_at_negative_direction(Vector3(-1, 0, 0), Vector3(0, 0, -1), Vector3(0, 1, 0))
+        self.look_at_negative_direction(Vector3(1, 0, 0), Vector3(0, 0, -1), Vector3(0, 1, 0))
 
     def lookAtYNegative(self):
-        self.look_at_negative_direction(Vector3(0, -1, 0), Vector3(1, 0, 0), Vector3(0, 0, 1))
+        self.look_at_negative_direction(Vector3(0, 1, 0), Vector3(0, 0, -1), Vector3(-1, 0, 0))
 
     def lookAtZNegative(self):
-        self.look_at_negative_direction(Vector3(0, 0, -1), Vector3(1, 0, 0), Vector3(0, 1, 0))
+        self.look_at_negative_direction(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0))

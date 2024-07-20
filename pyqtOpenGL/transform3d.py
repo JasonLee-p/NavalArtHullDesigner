@@ -354,8 +354,21 @@ class Vector3:
     def rotateByAxisAndAngle(self, x, y, z, angle) -> None:
         """
         rotate by angle(degree) around x,y,z
+        :param x: x axis
+        :param y: y axis
+        :param z: z axis
+        :param angle: angle in degree
         """
         self._data = np.dot(Matrix4x4.fromAxisAndAngle(x, y, z, angle).matrix33, self._data)
+
+    def angle(self, other: 'Vector3') -> float:
+        """
+        calculate the angle in radians between two vectors
+        计算两个向量之间的夹角，单位为弧度
+        :param other:
+        :return:
+        """
+        return np.arccos(np.dot(self._data, other._data) / (self.length() * other.length()))
 
     def __len__(self):
         return 3
@@ -382,7 +395,7 @@ class Vector3:
         return self
 
     def __mul__(self, other):
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, np.float32)):
             return Vector3(self._data * other)
         elif isinstance(other, (Vector3, np.ndarray, list, tuple)):
             return Vector3(self._data[0] * other[0],

@@ -52,10 +52,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
     def selectAll(self):
         self.selected_items.clear()
         for item in self.items:
-            item.setSelected(True)
-            # 如果item有handler属性，将其添加到self.selected_items中
-            # 有handler的item才是真正的工程文件组件
-            if hasattr(item, 'handler'):
+            if item.setSelected(True):
                 self.selected_items.append(item)
         self._after_selection()
 
@@ -400,17 +397,6 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self.update()
         return selected_items
 
-    def selected_items_handler(self):
-        """
-        返回当前被选择绘图对象所对应的工程对象
-        :return:
-        """
-        items = []
-        for item in self.selected_items:
-            if hasattr(item, 'handler'):
-                items.append(item.handler)
-        return items
-
     def pixelSize(self, pos=Vector3(0, 0, 0)):
         """
         depth: z-value in global coordinate system
@@ -512,15 +498,15 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
                     it.setSelected(False)
                 self.selected_items.clear()
                 for it in new_s_items:
-                    it.setSelected(True)
-                    if hasattr(it, 'handler'):
+                    selectable = it.setSelected(True)
+                    if selectable:
                         self.selected_items.append(it)
             # 如果按下ctrl键，取两集合相加
             else:
                 for it in new_s_items:
                     if it not in self.selected_items:
-                        it.setSelected(True)
-                        if hasattr(it, 'handler'):
+                        selectable = it.setSelected(True)
+                        if selectable:
                             self.selected_items.append(it)
             self._after_selection()
         elif ev.button() == QtCore.Qt.MouseButton.RightButton and alt_down:

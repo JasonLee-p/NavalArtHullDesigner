@@ -28,7 +28,8 @@ class HullSection(SubSectionHandler):
     deleted_s = pyqtSignal()
 
     def getCopy(self):
-        hullSection = HullSection(self.hullProject, self.z, self.nodes_data, self._parent.Col, self.armor)
+        hullSection = HullSection(self.hullProject, self.z, self.nodes_data, [node.Col for node in self.nodes],
+                                  self.armor)
         return hullSection
 
     def __init__(self, prj, z, node_datas, colors, armor, name=None):
