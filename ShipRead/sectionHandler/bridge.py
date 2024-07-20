@@ -11,6 +11,9 @@ class Railing(SubSectionHandler):
     栏杆
     """
 
+    def delete_by_user(self):
+        super().delete_by_user()
+
     def getCopy(self):
         railing = Railing(self.hullProject, self._parent)
         railing.height = self.height
@@ -46,6 +49,9 @@ class Handrail(SubSectionHandler):
     """
     栏板
     """
+
+    def delete_by_user(self):
+        super().delete_by_user()
 
     def getCopy(self):
         handrail = Handrail(self.hullProject, self._parent)
