@@ -166,6 +166,8 @@ class MemoryBlock:
 
 
 class VBO:
+    TAG = "VBO"
+
     def __init__(
             self,
             data: List[np.ndarray],
@@ -269,7 +271,7 @@ class VBO:
             gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self._vbo)
             return True
         except gl.GLError as e:
-            Log().warning("VBO bind error.")
+            Log().warning(self.TAG, "VBO bind error.")
             return False
 
     def delete(self):
