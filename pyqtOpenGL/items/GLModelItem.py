@@ -191,6 +191,7 @@ class GLModelItem(GLGraphicsItem, LightMixin):
             self.pick_shader.set_uniform("pickColor", self.pickColor(), "float")
             for i in self._order:
                 self.meshes[i].paint(self.pick_shader)
+        gl.glDisable(gl.GL_STENCIL_TEST)
 
     def setMaterial(self, mesh_id, material):
         self.meshes[mesh_id].setMaterial(material)

@@ -118,7 +118,6 @@ class _GLSingleAxisItem(GLGraphicsItem):
             self.clicked_s.emit()
         return super().setSelected(s, children)
 
-
     def paint(self, model_matrix=Matrix4x4()):
         self.setupGLState()
 
@@ -135,7 +134,7 @@ class _GLSingleAxisItem(GLGraphicsItem):
             self.vao_line.bind()
             gl.glDrawArrays(gl.GL_POINTS, 0, 3)
 
-        gl.glEnable(gl.GL_CULL_FACE)
+        gl.glEnable(gl.GL_CULL_FACE)  # 开启背面剔除
         gl.glCullFace(gl.GL_BACK)
         with self.shader_cone:
             self.shader_cone.set_uniform("view", proj_view, "mat4")
@@ -197,10 +196,10 @@ class GLAxisItem(GLGraphicsItem):
     def __init__(
             self,
             size=Vector3(1., 1., 1.),
-            width=3,
-            tip_size=0.7,
+            width=4,
+            tip_size=0.6,
             antialias=True,
-            glOptions='opaque',
+            glOptions='ontop',
             fix_to_corner=False,
             parentItem=None
     ):

@@ -1,8 +1,8 @@
 {
-  "check_code": "89e108aa751408e43a0eb9605af73922d2ee9199",
+  "check_code": "24de983beae0351b786ab72e8684d4864bace29d",
   "project_name": "SampleProject",
   "author": "JasonLee",
-  "edit_time": "2024-7-14 13:8:50",
+  "edit_time": "2024-7-20 23:32:45",
   "hull_section_group": [
     {
       "name": "\u4e3b\u4f53",
@@ -13,7 +13,7 @@
       ],
       "rot": [
         0,
-        0,
+        0.0,
         0
       ],
       "col": "#888889",

@@ -9,18 +9,19 @@ from PyQt5.QtCore import pyqtSignal
 from .transform3d import Matrix4x4
 
 GLOptions = {
-    'opaque': {
+    'opaque': {  # 不透明
         GL_BLEND: False,
         GL_ALPHA_TEST: False,
         GL_CULL_FACE: False,
-        "glDepthFunc": (GL_LEQUAL,),  # "glDepthFunc": (GL_LESS,),
+        'glDepthFunc': (GL_LEQUAL,),  # "glDepthFunc": (GL_LESS,),
         'glDepthMask': (GL_TRUE,),
+        'glBlendFunc': (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
     },
     'translucent': {
         GL_BLEND: True,
         GL_ALPHA_TEST: False,
         GL_CULL_FACE: False,
-        "glDepthFunc": (GL_LEQUAL,),  # "glDepthFunc": (GL_LESS,),
+        'glDepthFunc': (GL_LEQUAL,),  # "glDepthFunc": (GL_LESS,),
         'glDepthMask': (GL_TRUE,),
         'glBlendFunc': (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
     },
@@ -28,20 +29,20 @@ GLOptions = {
         GL_BLEND: True,
         GL_ALPHA_TEST: False,
         GL_CULL_FACE: True,
-        "glDepthFunc": (GL_LEQUAL,),  # "glDepthFunc": (GL_LESS,),
+        'glDepthFunc': (GL_LEQUAL,),  # "glDepthFunc": (GL_LESS,),
         'glCullFace': (GL_BACK,),
         'glDepthMask': (GL_TRUE,),
         'glBlendFunc': (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
     },
-    'additive': {
+    'additive': {  # 透明度叠加
         GL_BLEND: True,
         GL_ALPHA_TEST: False,
         GL_CULL_FACE: False,
-        "glDepthFunc": (GL_ALWAYS,),
+        'glDepthFunc': (GL_ALWAYS,),
         'glDepthMask': (GL_TRUE,),
         'glBlendFunc': (GL_SRC_ALPHA, GL_ONE),
     },
-    'ontop': {
+    'ontop': {  # 位于最上层
         GL_BLEND: True,
         GL_ALPHA_TEST: False,
         GL_CULL_FACE: False,
