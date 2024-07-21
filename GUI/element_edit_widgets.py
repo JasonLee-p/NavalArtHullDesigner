@@ -2,6 +2,9 @@
 """
 main_editor的功能性子控件，例如专门显示船体截面组的控件
 """
+import traceback
+
+from main_logger import Log
 
 from .basic_widgets import *
 from operation import *
@@ -316,6 +319,7 @@ class EditLadderWidget(EditTabWidget):
 
 
 class EditModelWidget(EditTabWidget):
+    TAG = "EditModelWidget"
     Instance: Optional['EditModelWidget'] = None
 
     def __init__(self):
@@ -330,7 +334,10 @@ class EditModelWidget(EditTabWidget):
     def updateSectionHandler(self, item):
         # 解绑原信号
         if self._current_item:
-            self._current_item.update_path_s.disconnect(self.updatePath)
+            try:
+                self._current_item.update_path_s.disconnect(self.updatePath)
+            except TypeError:
+                Log().error(traceback.format_exc(), self.TAG, "解绑信号失败")
         # 链接路径修改信号
         if hasattr(item, 'update_path_s'):
             item.update_path_s.connect(self.updatePath)
