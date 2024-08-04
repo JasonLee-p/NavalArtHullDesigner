@@ -234,10 +234,10 @@ class EditHullSectionGroupWidget(EditTabWidget):
             for section in self._current_item.get_sections():
                 section.showButton().hide()
                 section.showButton().setChecked(False)
-        # 解绑原信号
-        if self._current_item:
-            self._current_item.update_front_z_s.disconnect(self.updateFrontZ)
-            self._current_item.update_back_z_s.disconnect(self.updateBackZ)
+        # # 解绑原信号
+        # if self._current_item:
+        #     self._current_item.update_front_z_s.disconnect(self.updateFrontZ)
+        #     self._current_item.update_back_z_s.disconnect(self.updateBackZ)
         # 链接信号：
         if hasattr(item, 'update_front_z_s'):
             # 前后截面z值修改信号
