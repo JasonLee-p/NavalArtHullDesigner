@@ -234,7 +234,7 @@ class EditHullSectionGroupWidget(EditTabWidget):
             for section in self._current_item.get_sections():
                 section.showButton().hide()
                 section.showButton().setChecked(False)
-        # # 解绑原信号
+        # # 解绑原信号  # TODO
         # if self._current_item:
         #     self._current_item.update_front_z_s.disconnect(self.updateFrontZ)
         #     self._current_item.update_back_z_s.disconnect(self.updateBackZ)
@@ -332,7 +332,7 @@ class EditModelWidget(EditTabWidget):
         EditModelWidget.Instance = self
 
     def updateSectionHandler(self, item):
-        # # 解绑原信号
+        # # 解绑原信号  # TODO
         # if self._current_item:
         #     try:
         #         self._current_item.update_path_s.disconnect(self.updatePath)
