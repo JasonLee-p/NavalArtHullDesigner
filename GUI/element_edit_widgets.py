@@ -332,15 +332,15 @@ class EditModelWidget(EditTabWidget):
         EditModelWidget.Instance = self
 
     def updateSectionHandler(self, item):
-        # 解绑原信号
-        if self._current_item:
-            try:
-                self._current_item.update_path_s.disconnect(self.updatePath)
-            except TypeError:
-                Log().error(traceback.format_exc(), self.TAG, "解绑信号失败")
-            except Exception as _e:
-                Log().error(traceback.format_exc(), self.TAG, f"解绑信号失败：{_e}")
-                raise _e
+        # # 解绑原信号
+        # if self._current_item:
+        #     try:
+        #         self._current_item.update_path_s.disconnect(self.updatePath)
+        #     except TypeError:
+        #         Log().error(traceback.format_exc(), self.TAG, "解绑信号失败")
+        #     except Exception as _e:
+        #         Log().error(traceback.format_exc(), self.TAG, f"解绑信号失败：{_e}")
+        #         raise _e
         # 链接路径修改信号
         if hasattr(item, 'update_path_s'):
             item.update_path_s.connect(self.updatePath)
