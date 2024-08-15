@@ -45,7 +45,7 @@ def process_images(img_module):
     for attr_name in dir(img_module):
         # print(attr_name)
         # 筛选以 "_" 开头的变量
-        if attr_name.startswith('_') and not attr_name.startswith('__'):
+        if not attr_name.startswith('__') and attr_name.startswith('_'):
             # 获取变量的 base64 编码数据
             base64_data = getattr(img_module, attr_name)
             # 生成对应的 BYTES_... 变量名称
@@ -89,7 +89,7 @@ def load_colors(color_module, _theme_details=None):
 
 def get_theme_images(theme, _theme_details=None):
     """根据主题加载图标和颜色配置"""
-    custom_theme_details = {
+    custom_theme_details = {  # TODO: 将会从配置文件中读取
         "GUITHeme": {
             "BG_COLOR0": "#FFFFFF",
             "BG_COLOR1": "#F0F0F0",
@@ -121,8 +121,8 @@ def get_theme_images(theme, _theme_details=None):
     process_images(img_module)
 
 
+# 实例化不同类型的字体加载器
 try:
-    # 实例化不同类型的字体加载器
     YAHEI = LazyFontLoader("Microsoft YaHei")
     HEI = LazyFontLoader("SimHei")
     # 加粗
@@ -140,12 +140,11 @@ except Exception as e:
 # 主要颜色
 try:
     from config_read import ConfigHandler
-
     configHandler = ConfigHandler()
     theme_details = configHandler.get_config("Theme")
-    Theme = theme_details["Theme"]["ThemeName"]
+    ThemeName = theme_details["Theme"]["ThemeName"]
 except (FileNotFoundError, KeyError, AttributeError):
-    Theme = 'Night'
+    ThemeName = 'Night'
     theme_details = ConfigHandler.DEFAULT_CONFIG["Theme"]
 
 # 其他基础色
@@ -168,7 +167,7 @@ DARKER_RED = '#C00010'
 DARKER_GREEN = '#00C000'
 DARKER_BLUE = '#0010C0'
 
-get_theme_images(Theme, theme_details)
+get_theme_images(ThemeName, theme_details)
 
 ctypes.windll.shcore.SetProcessDpiAwareness(1)  # 设置高分辨率
 SCALE_FACTOR = ctypes.windll.shcore.GetScaleFactorForDevice(0)  # 获取缩放比例
