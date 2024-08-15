@@ -10,6 +10,12 @@ from typing import List, Optional
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
+# 静态导入需要的模块
+import GUI.theme_config_color._day_color as _day_color
+import GUI.theme_config_color._night_color as _night_color
+import GUI.UI_design.ImgPng_day as _ImgPng_day
+import GUI.UI_design.ImgPng_night as _ImgPng_night
+
 
 class LazyFontLoader:
     def __init__(self, font_family, bold=False, italic=False):
@@ -104,19 +110,18 @@ def get_theme_images(theme, _theme_details=None):
     img_module = None
     color_module = None
     if theme in ['Light', 'Day']:
-        color_module = load_module('GUI.theme_config_color._day_color')
-        img_module = load_module('GUI.UI_design.ImgPng_day')
+        img_module = _ImgPng_day
+        color_module = _day_color
         load_colors(color_module, _theme_details)
-        globals()['ThemeColor'] = getattr(color_module, 'ThemeColor')
     elif theme in ['Dark', 'Night']:
-        color_module = load_module('GUI.theme_config_color._night_color')
-        img_module = load_module('GUI.UI_design.ImgPng_night')
+        img_module = _ImgPng_night
+        color_module = _night_color
         load_colors(color_module, _theme_details)
     elif theme == 'Custom':
-        color_module = load_module('GUI.theme_config_color._day_color')
-        img_module = load_module('GUI.UI_design.ImgPng_night')
+        img_module = _ImgPng_night
+        color_module = _night_color
         load_colors(color_module, custom_theme_details)
-    globals()['ThemeColor'] = getattr(color_module, 'ThemeColor')
+    globals()['ThemeColor'] = color_module.ThemeColor
     # 动态处理所有图标，直接加载到全局命名空间
     process_images(img_module)
 
