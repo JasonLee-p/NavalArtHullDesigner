@@ -60,13 +60,14 @@ class _GLSingleAxisItem(GLGraphicsItem):
 
         self.axis = axis
         if self.axis == 0:
-            self.endPos = self.endPosX
+            self.endPos = _GLSingleAxisItem.endPosX
         elif self.axis == 1:
-            self.endPos = self.endPosY
+            self.endPos = _GLSingleAxisItem.endPosY
         else:
-            self.endPos = self.endPosZ
+            self.endPos = _GLSingleAxisItem.endPosZ
         self.color = np.array(color, dtype="f4")
-        self.leftHand = leftHand  # 是否为左手坐标系
+        # print(self.color)
+        self.leftHand: bool = leftHand  # 是否为左手坐标系
         self.antialias = antialias  # 抗锯齿
         self.cone_vertices, self.cone_indices = cone(0.06 * width * tip_size, 0.15 * width * tip_size)
 
