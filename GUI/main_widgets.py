@@ -362,12 +362,13 @@ class GLWidgetGUI(GLViewWidget):
     clear_selected_items = pyqtSignal()  # noqa
     after_selection = pyqtSignal()  # noqa
 
-    def __init__(self):
+    def __init__(self, left_hand=True):
         """
         """
         self.main_editor = None
         camera_sensitivity = configHandler.get_config("Sensitivity")
-        super().__init__(Vector3(100., 20., 40.), cam_sensitivity=camera_sensitivity)
+        self.leftHand = left_hand
+        super().__init__(Vector3(-100., 20., 40.), left_hand=self.leftHand, cam_sensitivity=camera_sensitivity)
         self.menu = Menu()
         # 切换视图模式的按钮
         self.camera_mode_button = Button(self, "切换视图模式", bd_radius=6, size=None, font=YAHEI[9])
@@ -375,9 +376,10 @@ class GLWidgetGUI(GLViewWidget):
 
         # 主光照
         self.light = PointLight(
-            pos=[400, 500, 400], ambient=(0.6, 0.6, 0.6), diffuse=(0.7, 0.7, 0.7), specular=(0.95, 0.95, 0.95),
-            constant=0.001,
-            linear=0.001,
+            pos=[-400, 500, 400], ambient=(0.6, 0.6, 0.6), diffuse=(0.7, 0.7, 0.7), specular=(0.95, 0.95, 0.95),
+            constant=0.6,
+            linear=0.00,
+            quadratic=0.000,
             directional=True,
         )
         # self.light1 = PointLight(pos=[0, -50, 10], diffuse=(0, 0.8, 0))
@@ -385,7 +387,7 @@ class GLWidgetGUI(GLViewWidget):
         # self.light3 = PointLight(pos=[90, 90, 90], diffuse=(0, 0, 0.8))
         # self.all_lights = [self.light, self.light1, self.light2, self.light3]
         # 基础背景物体
-        self.__axis = GLAxisItem(fix_to_corner=True)
+        self.__axis = GLAxisItem(fix_to_corner=True, left_hand=self.leftHand)
         self.__grid = GLGridItem(
             size=(500, 500), spacing=(50, 50),
             lineWidth=0.4,
@@ -584,6 +586,10 @@ class GLWidgetGUI(GLViewWidget):
         ctrl_down = event.modifiers() == Qt.ControlModifier
         alt_down = event.modifiers() == Qt.AltModifier
         shift_down = event.modifiers() == Qt.ShiftModifier
+
+    def paintGL(self):
+        self.light.set_data(pos=self.camera.pos)
+        super().paintGL()
 
     def _rightButtonReleased(self, ev):
         self.menu.popup(ev.globalPos())
