@@ -96,7 +96,7 @@ class Camera(QObject):
     start_animation_s = pyqtSignal()
     end_animation_s = pyqtSignal()
 
-    def __init__(self, pos=Vector3(0., 0., 50.), tar=Vector3(0, 0, 0), up=Vector3(0, 1, 0), fov=45, sensitivity=None):
+    def __init__(self, pos=Vector3(0., 0., -50.), tar=Vector3(0, 0, 0), up=Vector3(0, 1, 0), fov=45, left_hand=True, sensitivity=None):
         super().__init__()
         self.pos = pos
         self.tar = tar
@@ -113,6 +113,8 @@ class Camera(QObject):
         }
         self._proj_mode: Literal["perspective", "ortho"] = "perspective"
         self.zoom_factor = 0.1
+        # 是否为左手坐标系
+        self.leftHand = left_hand
         # 锁
         self.transform_mutex = QMutex()
         # 动画器
@@ -128,6 +130,8 @@ class Camera(QObject):
         return self.pos.copy()
 
     def get_projection_matrix(self, width, height):
+        if self.leftHand:
+            width = -width  # 修正坐标系为左手坐标系
         if self._proj_mode == "perspective":
             return Matrix4x4.create_perspective_proj(self.fov, width / height, max(0.1, self.distance * 0.05),
                                                      max(self.distance * 2, 1000))
@@ -167,7 +171,7 @@ class Camera(QObject):
         self.up = self.right.cross(self.tar - self.pos).normalized()
 
         # 获取旋转的角度（弧度）
-        right_angle = - dx * self.sensitivity["旋转"] * 0.005
+        right_angle = dx * self.sensitivity["旋转"] * 0.005
         up_angle = - dy * self.sensitivity["旋转"] * 0.005
         # 保持距离不变，dx决定相机绕y轴旋转的角度，dy决定相机在世界坐标中的俯仰角变化
         self.pos -= self.tar
@@ -188,9 +192,9 @@ class Camera(QObject):
     @mutexLock("transform_mutex")
     def pan(self, dx, dy):
         rate = self.sensitivity["平移"] * self.distance * 0.00002
-        _pan = Vector3(self.right * dx * rate - self.up * dy * rate)
-        self.pos -= _pan
-        self.tar -= _pan
+        _pan = Vector3(self.right * dx * rate + self.up * dy * rate)
+        self.pos += _pan
+        self.tar += _pan
         self._set_lookAt()
 
     @mutexLock("transform_mutex")

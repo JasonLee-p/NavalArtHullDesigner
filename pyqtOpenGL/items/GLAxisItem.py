@@ -37,6 +37,7 @@ class _GLSingleAxisItem(GLGraphicsItem):
             tip_size=0.7,
             antialias=True,
             fix_to_corner=False,
+            leftHand=True,
             axis=0,
             color: tuple = (1.0, 0.0, 0.0),
             parentItem=None
@@ -48,6 +49,7 @@ class _GLSingleAxisItem(GLGraphicsItem):
         :param tip_size:
         :param antialias:
         :param fix_to_corner:
+        :param leftHand: 是否为左手坐标系
         :param axis: 0: x, 1: y, 2: z
         :param parentItem:
         """
@@ -64,7 +66,7 @@ class _GLSingleAxisItem(GLGraphicsItem):
         else:
             self.endPos = self.endPosZ
         self.color = np.array(color, dtype="f4")
-
+        self.leftHand = leftHand  # 是否为左手坐标系
         self.antialias = antialias  # 抗锯齿
         self.cone_vertices, self.cone_indices = cone(0.06 * width * tip_size, 0.15 * width * tip_size)
 
@@ -173,8 +175,11 @@ class _GLSingleAxisItem(GLGraphicsItem):
     def proj_view_matrix(self):
         if self.__fix_to_corner:
             view = self.view()
+            aspect = 1 / view.deviceRatio()
+            if self.leftHand:
+                aspect = -aspect
             proj = Matrix4x4.create_perspective_proj(
-                20, 1 / view.deviceRatio(), 1, 80.0
+                20, aspect, 1, 80.0
             )
             # 计算在这个投影矩阵下, 窗口右上角点在相机坐标系下的坐标
             y_rate = -0.8
@@ -201,6 +206,7 @@ class GLAxisItem(GLGraphicsItem):
             antialias=True,
             glOptions='ontop',
             fix_to_corner=False,
+            left_hand=True,
             parentItem=None
     ):
         super().__init__(parentItem=parentItem, selectable=True)
@@ -209,9 +215,9 @@ class GLAxisItem(GLGraphicsItem):
             # 保证坐标轴不会被其他物体遮挡
             self.updateGLOptions({"glClear": (gl.GL_DEPTH_BUFFER_BIT,)})
             self.setDepthValue(1000)  # make sure it is drawn last
-        self.axisX = _GLSingleAxisItem(size, width, tip_size, antialias, fix_to_corner, 0, (1.0, 0.0, 0.0), self)
-        self.axisY = _GLSingleAxisItem(size, width, tip_size, antialias, fix_to_corner, 1, (0.0, 1.0, 0.0), self)
-        self.axisZ = _GLSingleAxisItem(size, width, tip_size, antialias, fix_to_corner, 2, (0.0, 0.0, 1.0), self)
+        self.axisX = _GLSingleAxisItem(size, width, tip_size, antialias, fix_to_corner, left_hand, 0, (1.0, 0.0, 0.0), self)
+        self.axisY = _GLSingleAxisItem(size, width, tip_size, antialias, fix_to_corner, left_hand, 1, (0.0, 1.0, 0.0), self)
+        self.axisZ = _GLSingleAxisItem(size, width, tip_size, antialias, fix_to_corner, left_hand, 2, (0.0, 0.0, 1.0), self)
         self.axisX_clicked_s = self.axisX.clicked_s
         self.axisY_clicked_s = self.axisY.clicked_s
         self.axisZ_clicked_s = self.axisZ.clicked_s

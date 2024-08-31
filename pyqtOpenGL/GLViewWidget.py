@@ -73,10 +73,11 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
 
     def __init__(
             self,
-            cam_position=Vector3(10., 10., 10.),
+            cam_position=Vector3(-10., 10., 10.),
             cam_tar=Vector3(0., 0., 0.),
             cam_sensitivity=None,
             fov=45.,
+            left_hand=True,
             bg_color=(0.1, 0.1, 0.1, 1.),  # 背景颜色
             parent=None,
             select_btn=QtCore.Qt.MouseButton.LeftButton,
@@ -92,8 +93,9 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self._paint_enabled = True  # 作为刷新的开关
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
         self.setStatusTip("3D View")
-        self.camera = Camera(cam_position, cam_tar, fov=fov, sensitivity=cam_sensitivity)
+        self.camera = Camera(cam_position, cam_tar, fov=fov, left_hand=left_hand, sensitivity=cam_sensitivity)
         self.mouse_last_pos = None  # used for mouse move event
+        self.shift_movePos = 0  # 限制移动方向，0为无，1为x轴，2为y轴
         self.pan_btn = pan_btn
         self.orbit_btn = orbit_btn
 
@@ -414,6 +416,25 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         fov = self.camera.fov
         return max(-pos[2], 0) * 2. * tan(0.5 * radians(fov)) / self.deviceHeight()
 
+    def __mouseMove_otherside(self, lastpos):
+        """
+        如果鼠标到达屏幕边缘，光标位置就移动到另一侧
+        :param lastpos: 鼠标位置
+        :return:
+        """
+        if lastpos.x() < 0:
+            QCursor.setPos(self.mapToGlobal(QPoint(self.deviceWidth() - 1, int(lastpos.y()))))
+            self.mouse_last_pos = QPoint(self.deviceWidth() - 1, int(lastpos.y()))
+        elif lastpos.x() > self.deviceWidth() - 1:
+            QCursor.setPos(self.mapToGlobal(QPoint(0, int(lastpos.y()))))
+            self.mouse_last_pos = QPoint(0, int(lastpos.y()))
+        elif lastpos.y() < 0:
+            QCursor.setPos(self.mapToGlobal(QPoint(int(lastpos.x()), self.deviceHeight() - 1)))
+            self.mouse_last_pos = QPoint(int(lastpos.x()), self.deviceHeight() - 1)
+        elif lastpos.y() > self.deviceHeight() - 1:
+            QCursor.setPos(self.mapToGlobal(QPoint(int(lastpos.x()), 0)))
+            self.mouse_last_pos = QPoint(int(lastpos.x()), 0)
+
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.Type.MouseButtonPress:
             self.mousePressEvent(event)
@@ -444,36 +465,24 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         diff = lpos - self.mouse_last_pos
         self.mouse_last_pos = lpos
 
-        # 如果鼠标到达屏幕边缘，光标位置就移动到另一侧
-        if lpos.x() < 0:
-            QCursor.setPos(self.mapToGlobal(QPoint(self.deviceWidth() - 1, int(lpos.y()))))
-            self.mouse_last_pos = QPoint(self.deviceWidth() - 1, int(lpos.y()))
-        elif lpos.x() > self.deviceWidth() - 1:
-            QCursor.setPos(self.mapToGlobal(QPoint(0, int(lpos.y()))))
-            self.mouse_last_pos = QPoint(0, int(lpos.y()))
-        elif lpos.y() < 0:
-            QCursor.setPos(self.mapToGlobal(QPoint(int(lpos.x()), self.deviceHeight() - 1)))
-            self.mouse_last_pos = QPoint(int(lpos.x()), self.deviceHeight() - 1)
-        elif lpos.y() > self.deviceHeight() - 1:
-            QCursor.setPos(self.mapToGlobal(QPoint(int(lpos.x()), 0)))
-            self.mouse_last_pos = QPoint(int(lpos.x()), 0)
-
         if ctrl_down:
             # 视角微调
             diff *= 0.1
-
         if shift_down:
-            # 限制移动方向
-            if abs(diff.x()) > abs(diff.y()):
+            if self.shift_movePos == 1:
                 diff.setY(0)
-            else:
+            elif self.shift_movePos == 2:
                 diff.setX(0)
+        else:
+            self.shift_movePos = 0
 
         if ev.buttons() == self.pan_btn:
+            self.__mouseMove_otherside(lpos)
             if not alt_down:
                 self.camera.pan(diff.x(), diff.y())
             self.paintGL_outside()
         elif ev.buttons() == self.orbit_btn:
+            self.__mouseMove_otherside(lpos)
             if not alt_down:
                 self.camera.orbit(diff.x(), diff.y())
             self.paintGL_outside()
