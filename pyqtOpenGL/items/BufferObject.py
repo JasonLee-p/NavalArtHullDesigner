@@ -205,7 +205,7 @@ class VBO:
         :param data: 数据列表，每个元素是一个 ndarray，表示一个数据块。
         """
         if not self.bind():
-            Log().warning("_loadSubDatas函数退出，由于缓冲区绑定失败。")
+            Log().warning(self.TAG, "_loadSubDatas函数退出，由于缓冲区绑定失败。")
             return False
         for _id, da in zip(block_id, data):
             offset = int(self.blocks.block_offsets[_id])
