@@ -28,17 +28,17 @@ def rotate_quaternion(vec, rot: list):
 
     # 合并三个旋转四元数
     q = quaternion(1, 0, 0, 0)
-    if CONST.ROTATE_ORDER == "XYZ":
+    if CONST.ROTATE_ORDER == CONST.XYZ:
         q = q * quaternion(*q_x) * quaternion(*q_y) * quaternion(*q_z)
-    elif CONST.ROTATE_ORDER == "XZY":
+    elif CONST.ROTATE_ORDER == CONST.XZY:
         q = q * quaternion(*q_x) * quaternion(*q_z) * quaternion(*q_y)
-    elif CONST.ROTATE_ORDER == "YXZ":
+    elif CONST.ROTATE_ORDER == CONST.YXZ:
         q = q * quaternion(*q_y) * quaternion(*q_x) * quaternion(*q_z)
-    elif CONST.ROTATE_ORDER == "YZX":
+    elif CONST.ROTATE_ORDER == CONST.YZX:
         q = q * quaternion(*q_y) * quaternion(*q_z) * quaternion(*q_x)
-    elif CONST.ROTATE_ORDER == "ZXY":
+    elif CONST.ROTATE_ORDER == CONST.ZXY:
         q = q * quaternion(*q_z) * quaternion(*q_x) * quaternion(*q_y)
-    elif CONST.ROTATE_ORDER == "ZYX":
+    elif CONST.ROTATE_ORDER == CONST.ZYX:
         q = q * quaternion(*q_z) * quaternion(*q_y) * quaternion(*q_x)
     else:
         raise ValueError("Invalid RotateOrder!")

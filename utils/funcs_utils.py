@@ -14,11 +14,11 @@ from PyQt5.QtWidgets import QMessageBox
 
 class CONST:
     # 信息类型
-    ERROR = "error"
-    WARNING = "warning"
-    INFO = "info"
-    PROMPT = "prompt"
-    QUESTION = "question"
+    ERROR = "e"
+    WARNING = "w"
+    INFO = "i"
+    PROMPT = "p"
+    QUESTION = "q"
 
     # 具体方位
     FRONT = "front"
@@ -65,7 +65,14 @@ class CONST:
     DIR_TO_RAWDIR_MAP = {
         FRONT: FRONT_BACK, BACK: FRONT_BACK, UP: UP_DOWN, DOWN: UP_DOWN, LEFT: LEFT_RIGHT, RIGHT: LEFT_RIGHT}
     # 旋转顺序
-    __orders = ["XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX"]
+    XYZ = 'XYZ'
+    XZY = 'XZY'
+    YXZ = 'YXZ'
+    YZX = 'YZX'
+    ZXY = 'ZXY'
+    ZYX = 'ZYX'
+    __orders = [XYZ, XZY, YXZ, YZX, ZXY, ZYX]
+
     ROTATE_ORDER = __orders[2]
 
 
