@@ -5,6 +5,7 @@
 
 import ctypes
 import time
+from functools import singledispatchmethod, update_wrapper
 from typing import Literal
 
 from PyQt5.QtCore import QMutexLocker
@@ -143,6 +144,41 @@ def singleton(cls):
         return instances[cls]
 
     return wrapper
+
+
+class dispatchmethod(singledispatchmethod):
+    """Dispatch a method to different implementations
+    depending upon the type of its first argument.
+    If there is no argument, use 'object' instead.
+    """
+
+    def __init__(self, func):
+        super().__init__(func)
+        self._cache = {}
+
+    def __get__(self, obj, cls=None):
+        def _method(*args, **kwargs):
+            # Determine the class of the first argument or fallback to object
+            if len(args) > 0:
+                class__ = args[0].__class__
+            elif len(kwargs) > 0:
+                class__ = next(iter(kwargs.values())).__class__
+            else:
+                class__ = object
+
+            # Check the cache first
+            if class__ in self._cache:
+                method = self._cache[class__]
+            else:
+                method = self.dispatcher.dispatch(class__)
+                self._cache[class__] = method
+
+            return method.__get__(obj, cls)(*args, **kwargs)
+
+        _method.__isabstractmethod__ = self.__isabstractmethod__
+        _method.register = self.register
+        update_wrapper(_method, self.func)
+        return _method
 
 
 def empty_func(*args, **kwargs):  # pragma: no cover

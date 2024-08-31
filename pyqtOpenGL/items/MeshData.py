@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QMessageBox
 from .BufferObject import VAO, VBO, EBO
 from .shader import Shader
 from .texture import Texture2D
-from ..functions import dispatchmethod
+from ..functions import _dispatchmethod
 from ..transform3d import Vector3
 
 __all__ = [
@@ -34,7 +34,7 @@ TextureType = {
 
 class Material:
 
-    @dispatchmethod
+    @_dispatchmethod
     def __init__(
             self,
             ambient=(0.4, 0.4, 0.4),

@@ -5,7 +5,7 @@ from functools import update_wrapper, singledispatchmethod
 
 __all__ = [
     'clip_scalar', 'mkColor', 'glColor', 'intColor', 'clip_array',
-    'Filter', 'dispatchmethod'
+    'Filter', '_dispatchmethod'
 ]
 
 Colors = {
@@ -205,7 +205,7 @@ class Filter:
         return self._data
 
 
-class dispatchmethod(singledispatchmethod):
+class _dispatchmethod(singledispatchmethod):
     """Dispatch a method to different implementations
     depending upon the type of its first argument.
     If there is no argument, use 'object' instead.

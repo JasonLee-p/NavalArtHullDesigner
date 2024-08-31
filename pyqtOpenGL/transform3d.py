@@ -6,7 +6,7 @@ from typing import Union
 import numpy as np
 from PyQt5.QtGui import QQuaternion, QMatrix4x4, QVector3D, QMatrix3x3, QVector4D
 
-from .functions import dispatchmethod
+from .functions import _dispatchmethod
 
 
 class Quaternion(QQuaternion):
@@ -15,7 +15,7 @@ class Quaternion(QQuaternion):
     """
 
     # constructors
-    @dispatchmethod
+    @_dispatchmethod
     def __init__(self):
         super().__init__()
 
@@ -96,7 +96,7 @@ class Matrix4x4(QMatrix4x4):
     """
 
     # constructors
-    @dispatchmethod
+    @_dispatchmethod
     def __init__(self):
         super().__init__()
 
@@ -154,7 +154,7 @@ class Matrix4x4(QMatrix4x4):
         np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
         return f"Matrix4x4(\n{self.matrix44}\n)"
 
-    @dispatchmethod
+    @_dispatchmethod
     def rotate(self, q: Quaternion, local=True):
         """rotate by quaternion in local space, it will change the current matrix"""
         if local:
@@ -324,7 +324,7 @@ class Matrix4x4(QMatrix4x4):
 
 class Vector3:
 
-    @dispatchmethod
+    @_dispatchmethod
     def __init__(self, x: float = 0., y: float = 0., z: float = 0.):
         self._data = np.array([x, y, z], dtype='f4')
 
