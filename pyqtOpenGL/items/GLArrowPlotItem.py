@@ -21,14 +21,14 @@ class GLArrowPlotItem(GLGraphicsItem):
             color=None,
             tip_size=None,  # radius, height
             tip_pos=0,  # bias of tip position, end + tip_pos * (end - start)/norm(end - start)
-            width=1.,
+            width=3.,
             antialias=True,
             glOptions='opaque',
             parentItem=None
     ):
         super().__init__(parentItem=parentItem)
         if tip_size is None:
-            tip_size = [0.6, 1.2]
+            tip_size = [0.7, 1.5]
         if color is None:
             color = [1., 1., 1.]
         self.antialias = antialias
