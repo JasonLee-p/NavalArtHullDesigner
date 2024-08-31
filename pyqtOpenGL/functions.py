@@ -232,16 +232,27 @@ class dispatchmethod(singledispatchmethod):
     If there is no argument, use 'object' instead.
     """
 
+    def __init__(self, func):
+        super().__init__(func)
+        self._cache = {}
+
     def __get__(self, obj, cls=None):
         def _method(*args, **kwargs):
+            # Determine the class of the first argument or fallback to object
             if len(args) > 0:
                 class__ = args[0].__class__
             elif len(kwargs) > 0:
-                class__ = next(kwargs.values().__iter__()).__class__
+                class__ = next(iter(kwargs.values())).__class__
             else:
                 class__ = object
 
-            method = self.dispatcher.dispatch(class__)
+            # Check the cache first
+            if class__ in self._cache:
+                method = self._cache[class__]
+            else:
+                method = self.dispatcher.dispatch(class__)
+                self._cache[class__] = method
+
             return method.__get__(obj, cls)(*args, **kwargs)
 
         _method.__isabstractmethod__ = self.__isabstractmethod__
