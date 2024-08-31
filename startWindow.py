@@ -5,7 +5,7 @@
 
 from GUI import *
 from PyQt5.QtCore import Qt
-from funcs_utils import open_url
+from utils.funcs_utils import open_url
 
 
 class _MyLabel(QLabel):

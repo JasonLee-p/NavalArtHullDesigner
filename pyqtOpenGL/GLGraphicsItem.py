@@ -5,7 +5,7 @@ from OpenGL import GL
 from OpenGL.GL import *  # noqa
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
-from funcs_utils import singleton
+from utils.funcs_utils import singleton
 
 from .transform3d import Matrix4x4
 

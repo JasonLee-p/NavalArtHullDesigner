@@ -1,4 +1,4 @@
-from cv2_replacements import *
+from utils.cv2_replacements import *
 import numpy as np
 from PyQt5.QtCore import Qt
 from matplotlib import cm

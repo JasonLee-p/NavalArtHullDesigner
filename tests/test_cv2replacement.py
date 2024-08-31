@@ -5,7 +5,7 @@ import unittest
 from PIL import Image
 import os
 
-from cv2_replacements import *
+from utils.cv2_replacements import *
 
 
 class TestCV2Replacements(unittest.TestCase):
@@ -23,8 +23,8 @@ class TestCV2Replacements(unittest.TestCase):
         os.makedirs('res', exist_ok=True)
         self.test_image_path = 'res/test_image.png'
         self.test_gray_image_path = 'res/test_gray_image.png'
-        imwrite(self.test_image_path, self.test_image)
-        imwrite(self.test_gray_image_path, self.test_gray_image)
+        ReplaceCV2.imwrite(self.test_image_path, self.test_image)
+        ReplaceCV2.imwrite(self.test_gray_image_path, self.test_gray_image)
 
     def tearDown(self):
         # 删除测试图像
@@ -34,46 +34,46 @@ class TestCV2Replacements(unittest.TestCase):
             os.remove(self.test_gray_image_path)
 
     def test_imread(self):
-        img = imread(self.test_image_path)
+        img = ReplaceCV2.imread(self.test_image_path)
         self.assertTrue(np.array_equal(img, self.test_image))
 
     def test_imwrite(self):
         path = 'res/test_save.png'
-        imwrite(path, self.test_image)
-        saved_img = imread(path)
+        ReplaceCV2.imwrite(path, self.test_image)
+        saved_img = ReplaceCV2.imread(path)
         self.assertTrue(np.array_equal(saved_img, self.test_image))
         if os.path.exists(path):
             os.remove(path)
 
     def test_cvtColor_BGR2RGB(self):
         bgr_image = self.test_image[..., ::-1]
-        rgb_image = cvtColor(bgr_image, 'COLOR_BGR2RGB')
+        rgb_image = ReplaceCV2.cvtColor(bgr_image, 'COLOR_BGR2RGB')
         self.assertTrue(np.array_equal(rgb_image, self.test_image))
 
     def test_cvtColor_RGB2BGR(self):
-        rgb_image = cvtColor(self.test_image, 'COLOR_RGB2BGR')
+        rgb_image = ReplaceCV2.cvtColor(self.test_image, 'COLOR_RGB2BGR')
         bgr_image = self.test_image[..., ::-1]
         self.assertTrue(np.array_equal(rgb_image, bgr_image))
 
     def test_cvtColor_BGR2GRAY(self):
-        gray_image = cvtColor(self.test_image, 'COLOR_BGR2GRAY')
+        gray_image = ReplaceCV2.cvtColor(self.test_image, 'COLOR_BGR2GRAY')
         expected_gray_image = np.array(Image.fromarray(self.test_image).convert("L"))
         self.assertTrue(np.array_equal(gray_image, expected_gray_image))
 
     def test_cvtColor_GRAY2BGR(self):
-        bgr_image = cvtColor(self.test_gray_image, 'COLOR_GRAY2BGR')
+        bgr_image = ReplaceCV2.cvtColor(self.test_gray_image, 'COLOR_GRAY2BGR')
         expected_bgr_image = np.stack([self.test_gray_image] * 3, axis=-1)
         self.assertTrue(np.array_equal(bgr_image, expected_bgr_image))
 
     def test_resize(self):
-        resized_image = resize(self.test_image, (50, 50))
+        resized_image = ReplaceCV2.resize(self.test_image, (50, 50))
         self.assertEqual(resized_image.shape, (50, 50, 3))
 
-        resized_image_fx_fy = resize(self.test_image, (0, 0), fx=0.5, fy=0.5)
+        resized_image_fx_fy = ReplaceCV2.resize(self.test_image, (0, 0), fx=0.5, fy=0.5)
         self.assertEqual(resized_image_fx_fy.shape, (50, 50, 3))
 
     def test_pyrDown(self):
-        downsampled_image = pyrDown(self.test_image)
+        downsampled_image = ReplaceCV2.pyrDown(self.test_image)
         self.assertEqual(downsampled_image.shape, (50, 50, 3))
 
 

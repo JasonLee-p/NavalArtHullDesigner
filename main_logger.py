@@ -10,7 +10,7 @@ import time
 from contextlib import contextmanager
 
 from PyQt5.QtCore import QMutex, pyqtSignal, QObject
-from funcs_utils import singleton, mutexLock
+from utils.funcs_utils import singleton, mutexLock
 
 
 def getTagStr(tag):

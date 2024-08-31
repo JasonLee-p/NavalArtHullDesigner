@@ -1,7 +1,7 @@
 # tests/test_funcs_utils.py
 import unittest
 from unittest.mock import patch, MagicMock
-from funcs_utils import *
+from utils.funcs_utils import *
 from PyQt5.QtCore import QMutex
 
 

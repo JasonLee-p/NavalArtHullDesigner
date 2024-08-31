@@ -6,7 +6,7 @@ from abc import abstractmethod
 from typing import List, Union, Optional
 
 from PyQt5.QtCore import QMutex
-from funcs_utils import operationMutexLock
+from utils.funcs_utils import operationMutexLock
 
 
 class Operation:

@@ -3,15 +3,13 @@ import typing
 from time import time
 from typing import Callable
 
-
-import numpy as np
 import yaml
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSignal, QTimer, Qt, pyqtSlot, QPoint, QEventLoop, QThread, QRect
 from PyQt5.QtGui import QResizeEvent
 from PyQt5.QtWidgets import QWidget, QApplication
-from cv2_replacements import *
+from utils.cv2_replacements import *
 
 from ..GLWidgets import *
 
@@ -654,7 +652,7 @@ class QImageViewWidget(QtWidgets.QLabel):
         h, w = self.q_img.height(), self.q_img.width()
         _bytes = self.q_img.bits().asstring(self.q_img.byteCount())
         img = np.frombuffer(_bytes, np.uint8).reshape((h, w, self.q_img.depth() // 8))
-        img = cvtColor(img, 'COLOR_BGRA2BGR')
+        img = ReplaceCV2.cvtColor(img, 'COLOR_BGRA2BGR')
         return img
 
 
@@ -718,7 +716,7 @@ class VisualizeWidget(QtWidgets.QFrame):
         elif self.tab_widget.currentIndex() in [VisualizeType.Surface, VisualizeType.PointCloud] and \
                 img is not None:
             while img.shape[0] > 800:
-                img = pyrDown(img)
+                img = ReplaceCV2.pyrDown(img)
             self.tab_widget.currentWidget().setData(img, **self.color_map_panel.table)
 
         elif self.tab_widget.currentIndex() == VisualizeType.Quiver and start_pts is not None \
@@ -780,7 +778,7 @@ class VisualizeWidget(QtWidgets.QFrame):
         qimage = pixmap.toImage()
         _bytes = qimage.bits().asstring(qimage.byteCount())
         img = np.frombuffer(_bytes, np.uint8).reshape((h, w, 4))
-        img = cvtColor(img, 'COLOR_BGRA2BGR')
+        img = ReplaceCV2.cvtColor(img, 'COLOR_BGRA2BGR')
         return img
 
 

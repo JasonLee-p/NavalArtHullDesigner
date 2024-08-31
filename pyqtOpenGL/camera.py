@@ -6,7 +6,7 @@ from typing import Literal
 import numpy as np
 from PyQt5.QtCore import QTimer, QMutex, pyqtSignal, QObject
 from PyQt5.QtGui import QVector3D as Qvec3
-from funcs_utils import mutexLock
+from utils.funcs_utils import mutexLock
 from main_logger import Log
 
 from .transform3d import Matrix4x4, Vector3

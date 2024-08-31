@@ -10,7 +10,7 @@ from GUI.sub_component_edt_widgets import SubElementShow
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QFileDialog
 from ShipRead.na_project import *
-from funcs_utils import not_implemented, snake_to_camel
+from utils.funcs_utils import not_implemented, snake_to_camel
 from main_logger import Log, StatusBarHandler
 from operation import OperationStack
 from operation.basic_op import Operation

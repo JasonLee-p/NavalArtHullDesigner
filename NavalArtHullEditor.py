@@ -16,7 +16,7 @@ try:
     # 本地库
     from GUI import *
     from main_logger import Log, StatusBarHandler
-    from funcs_utils import singleton
+    from utils.funcs_utils import singleton
     from path_lib import *
     from main_editor import MainEditor
     from startWindow import StartWindow

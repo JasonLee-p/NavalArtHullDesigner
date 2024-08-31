@@ -13,7 +13,7 @@ from typing import Optional
 from GUI.element_structure_widgets import *
 from PyQt5 import QtCore
 from ShipRead.na_project import ShipProject
-from funcs_utils import not_implemented
+from utils.funcs_utils import not_implemented
 from path_lib import CURRENT_PATH, DESKTOP_PATH
 from pyqtOpenGL import *
 from pyqtOpenGL.camera import Camera

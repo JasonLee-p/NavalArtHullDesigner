@@ -4,7 +4,7 @@
 """
 
 import ujson
-from funcs_utils import merge_dict
+from utils.funcs_utils import merge_dict
 from path_lib import *
 
 

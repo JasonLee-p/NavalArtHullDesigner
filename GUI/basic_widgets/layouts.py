@@ -8,7 +8,7 @@ from typing import Literal, Optional, List, Dict
 from .buttons import *
 
 
-from funcs_utils import CONST, color_print, operationMutexLock
+from utils.funcs_utils import CONST, color_print, operationMutexLock
 
 
 def get_distance(pos1: QPoint, pos2: QPoint) -> float:
