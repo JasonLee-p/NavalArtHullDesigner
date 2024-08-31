@@ -401,6 +401,9 @@ class GLWidgetGUI(GLViewWidget):
         self.G_material = EditItemMaterial(color=(0, 255, 0))
         self.B_material = EditItemMaterial(color=(0, 0, 255))
 
+        self.strech_arrow = GLArrowPlotItem(start_pos=(0, 0, 0), end_pos=(0, 20, 0), color=(1.0, 1.0, 0.0))
+        self.strech_arrow.setVisible(False)
+
         # self.text = GLTextItem(text="BB-63 USS Missouri", pos=(0, 50, 0), color=(0.6, 0.6, 0.6), fixed=False)
         # self.model = GLModelItem(
         #     "./pyqtOpenGL/items/resources/models/BB-63.obj",
@@ -412,6 +415,7 @@ class GLWidgetGUI(GLViewWidget):
 
         self.addItem(self.__axis)
         self.addItem(self.__grid)
+        self.addItem(self.strech_arrow)
 
         # 信号连接
         self.__bind_axis_signal()
