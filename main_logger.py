@@ -10,7 +10,7 @@ import time
 from contextlib import contextmanager
 
 from PyQt5.QtCore import QMutex, pyqtSignal, QObject
-from utils.funcs_utils import singleton, mutexLock
+from utils import singleton, mutexLock, now
 
 
 def getTagStr(tag):
@@ -47,7 +47,7 @@ class Log:
         self._stderr = sys.stderr
         self.path = path
         self._init_log_file()
-        logging_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        logging_time = now()
         self.addString = (f"\n{self.SEPARATOR}\n"
                           f"{logging_time}  {self.INFO}{getTagStr('Log')}程序启动，日志启动\n")
 
@@ -60,14 +60,12 @@ class Log:
             if f.tell() > self.FILE_MAX_SIZE:
                 f.truncate(0)  # 清空文件
                 # TODO: 可以尝试上传
-                truncate_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-                f.write(f"{truncate_time}  {self.INFO}{getTagStr('Log')}日志文件超过1MB，已清空\n")
+                f.write(f"{now()}  {self.INFO}{getTagStr('Log')}日志文件超过1MB，已清空\n")
 
     @mutexLock("write_mutex")
     def error(self, trace, tag, info):
-        err_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         infoString = getInfoStr(trace + '\n' + info)
-        string = f"{err_time}  {self.ERROR}{getTagStr(tag)}{infoString}\n"
+        string = f"{now()}  {self.ERROR}{getTagStr(tag)}{infoString}\n"
         self.addString += string
         # 使用sys.stderr输出
         self._stderr.write(string)
@@ -76,16 +74,14 @@ class Log:
 
     @mutexLock("write_mutex")
     def warning(self, tag, info):
-        warn_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        string = f"{warn_time}  {self.WARNING}{getTagStr(tag)}{getInfoStr(info)}\n"
+        string = f"{now()}  {self.WARNING}{getTagStr(tag)}{getInfoStr(info)}\n"
         self.addString += string
         self._stdout.write(string)
         self._stdout.flush()
 
     @mutexLock("write_mutex")
     def info(self, tag, info):
-        log_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        string = f"{log_time}  {self.INFO}{getTagStr(tag)}{getInfoStr(info)}\n"
+        string = f"{now()}  {self.INFO}{getTagStr(tag)}{getInfoStr(info)}\n"
         self.addString += string
         self._stdout.write(string)
         self._stdout.flush()
@@ -94,15 +90,14 @@ class Log:
     def save(self):
         self._stdout.flush()
         self._stderr.flush()
-        log_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        self.addString += (f"{log_time}  {self.INFO}{getTagStr('Log')}保存日志，程序退出\n"
+        self.addString += (f"{now()}  {self.INFO}{getTagStr('Log')}保存日志，程序退出\n"
                            f"{self.SEPARATOR}\n")
         try:
             with open(self.path, "a", encoding="utf-8") as f:
                 f.write(self.addString)
                 self.addString = ''
         except Exception as e:
-            self._stderr.write(f"{log_time}  {self.ERROR}{getTagStr('Log')}保存日志失败：{e}\n")
+            self._stderr.write(f"{now()}  {self.ERROR}{getTagStr('Log')}保存日志失败：{e}\n")
 
     @contextmanager
     def redirectOutput(self, tag):
@@ -144,7 +139,7 @@ class StatusBarHandler(QObject):
     message = pyqtSignal(str, str)
 
     def __init__(self):
-        from GUI import GRAY, LIGHTER_RED, FG_COLOR0
+        from GUI import GRAY, LIGHTER_RED, FG_COLOR0  # noqa
         self.GRAY = GRAY
         self.LIGHTER_RED = LIGHTER_RED
         self.FG_COLOR0 = FG_COLOR0

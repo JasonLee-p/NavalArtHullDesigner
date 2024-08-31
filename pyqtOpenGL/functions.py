@@ -2,12 +2,11 @@ from PyQt5 import QtGui
 import numpy as np
 import sys
 from pathlib import Path
-from datetime import datetime
 from functools import update_wrapper, singledispatchmethod
 
 __all__ = [
     'clip_scalar', 'mkColor', 'glColor', 'intColor', 'clip_array',
-    'Filter', 'increment_path', 'now', 'dispatchmethod'
+    'Filter', 'increment_path', 'dispatchmethod'
 ]
 
 Colors = {
@@ -220,10 +219,6 @@ def increment_path(path):
         if not path.with_name(f"{stem}_{n:04d}{suffix}").exists():  #
             break
     return str(path.with_name(f"{stem}_{n:04d}{suffix}"))
-
-
-def now(fmt='%y_%m_%d_%H_%M_%S'):
-    return datetime.now().strftime(fmt)
 
 
 class dispatchmethod(singledispatchmethod):

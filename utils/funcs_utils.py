@@ -188,6 +188,10 @@ def time_it(func):
     return wrapper
 
 
+def now(fmt='%Y-%m-%d %H:%M:%S'):
+    return time.strftime(fmt, time.localtime())
+
+
 def operationMutexLock(func):
     """
     用于给类的方法加锁
