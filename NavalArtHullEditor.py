@@ -168,6 +168,8 @@ CURRENT_PATH: {CURRENT_PATH}""")
         QApp.setOrganizationName("JasonLee")
         QApp.setAttribute(Qt.AA_DisableHighDpiScaling)
         Log().info(GLOBAL_TAG, f"QApp初始化完成")
+        # 设置全局的提示框字体
+        QToolTip.setFont(YAHEI[9])
         # 打开欢迎界面
         startWindow = StartWindow()
         mainEditors: MainEditorHandler = MainEditorHandler(Log())
