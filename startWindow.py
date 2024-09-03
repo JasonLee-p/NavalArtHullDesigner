@@ -6,6 +6,7 @@
 from GUI import *
 from PyQt5.QtCore import Qt
 from utils.funcs_utils import open_url
+from string_src import *
 
 
 class _MyLabel(QLabel):
@@ -395,11 +396,11 @@ class StartWindow(_BasicDialog):
         self.right_layout = QVBoxLayout()
         self.left_widget_main = QWidget()
         self.left_grid_layout = QGridLayout()
-        self.title = _MyLabel("欢迎使用 NavalArt 船体编辑器", font=YAHEI[20])
+        self.title = _MyLabel(f"欢迎使用{APP_FULL_NAME_STR}", font=YAHEI[20])
         self.buttons = {
             "上次编辑": QPushButton("上次编辑"),
-            "新建工程": QPushButton("新建工程"),
-            "打开工程": QPushButton("打开工程"),
+            f"新建{DESIGNER_PRJ_STR}": QPushButton(f"新建{DESIGNER_PRJ_STR}"),
+            f"打开{DESIGNER_PRJ_STR}": QPushButton(f"打开{DESIGNER_PRJ_STR}"),
             "设置": QPushButton("设置"),
             "帮助": QPushButton("帮助"),
             "关于": QPushButton("关于"),
@@ -466,9 +467,9 @@ class StartWindow(_BasicDialog):
         self.left_layout.addWidget(self.left_widget_main, stretch=1)
         self.__set_left_widget_main()
         # 添加文本
-        _text = "   NavalArt 船体编辑器，是一款基于颜色选取的船体编辑器。" \
-                "我们深知在 NavalArt 游戏内部编辑船体的痛点，" \
-                "因此我们开发了这款船体编辑器，希望能够帮助到大家。\n" \
+        _text = f"   {APP_FULL_NAME_STR}，是一款基于颜色选取的船体编辑器。" \
+                "我们深知在 NavalArt 游戏内部船体编辑的繁琐，" \
+                "因此我们开发了这款船体设计器，希望能够帮助到大家。\n" \
                 "   我们将持续更新，如果您有任何建议，请联系我们："
         text_edit = QTextEdit()
         text_edit.setReadOnly(True)
@@ -555,7 +556,7 @@ class StartWindow(_BasicDialog):
         email_text = _MyLabel("E-mail：", font=YAHEI[10])
         email_content = _MyLabel("2593292614@qq.com", font=YAHEI[10])
         bilibili_text = _MyLabel("哔哩哔哩：", font=YAHEI[10])
-        bilibili_content = _MyLabel("咕咕的园艏", font=YAHEI[10])
+        bilibili_content = _MyLabel("JasssonLee", font=YAHEI[10])
         # 添加下划线
         email_content.setFrameShape(QFrame.HLine)
         bilibili_content.setFrameShape(QFrame.HLine)
@@ -653,8 +654,8 @@ class StartWindow(_BasicDialog):
         :return:
         """
         self.buttons["上次编辑"].clicked.connect(self.lastEdit_signal.emit)
-        self.buttons["新建工程"].clicked.connect(self.newPrj_signal.emit)
-        self.buttons["打开工程"].clicked.connect(self.openPrj_signal.emit)
+        self.buttons[f"新建{DESIGNER_PRJ_STR}"].clicked.connect(self.newPrj_signal.emit)
+        self.buttons[f"打开{DESIGNER_PRJ_STR}"].clicked.connect(self.openPrj_signal.emit)
         self.buttons["设置"].clicked.connect(self.setting_signal.emit)
         self.buttons["帮助"].clicked.connect(self.help_signal.emit)
         self.buttons["关于"].clicked.connect(self.about_signal.emit)

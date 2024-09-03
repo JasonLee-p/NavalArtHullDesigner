@@ -25,12 +25,12 @@ from .edit_widgets import *
 
 class UserInfoTab(MutiDirectionTab):
     def __init__(self, parent):
-        super().__init__(parent, CONST.DOWN, "用户", USER_IMAGE)
+        super().__init__(parent, CONST.DOWN, "用户", "", USER_IMAGE)
         self.set_layout(QVBoxLayout())
         self.__init_main_widget()
 
     def init_top_widget(self):
-        ...
+        pass
 
     def __init_main_widget(self):
         self.layout().setContentsMargins(5, 5, 5, 0)
@@ -39,7 +39,7 @@ class UserInfoTab(MutiDirectionTab):
 
 class PrjInfoTab(MutiDirectionTab):
     def __init__(self, parent):
-        super().__init__(parent, CONST.RIGHT, "船体信息", ELEMENTS_IMAGE)
+        super().__init__(parent, CONST.RIGHT, "船体信息", f"{DESIGNER_PRJ_STR}的总体信息", ELEMENTS_IMAGE)
         self.set_layout(QVBoxLayout())
         # 控件
         self.shipInfo_widget = QWidget()
@@ -53,7 +53,7 @@ class PrjInfoTab(MutiDirectionTab):
         self.__init_main_widget()
 
     def init_top_widget(self):
-        ...
+        pass
 
     def __init_main_widget(self):
         self.layout().setContentsMargins(5, 5, 5, 0)
@@ -84,10 +84,10 @@ class PrjInfoTab(MutiDirectionTab):
         self.main_layout.addWidget(self.shipInfo_widget)
 
 
-class ElementStructureTab(MutiDirectionTab):
+class HierarchyTab(MutiDirectionTab):
     def __init__(self, parent, main_editor):
         self.main_editor = main_editor
-        super().__init__(parent, CONST.LEFT, "结构层级", STRUCTURE_IMAGE)
+        super().__init__(parent, CONST.LEFT, HIERARCHY_STR, f"{DESIGNER_PRJ_STR}所有的部件都在这里", STRUCTURE_IMAGE)
         self.set_layout(QVBoxLayout())
         # 控件
         self.tab_widget = TabWidget(None, QTabWidget.West)
@@ -100,13 +100,13 @@ class ElementStructureTab(MutiDirectionTab):
         self.__init_main_widget()
 
     def init_top_widget(self):
-        ...
+        pass
 
     def __init_main_widget(self):
         self.layout().setContentsMargins(5, 5, 5, 0)
         self.layout().setSpacing(5)
-        self.tab_widget.addTab(self._hullSectionGroup_tab, "船体截面组")
-        self.tab_widget.addTab(self._armorSectionGroup_tab, "装甲截面组")
+        self.tab_widget.addTab(self._hullSectionGroup_tab, HULL_SECTION_GROUP_STR)
+        self.tab_widget.addTab(self._armorSectionGroup_tab, ARMOR_SECTION_GROUP_STR)
         self.tab_widget.addTab(self._bridge_tab, "舰桥")
         self.tab_widget.addTab(self._ladder_tab, "梯子")
         self.tab_widget.addTab(self._model_tab, "外部模型")
@@ -163,7 +163,7 @@ class ElementStructureTab(MutiDirectionTab):
         self.model_tab.clear()
 
 
-class ElementEditTab(MutiDirectionTab):
+class EditTab(MutiDirectionTab):
     elementType_updated = pyqtSignal(str)  # noqa
 
     def __init__(self, parent):
@@ -171,11 +171,11 @@ class ElementEditTab(MutiDirectionTab):
         元素编辑窗口
         :param parent:
         """
-        super().__init__(parent, CONST.RIGHT, "元素编辑", EDIT_IMAGE)
+        super().__init__(parent, CONST.RIGHT, "部件编辑", "编辑单个部件", EDIT_IMAGE)
         self.element_mutex = QMutex()  # 互斥锁，用于保证只有一个元素被编辑
         self.element_locker = QMutexLocker(self.element_mutex)
         self.set_layout(QVBoxLayout())
-        self.elementType_label = TextLabel(self, "无选中物体", YAHEI[9], FG_COLOR1, Qt.AlignLeft)
+        self.elementType_label = TextLabel(self, "没有选中部件", YAHEI[9], FG_COLOR1, Qt.AlignLeft)
         self.elementName_label = TextLabel(self, "", YAHEI[9], FG_COLOR0, Qt.AlignCenter)
         self.edit_hullSectionGroup_widget = EditHullSectionGroupWidget()
         self.edit_armorSectionGroup_widget = EditArmorSectionGroupWidget()
@@ -183,8 +183,8 @@ class ElementEditTab(MutiDirectionTab):
         self.edit_ladder_widget = EditLadderWidget()
         self.edit_model_widget = EditModelWidget()
         self.edit_widgets = {
-            self.edit_hullSectionGroup_widget: "船体截面组",
-            self.edit_armorSectionGroup_widget: "装甲截面组",
+            self.edit_hullSectionGroup_widget: HULL_SECTION_GROUP_STR,
+            self.edit_armorSectionGroup_widget: ARMOR_SECTION_GROUP_STR,
             self.edit_bridge_widget: "舰桥",
             self.edit_ladder_widget: "梯子",
             self.edit_model_widget: "外部模型"
@@ -194,7 +194,7 @@ class ElementEditTab(MutiDirectionTab):
         self.__init_main_widget()
 
     def init_top_widget(self):
-        ...
+        pass
 
     def __init_main_widget(self):
         self.layout().setContentsMargins(5, 5, 5, 0)
@@ -222,7 +222,7 @@ class ElementEditTab(MutiDirectionTab):
     # noinspection PyTypeChecker
     def set_editing_widget(
             self,
-            element_type: Literal["船体截面组", "装甲截面组", "舰桥", "栏杆", "栏板", "梯子"] = None,
+            element_type: Literal[HULL_SECTION_GROUP_STR, ARMOR_SECTION_GROUP_STR, "舰桥", "栏杆", "栏板", "梯子"] = None,
             edit_widget: Optional[EditTabWidget] = None
     ):
         """
@@ -270,12 +270,12 @@ class ElementEditTab(MutiDirectionTab):
                 self.elementType_updated.emit(element_type)
 
     def clear_editing_widget(self):
-        self.elementType_label.setText("无选中物体")
+        self.elementType_label.setText("无选中部件")
         self.elementName_label.setText("")
         for ew in self.edit_widgets:
             ew.hide()
         self.current_edit_widget = None
-        self.elementType_updated.emit("无选中物体")
+        self.elementType_updated.emit("无选中部件")
 
     def edit_hullSectionGroup(self, hull_section_group):
         self.edit_hullSectionGroup_widget.updateSectionHandler(hull_section_group)
@@ -298,7 +298,7 @@ class SettingTab(MutiDirectionTab):
         self.__configHandler = configHandler_
         self.__camera_sensitivity = configHandler_.get_config("Sensitivity")
         self.__camera: Camera = camera
-        super().__init__(parent, CONST.RIGHT, "设置", SETTINGS_IMAGE)
+        super().__init__(parent, CONST.RIGHT, "设置", f"让{APP_SHORT_NAME_STR}更符合你的使用习惯", SETTINGS_IMAGE)
         self.set_layout(QVBoxLayout())
         # 初始化标签页，分别为：主题、相机灵敏度 =================================================================
         self.tab_widget = TabWidget(None)
@@ -316,7 +316,7 @@ class SettingTab(MutiDirectionTab):
         # ===================================================================
 
     def init_top_widget(self):
-        ...
+        pass
 
     def __init_tab_widgets(self):
         self.layout().setContentsMargins(5, 5, 5, 0)
@@ -365,7 +365,7 @@ class ToolsTab(MutiDirectionTab):
         元素编辑窗口
         :param parent:
         """
-        super().__init__(parent, CONST.DOWN, "便捷工具箱", TOOLS_IMAGE)
+        super().__init__(parent, CONST.DOWN, f"{NA_DESIGN_STR}工具箱", f"对{NA_DESIGN_STR}进行快捷操作（不是{DESIGNER_PRJ_STR}！）", TOOLS_IMAGE)
         self.set_layout(QHBoxLayout())
         self.button_widget = QFrame()
         self.button_widget.setLayout(QHBoxLayout())
@@ -376,11 +376,13 @@ class ToolsTab(MutiDirectionTab):
         # self.scaleButton = Button(self, "缩放整个na设计图纸",
         #                           bd_radius=6, size=(80, 30), font=YAHEI[9],
         #                           bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3))
-        self.moveButton = ImageTextButton(self, "整体移动", "移动整个na设计图纸，推荐移动1.5的倍数",
-                                          BYTES_USER, ImageTextButton.ImgTop, 90, bd_radius=6, size=(114, 132),
+        self.moveButton = ImageTextButton(self, "整体移动", f"移动整个{NA_DESIGN_STR}-推荐移动1.5的倍数",
+                                          BYTES_AXIS, ImageTextButton.ImgTop,
+                                          72, bd_radius=6, size=(114, 132), spacing=10,
                                           bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3), fg=FG_COLOR0)
-        self.scaleButton = ImageTextButton(self, "整体缩放", "缩放整个na设计图纸",
-                                           BYTES_AXIS, ImageTextButton.ImgTop, 90, bd_radius=6, size=(114, 132),
+        self.scaleButton = ImageTextButton(self, "整体缩放", f"缩放整个{NA_DESIGN_STR}-部分零件的大小不可缩放",
+                                           BYTES_CUBE, ImageTextButton.ImgTop,
+                                           72, bd_radius=6, size=(114, 132), spacing=10,
                                            bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3), fg=FG_COLOR0)
         # 初始化
         self.__init_main_widget()
@@ -405,6 +407,8 @@ class ToolsTab(MutiDirectionTab):
             }}
         """)
         self.button_widget.layout().setAlignment(Qt.AlignLeft)
+        self.button_widget.layout().setContentsMargins(15, 15, 15, 15)
+        self.button_widget.layout().setSpacing(10)
         self.moveButton.clicked.connect(self.move_dialog)
         self.scaleButton.clicked.connect(self.scale_dialog)
 
@@ -789,38 +793,38 @@ class MainEditorGUI(Window):
             self.camera = None
         # 标签页
         self.user_tab = UserInfoTab(self.main_widget)
-        self.structure_tab = ElementStructureTab(self.main_widget, self)
+        self.structure_tab = HierarchyTab(self.main_widget, self)
         self.info_tab = PrjInfoTab(self.main_widget)
-        self.edit_tab = ElementEditTab(self.main_widget)
+        self.edit_tab = EditTab(self.main_widget)
         self.setting_tab = SettingTab(self.main_widget, self.configHandler, self.camera)
         self.tools_tab = ToolsTab(self.main_widget)
         # 初始化标签页
         self.__init_tab_widgets()
-        super().__init__(None, title='NavalArt Hull Editor', ico_bites=BYTES_ICO, size=(1000, 618), resizable=True,
+        super().__init__(None, title=APP_FULL_NAME_STR, ico_bites=BYTES_ICO, size=(1000, 618), resizable=True,
                          show_maximize=True, bd_radius=0)
         # noinspection PyUnresolvedReferences
-        self.setWindowTitle('NavalArt Hull Editor')
+        self.setWindowTitle(APP_FULL_NAME_STR)
         # 顶部控件
         self.menuButtons = []
         self.menu_map = {
             "文件": {
-                "新建工程": self.new_prj,
-                "打开工程": self.open_prj,
-                "保存工程": self.save_prj,
-                "另存工程": self.save_as_prj,
-                "导出到NA": self.export_to_na,
+                f"新建{DESIGNER_PRJ_SHORT_STR}": self.new_prj,
+                f"打开{DESIGNER_PRJ_SHORT_STR}": self.open_prj,
+                f"保存{DESIGNER_PRJ_SHORT_STR}": self.save_prj,
+                f"另存{DESIGNER_PRJ_SHORT_STR}": self.save_as_prj,
+                f"导出到{NA_STR}": self.export_to_na,
             },
             "设置": {
                 "主题": self.set_theme,
                 "相机灵敏度": self.set_camera,
             },
             "关于": {
-                "关于": self.about,
+                ABOUT_STR: self.about,
                 "教程": self.tutorial,
             }
         }
         self.currentPrj_button = Button(
-            self.customized_top_widget, "当前项目", 0, BG_COLOR1, 5, font=YAHEI[9],
+            self.customized_top_widget, f"当前{DESIGNER_PRJ_SHORT_STR}", 0, BG_COLOR1, 5, font=YAHEI[9],
             bg=(BG_COLOR1, BG_COLOR3, GRAY, BG_COLOR3), size=None, padding=(5, 5, 5, 15), show_indicator=" ")
         self.prj_menu_maxSize = [400, 700]
         self.prj_menu = self.__init_prjMenu()
@@ -841,7 +845,7 @@ class MainEditorGUI(Window):
             menu_bt.setMenu(menu)
             self.menuButtons.append(menu_bt)
         # 按钮：
-        self.currentPrj_button.setText("当前无项目")
+        self.currentPrj_button.setText(f"未打开{DESIGNER_PRJ_SHORT_STR}")
         # noinspection PyUnresolvedReferences
         self.currentPrj_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.MinimumExpanding)
         self.currentPrj_button.setFocusPolicy(Qt.NoFocus)

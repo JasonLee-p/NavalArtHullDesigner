@@ -192,7 +192,7 @@ class _MutiDirectionTab(QWidget):
     __dragging_button: Optional[TabButton] = None
 
     def __init__(self, main_widget_with_multidir, init_direction=CONST.RIGHT,
-                 name: str = None, image: QImage = None,
+                 name: str = None, tool_tip="", image: QImage = None,
                  fg: Union[ThemeColor, str] = FG_COLOR0,
                  bd_radius: Union[int, Tuple[int, int, int, int]] = 0):
         """
@@ -204,6 +204,7 @@ class _MutiDirectionTab(QWidget):
         super().__init__(None)
         # self.setMouseTracking(True)
         self.name = name
+        self.tool_tip = tool_tip
         self.direction = init_direction  # 当前位置
         self.main_widget_with_multidir = main_widget_with_multidir  # 父窗口
         # 按钮
@@ -218,6 +219,12 @@ class _MutiDirectionTab(QWidget):
                 border-top-right-radius: {bd_radius[1]}px;
                 border-bottom-right-radius: {bd_radius[2]}px;
                 border-bottom-left-radius: {bd_radius[3]}px;
+            }}
+            QToolTip{{
+                background-color: {BG_COLOR1};
+                color: {FG_COLOR0};
+                border: 1px solid {BG_COLOR2};
+                border-radius: 4px;
             }}
         """)
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
@@ -298,6 +305,7 @@ class _MutiDirectionTab(QWidget):
         self.top_layout.setSpacing(0)
         self.top_layout.addWidget(self.title_label, Qt.AlignLeft | Qt.AlignVCenter)
         self.top_layout.addWidget(self._drag_area, Qt.AlignRight | Qt.AlignVCenter)
+        self._top_widget.setToolTip(self.tool_tip)
         self.__init_drag_area()
         self.init_top_widget()
 
@@ -337,8 +345,8 @@ class _MutiDirectionTab(QWidget):
 
 class MutiDirectionTab(_MutiDirectionTab):
     def __init__(self, main_widget_with_multidir, init_direction=CONST.RIGHT,
-                 name: str = None, image: QImage = None):
-        super().__init__(main_widget_with_multidir, init_direction, name, image)
+                 name: str = None, tool_tip="", image: QImage = None):
+        super().__init__(main_widget_with_multidir, init_direction, name, tool_tip, image)
 
     def set_layout(self, layout: QLayout):
         """
@@ -356,7 +364,7 @@ class MutiDirectionTab(_MutiDirectionTab):
 
     @abstractmethod
     def init_top_widget(self):
-        pass
+        ...
 
 
 class FreeTabFrame(QFrame):
