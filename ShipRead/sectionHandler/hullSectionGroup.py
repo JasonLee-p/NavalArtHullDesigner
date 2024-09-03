@@ -7,7 +7,7 @@ import numpy as np
 from GUI.sub_component_edt_widgets import SubSectionShow
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QColor, QVector3D
-from ShipPaint import HullSectionItem, HullSectionGroupItem
+from ShipPaint import HullVerSecItem, HullSectionGroupItem
 from .baseComponent import ComponentNodeXY, PrjComponent, SubPrjComponent
 from .bridge import Railing, Handrail
 from main_logger import Log
@@ -190,13 +190,13 @@ class HullSectionGroup(PrjComponent):
         self.setPaintItem(paint_item)
         self.setPos(pos)
         self.setRot(rot)
-
         # 倒过来，从大到小排列
         for section in self.__sections[::-1]:
             section.init_parent(self)
-            section.setPaintItem(HullSectionItem(section, section.z, section.nodes))
+            section.setPaintItem(HullVerSecItem(section, section.z, section.nodes))
             # 将截面展示的button控件加入右侧滚动区域
             self._edit_tab.edit_hullSectionGroup_widget.add_section_showButton(section)
+        # 初始化
 
     def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
         super()._init_showButton(type_)
