@@ -374,5 +374,8 @@ class EditModelWidget(EditTabWidget):
         """
         # 打开文件选择对话框，路径就是当前button的text
         path = QFileDialog.getOpenFileName(self, "选择模型文件", "", "模型文件 (*.obj *.fbx *.3ds *.stl *.ply *.off)")[0]
+        # 过滤掉空路径
+        if not path or path == '.':
+            return
         op = ChangeModelPathOperation(self._current_item, path, self.pathButton.text())
         self.operationStack.execute(op)
