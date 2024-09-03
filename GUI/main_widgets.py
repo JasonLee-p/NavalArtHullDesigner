@@ -10,8 +10,8 @@ import gc
 import os
 from typing import Optional
 
+from GUI.dialogs import MoveDialog, ScaleDialog
 from GUI.element_structure_widgets import *
-from PyQt5 import QtCore
 from ShipRead.na_project import ShipProject
 from utils.funcs_utils import not_implemented
 from path_lib import CURRENT_PATH, DESKTOP_PATH
@@ -356,6 +356,67 @@ class SettingTab(MutiDirectionTab):
         self.__configHandler.set_config("Sensitivity", sensitivity)
         if self.__camera:
             self.__camera.sensitivity = sensitivity
+
+
+class ToolsTab(MutiDirectionTab):
+    def __init__(self, parent):
+        """
+        元素编辑窗口
+        :param parent:
+        """
+        super().__init__(parent, CONST.DOWN, "便捷工具箱", TOOLS_IMAGE)
+        self.set_layout(QHBoxLayout())
+        self.button_widget = QFrame()
+        self.button_widget.setLayout(QHBoxLayout())
+        # 按钮初始化
+        # self.moveButton = Button(self, "移动整个na设计图纸，推荐移动1.5的倍数",
+        #                          bd_radius=6, size=(80, 30), font=YAHEI[9],
+        #                          bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3))
+        # self.scaleButton = Button(self, "缩放整个na设计图纸",
+        #                           bd_radius=6, size=(80, 30), font=YAHEI[9],
+        #                           bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3))
+        self.moveButton = ImageTextButton(self, "整体移动", "移动整个na设计图纸，推荐移动1.5的倍数",
+                                          BYTES_USER, ImageTextButton.ImgTop, 90, bd_radius=6, size=(114, 132),
+                                          bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3), fg=FG_COLOR0)
+        self.scaleButton = ImageTextButton(self, "整体缩放", "缩放整个na设计图纸",
+                                           BYTES_AXIS, ImageTextButton.ImgTop, 90, bd_radius=6, size=(114, 132),
+                                           bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3), fg=FG_COLOR0)
+        # 初始化
+        self.__init_main_widget()
+
+    def __init_main_widget(self):
+        self.layout().setContentsMargins(5, 5, 5, 0)
+        self.layout().setSpacing(5)
+
+        self.init_top_widget()
+        self.__init_button_widget()
+        self.main_layout.addWidget(self.button_widget)
+
+    def init_top_widget(self):
+        pass
+
+    def __init_button_widget(self):
+        self.button_widget.setStyleSheet(f"""
+            QFrame{{
+                border: 0px;
+                border-radius: 15px;
+                background-color: {BG_COLOR0};
+            }}
+        """)
+        self.button_widget.layout().setAlignment(Qt.AlignLeft)
+        self.moveButton.clicked.connect(self.move_dialog)
+        self.scaleButton.clicked.connect(self.scale_dialog)
+
+        self.button_widget.layout().addWidget(self.moveButton, alignment=Qt.AlignLeft)
+        self.button_widget.layout().addWidget(self.scaleButton, alignment=Qt.AlignLeft)
+
+    def move_dialog(self):
+        dialog = MoveDialog()
+        dialog.show()
+
+    def scale_dialog(self):
+        dialog = ScaleDialog()
+        dialog.show()
 
 
 class GLWidgetGUI(GLViewWidget):
@@ -720,16 +781,18 @@ class MainEditorGUI(Window):
         self.logger = logger
         # 主窗口
         self.main_widget = MultiDirTabMainFrame(self.gl_widget)
+        # 设置相机
+        if hasattr(self.gl_widget, "camera"):
+            self.camera = self.gl_widget.camera
+        else:
+            self.camera = None
         # 标签页
         self.user_tab = UserInfoTab(self.main_widget)
         self.structure_tab = ElementStructureTab(self.main_widget, self)
         self.info_tab = PrjInfoTab(self.main_widget)
         self.edit_tab = ElementEditTab(self.main_widget)
-        if hasattr(self.gl_widget, "camera"):
-            self.camera = self.gl_widget.camera
-        else:
-            self.camera = None
         self.setting_tab = SettingTab(self.main_widget, self.configHandler, self.camera)
+        self.tools_tab = ToolsTab(self.main_widget)
         # 初始化标签页
         self.__init_tab_widgets()
         super().__init__(None, title='NavalArt Hull Editor', ico_bites=BYTES_ICO, size=(1000, 618), resizable=True,
@@ -883,9 +946,10 @@ class MainEditorGUI(Window):
         # 布局
         self.main_widget.add_tab(self.structure_tab)
         self.main_widget.add_tab(self.info_tab)
-        self.main_widget.add_tab(self.user_tab)
         self.main_widget.add_tab(self.edit_tab)
         self.main_widget.add_tab(self.setting_tab)
+        self.main_widget.add_tab(self.tools_tab)
+        self.main_widget.add_tab(self.user_tab)
 
     def init_top_widget(self):
         self.top_widget.setFixedHeight(self.topH)
