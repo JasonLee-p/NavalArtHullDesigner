@@ -492,7 +492,7 @@ class ImageTextButton(TextButton):
             img_pos: str = ImgLeft,
             img_size: Union[int, Tuple[int, int]] = 0,
             img_bd_radius: int = 0,
-            spacing: int = 5,
+            spacing: int = 10,
             bd: Union[int, Tuple[int, int, int, int]] = 0,
             bd_color: Union[str, ThemeColor, Tuple[str, str, str, str]] = FG_COLOR0,
             bd_radius: Union[int, Tuple[int, int, int, int]] = 0,
