@@ -136,7 +136,7 @@ def _get_index(half_index):
     return indexes
 
 
-class HullSectionItem(GLMeshItem):
+class HullVerSecItem(GLMeshItem):
 
     # noinspection PyProtectedMember
     def __init__(self, handler, z, nodes: Union[list, tuple]):
@@ -383,6 +383,22 @@ class HullSectionItem(GLMeshItem):
         当父项被选中时
         """
         self.parentSelected = selected
+
+
+class HullHorSecItem(GLMeshItem):
+    TAG = "HullHorSecItem"
+
+    def __init__(self):
+        super().__init__(selectable=False)
+        ...
+
+
+class HullSecConnection(GLMeshItem):
+    TAG = "HullSecConnection"
+
+    def __init__(self):
+        super().__init__(selectable=False)
+        ...
 
 
 class HullSectionGroupItem(GLGraphicsItem):
