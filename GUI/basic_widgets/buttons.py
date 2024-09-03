@@ -316,11 +316,11 @@ class TextButton(Button):
             font=YAHEI[6],
             align=Qt.AlignCenter,
             size: Union[int, Tuple[int, int]] = (60, 26),
-            __set_text: bool = True
+            _set_text: bool = True
     ):
         self.text = text
         # 设置样式
-        if __set_text:
+        if _set_text:
             self.setText(text)
         super().__init__(parent, tool_tip, bd, bd_color, bd_radius, padding, bg, fg, font, align, size)
 
@@ -519,15 +519,18 @@ class ImageTextButton(TextButton):
         :param fg:
         :param font:
         """
-        self.text_label = TextLabel(text, font, fg if isinstance(fg, (str, ThemeColor)) else fg[0])
-        self.img_label = BorderRadiusImage(parent, img_bytes, img_size, img_bd_radius)
-        self.layout = QHBoxLayout() if img_pos in [self.ImgLeft, self.ImgRight] else QVBoxLayout()
+        self.text_label = TextLabel(None, text, font, fg if isinstance(fg, (str, ThemeColor)) else fg[0], align)
+        self.img_label = BorderRadiusImage(None, img_bytes, img_size, img_bd_radius)
+        self.layout = QHBoxLayout() if img_pos == self.ImgLeft or img_pos == self.ImgRight else QVBoxLayout()
         self.widgets = [self.img_label, self.text_label] if img_pos in [self.ImgLeft, self.ImgTop] else [
             self.text_label, self.img_label]
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(spacing)
         self.layout.addStretch()
-        self.layout.addLayout(self.layout)
+        for widget in self.widgets:
+            self.layout.addWidget(widget)
         self.layout.addStretch()
         super().__init__(parent, text, tool_tip, bd, bd_color, bd_radius, padding, bg, fg, font, align, size,
-                         __set_text=False)
+                         _set_text=False)
+        self.setLayout(self.layout)
+        self.layout.setAlignment(align)
