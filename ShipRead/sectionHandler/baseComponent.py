@@ -9,7 +9,7 @@
 """
 import traceback
 
-from GUI.element_structure_widgets import *
+from GUI.hierarchy_widgets import *
 from GUI.sub_component_edt_widgets import SubElementShow
 from PyQt5.QtGui import QVector3D
 

@@ -2,7 +2,7 @@
 工程文件组件：舰桥
 """
 from PyQt5.QtGui import QVector3D, QColor
-from GUI.element_structure_widgets import *
+from GUI.hierarchy_widgets import *
 from .baseComponent import PrjComponent, SubPrjComponent, ComponentNodeXZ
 
 

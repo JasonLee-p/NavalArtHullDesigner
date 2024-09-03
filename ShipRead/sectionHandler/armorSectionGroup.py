@@ -1,7 +1,7 @@
 """
 工程文件组件：装甲截面组
 """
-from GUI.element_structure_widgets import *
+from GUI.hierarchy_widgets import *
 from PyQt5.QtGui import QColor, QVector3D
 from ShipPaint import ArmorSectionGroupItem
 from .baseComponent import ComponentNodeXY, PrjComponent, SubPrjComponent

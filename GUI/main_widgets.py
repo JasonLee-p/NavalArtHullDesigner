@@ -11,7 +11,8 @@ import os
 from typing import Optional
 
 from GUI.dialogs import MoveDialog, ScaleDialog
-from GUI.element_structure_widgets import *
+from GUI.hierarchy_widgets import *
+from string_src import *
 from ShipRead.na_project import ShipProject
 from utils.funcs_utils import not_implemented
 from path_lib import CURRENT_PATH, DESKTOP_PATH
@@ -19,7 +20,7 @@ from pyqtOpenGL import *
 from pyqtOpenGL.camera import Camera
 from pyqtOpenGL.items.MeshData import EditItemMaterial
 
-from .element_edit_widgets import *
+from .edit_widgets import *
 
 
 class UserInfoTab(MutiDirectionTab):

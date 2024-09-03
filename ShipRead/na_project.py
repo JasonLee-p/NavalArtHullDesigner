@@ -8,7 +8,7 @@ import traceback
 from hashlib import sha1
 
 import ujson
-from GUI.element_structure_widgets import *
+from GUI.hierarchy_widgets import *
 from PyQt5.QtGui import QVector3D, QColor
 from PyQt5.QtWidgets import QMessageBox
 from ShipPaint import *

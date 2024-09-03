@@ -3,7 +3,7 @@
 """
 from pathlib import Path
 
-from GUI.element_structure_widgets import *
+from GUI.hierarchy_widgets import *
 from PyQt5.QtGui import QVector3D
 from .baseComponent import PrjComponent
 from pyqtOpenGL import GLModelItem
