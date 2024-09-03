@@ -116,28 +116,46 @@ class BorderRadiusImage(QLabel):
             self.width, self.height = img_size[0], img_size[1]
         self.img_bytes = img_bytes
         self.bd_radius = bd_radius
+
+        # 加载图像并缩放到指定大小
         image = QImage.fromData(QByteArray(self.img_bytes))  # noqa
-        img = QPixmap()
-        img.convertFromImage(image)  # noqa
-        img.scaled(self.width, self.height, Qt.KeepAspectRatio)
-        rounded_img = QPixmap()
-        rounded_img.scaled(self.width, self.height, Qt.KeepAspectRatio)
+        img = QPixmap.fromImage(image.scaled(self.width, self.height, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+
+        # 创建一个透明背景的 QPixmap
+        rounded_img = QPixmap(self.width, self.height)
         rounded_img.fill(Qt.transparent)
-        painter = QPainter()
-        painter.begin(rounded_img)
+
+        # 开始绘制
+        painter = QPainter(rounded_img)
         painter.setRenderHint(QPainter.Antialiasing)
-        # 创建一个椭圆路径来表示圆角
+
+        # 创建圆角矩形路径
         path = QPainterPath()
         path.addRoundedRect(0, 0, self.width, self.height, self.bd_radius, self.bd_radius)
         painter.setClipPath(path)
+
+        # 绘制缩放后的图片
         painter.drawPixmap(0, 0, img)
         painter.end()
+
+        # 设置 QLabel 的图像
         self.setPixmap(rounded_img)
-        self.setStyleSheet(
-            f"background-color: rgba(0, 0, 0, 0);"
-            f"border-radius: {self.bd_radius}px;"
-        )
         self.setFixedSize(self.width, self.height)
+
+        # 设置样式表
+        self.setStyleSheet(f"""
+            QLabel{{
+                background-color: transparent;
+            }}
+            QToolTip{{
+                background-color: {BG_COLOR0};
+                color: {FG_COLOR0};
+                border: 1px solid {FG_COLOR0};
+                border-radius: 4px;
+            }}
+        """)
+
+        # 设置工具提示
         if tool_tip:
             self.setToolTip(tool_tip)
             self.setToolTipDuration(5000)
