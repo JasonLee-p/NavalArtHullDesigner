@@ -1,5 +1,6 @@
 import OpenGL.GL as gl
 import numpy as np
+from main_logger import Log
 
 from .MeshData import Mesh
 from .light import LightMixin, light_fragment_shader
