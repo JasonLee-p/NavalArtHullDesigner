@@ -4,6 +4,7 @@
 """
 from abc import abstractmethod
 
+from ..basic_data import *
 from .buttons import *
 from .buttons import _set_buttons
 from .other_widgets import *
@@ -177,7 +178,19 @@ class HSLColorPicker(QWidget):
 class BasicDialog(QDialog):
     def __init__(self, parent=None, border_radius=8, title=None, size=QSize(400, 300), center_layout=None,
                  resizable=False, hide_top=False, hide_bottom=False, ensure_bt_fill=False):
-        self.close_bg = QIcon(QPixmap.fromImage(Button.CLOSE_IMAGE))
+        """
+
+        :param parent:
+        :param border_radius:
+        :param title:
+        :param size:
+        :param center_layout:
+        :param resizable:
+        :param hide_top:
+        :param hide_bottom:
+        :param ensure_bt_fill:
+        """
+        self.close_bg = QIcon(QPixmap.fromImage(CLOSE_IMAGE))
         self._parent = parent
         self._generate_self_parent = False
         if not parent:
@@ -187,11 +200,13 @@ class BasicDialog(QDialog):
             self._parent.setAttribute(Qt.WA_TranslucentBackground)
             self._parent.setWindowFlags(Qt.FramelessWindowHint)
             self._parent.setFixedSize(WIN_WID, WIN_HEI)
-            self._parent.move((WIN_WID - self._parent.width()) / 2, 3 * (WIN_HEI - self._parent.height()) / 7)
+            self._parent.move((WIN_WID - self._parent.width()) // 2, 3 * (WIN_HEI - self._parent.height()) // 7)
             self._parent.show()
             self._generate_self_parent = True
         super().__init__(parent=self._parent)
-        self.hide()
+        self._emerge_animation()
+        # self.hide()
+        title = "   " + title if title else ""
         self.setWindowTitle(title)
         self.title = title
         self.setWindowFlags(Qt.FramelessWindowHint)
@@ -249,7 +264,7 @@ class BasicDialog(QDialog):
             self.ensure_button = QPushButton('确定')
             self.add_bottom_bar(ensure_bt_fill)
         # 移动到屏幕中央
-        self.move((WIN_WID - self.width()) / 2, 3 * (WIN_HEI - self.height()) / 7)
+        self.move((WIN_WID - self.width()) // 2, 3 * (WIN_HEI - self.height()) // 7)
         # 给top_layout的区域添加鼠标拖动功能
         self.m_flag = False
         self.m_Position = None
@@ -297,7 +312,12 @@ class BasicDialog(QDialog):
     def init_center_layout(self):
         self.main_layout.addLayout(self._center_layout, stretch=1)
 
-    def add_bottom_bar(self, ensure_bt_fill):
+    def add_bottom_bar(self, ensure_bt_fill: bool):
+        """
+
+        :param ensure_bt_fill: 是否填充整个底部
+        :return:
+        """
         self.bottom_layout.setContentsMargins(0, 0, 0, 0)
         self.bottom_layout.setSpacing(0)
         self.main_layout.addLayout(self.bottom_layout)
@@ -306,16 +326,17 @@ class BasicDialog(QDialog):
             self.bottom_layout.addWidget(self.cancel_button)
             self.bottom_layout.addWidget(self.ensure_button)
             _set_buttons([self.cancel_button], sizes=(80, 30), border=0, bd_radius=10,
-                         bg=(BG_COLOR1, "#F76677", "#F76677", BG_COLOR2))
+                         bg=(BG_COLOR1, LIGHTER_RED, LIGHTER_RED, BG_COLOR2))
             _set_buttons([self.ensure_button], sizes=(80, 30), border=0, bd_radius=10,
-                         bg=(BG_COLOR1, "#6DDF6D", "#6DDF6D", BG_COLOR2))
+                         bg=(BG_COLOR1, LIGHTER_GREEN, LIGHTER_GREEN, BG_COLOR2))
             self.cancel_button.clicked.connect(self.close)
             self.ensure_button.clicked.connect(self.ensure)
-            self.ensure_button.setFocus()
+            self.cancel_button.setFocusPolicy(Qt.NoFocus)
+            self.ensure_button.setFocusPolicy(Qt.NoFocus)
         else:
             self.bottom_layout.addWidget(self.ensure_button)
             _set_buttons([self.ensure_button], sizes=(300, 35), border=0, bd_radius=(0, 0, 15, 15),
-                         bg=(BG_COLOR2, "#6DDF6D", "#6DDF6D", BG_COLOR2))
+                         bg=(BG_COLOR2, LIGHTER_GREEN, LIGHTER_GREEN, BG_COLOR2))
             self.ensure_button.setFocusPolicy(Qt.NoFocus)
             self.ensure_button.clicked.connect(self.ensure)
 
@@ -408,10 +429,9 @@ class BasicDialog(QDialog):
                 self.m_Position = event.globalPos()
                 event.accept()
 
-    def _animate(self):
-        animation = QPropertyAnimation(self, QByteArray(b"windowOpacity"))
-        animation.setDuration(300)
-        animation.setStartValue(0)
-        animation.setEndValue(1)
-        self.show()
-        animation.start()
+    def _emerge_animation(self):
+        self.animation = QPropertyAnimation(self.parent(), QByteArray(b"windowOpacity"))
+        self.animation.setDuration(100)
+        self.animation.setStartValue(0)
+        self.animation.setEndValue(1)
+        self.animation.start()

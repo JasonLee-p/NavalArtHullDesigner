@@ -173,7 +173,7 @@ class Button(QPushButton):
             self.setFixedSize(size[0], size[1])
         if tool_tip:
             self.setToolTip(tool_tip)
-            self.setToolTipDuration(3000)
+            self.setToolTipDuration(5000)
         if focus_policy:
             self.setFocusPolicy(focus_policy)
         else:
@@ -261,6 +261,12 @@ class Button(QPushButton):
                 padding: {self.padding[0]}px {self.padding[1]}px {self.padding[2]}px {self.padding[3]}px;
             }}
             {indicator_styleSheet}
+            QToolTip {{
+                background-color: {self.bg[0]};
+                color: {self.fg[0]};
+                border: 1px solid {self.fg[1]};
+                border-radius: 4px;
+            }}
         """)
 
     def reset_theme(self, theme_data):
