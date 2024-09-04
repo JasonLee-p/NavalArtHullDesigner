@@ -324,7 +324,7 @@ class EditModelWidget(EditTabWidget):
 
     def __init__(self):
         super().__init__()
-        self.pathButton = Button(None, "单击以重新选择模型路径", bg=('transparent', BG_COLOR3, BG_COLOR2, BG_COLOR3),
+        self.pathButton = Button(None, "单击：重新选择模型路径", bg=('transparent', BG_COLOR3, BG_COLOR2, BG_COLOR3),
                                  bd_radius=5, size=None,
                                  font=YAHEI[9], bd=1, padding=3)
         self._init_ui()

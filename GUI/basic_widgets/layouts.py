@@ -185,6 +185,17 @@ class ButtonGroup:
             else:
                 self.current = None
 
+    def clear(self):
+        """
+        清空
+        """
+        for button in self.buttons:
+            button.setChecked(False)
+            if hasattr(button, 'func_'):
+                button.clicked.disconnect(button.func_)
+        self.buttons.clear()
+        self.current = None
+
 
 class _MutiDirectionTab(QWidget):
     __draggable_tab: Optional['_MutiDirectionTab'] = None
@@ -839,7 +850,12 @@ class Window(QWidget):
         self.ask_if_close = ask_if_close
         # 基础样式
         self.setFont(font)
-        self.shadow = QGraphicsDropShadowEffect()
+        # 设置边框阴影
+        self.shadow = QGraphicsDropShadowEffect(self)
+        self.shadow.setOffset(7)
+        self.shadow.setColor(QColor(10, 10, 10, 70))
+        self.shadow.setBlurRadius(50)
+        self.setGraphicsEffect(self.shadow)
         # 设置非最大化的大小
         self.setFixedSize(QSize(size[0], size[1]))
         self.setMinimumSize(QSize(200, 200))

@@ -557,6 +557,16 @@ class Splitter(QSplitter):
 
 class ScrollArea(QScrollArea):
     def __init__(self, parent, widget, orientation, bd=0, bd_radius=0, bg="transparent", bar_bg=BG_COLOR0):
+        """
+        滚动区域
+        :param parent:
+        :param widget:
+        :param orientation: Qt.Horizontal or Qt.Vertical
+        :param bd:
+        :param bd_radius:
+        :param bg:
+        :param bar_bg:
+        """
         self.styleSheet = f"""
                 QScrollArea{{
                     background-color: {bg}; color: {FG_COLOR0};

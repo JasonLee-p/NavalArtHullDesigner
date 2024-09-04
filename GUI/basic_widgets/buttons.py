@@ -319,10 +319,10 @@ class TextButton(Button):
             _set_text: bool = True
     ):
         self.text = text
+        super().__init__(parent, tool_tip, bd, bd_color, bd_radius, padding, bg, fg, font, align, size)
         # 设置样式
         if _set_text:
             self.setText(text)
-        super().__init__(parent, tool_tip, bd, bd_color, bd_radius, padding, bg, fg, font, align, size)
 
 
 class ImageButton(QPushButton):

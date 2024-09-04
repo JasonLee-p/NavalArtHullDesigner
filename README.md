@@ -87,7 +87,7 @@ NavalArtHullEditor/
 
 运行主入口文件，以启动编辑器：
 ```bash
-python NavalArtHullEditor.py
+python NavalArtHullDesigner.py
 ```
 
 ### 构建可执行文件

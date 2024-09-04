@@ -179,67 +179,77 @@ class BasicDialog(QDialog):
     def __init__(self, parent=None, border_radius=8, title=None, size=QSize(400, 300), center_layout=None,
                  resizable=False, hide_top=False, hide_bottom=False, ensure_bt_fill=False):
         """
+        对话框基类
 
-        :param parent:
-        :param border_radius:
-        :param title:
-        :param size:
-        :param center_layout:
-        :param resizable:
-        :param hide_top:
-        :param hide_bottom:
-        :param ensure_bt_fill:
+        :param parent: 父窗口，通常设置为None或者主窗口
+        :param border_radius: 边框圆角半径，通常为8（和按钮的圆角半径一致）
+        :param title: 标题
+        :param size: 窗口大小
+        :param center_layout: 中心布局，默认None则为QVBoxLayout
+        :param resizable: 是否可缩放
+        :param hide_top: 是否隐藏顶部栏
+        :param hide_bottom: 是否隐藏底部栏
+        :param ensure_bt_fill: 确定按钮是否填充整个底部
         """
         self.close_bg = QIcon(QPixmap.fromImage(CLOSE_IMAGE))
-        self._parent = parent
-        self._generate_self_parent = False
-        if not parent:
-            # 此时没有其他控件，但是如果直接显示会导致圆角黑边，所以需要设置一个背景色
-            self._parent = QWidget()
-            # 设置透明
-            self._parent.setAttribute(Qt.WA_TranslucentBackground)
-            self._parent.setWindowFlags(Qt.FramelessWindowHint)
-            self._parent.setFixedSize(WIN_WID, WIN_HEI)
-            self._parent.move((WIN_WID - self._parent.width()) // 2, 3 * (WIN_HEI - self._parent.height()) // 7)
-            self._parent.show()
-            self._generate_self_parent = True
-        super().__init__(parent=self._parent)
+        super().__init__(parent=parent)
         self._emerge_animation()
         # self.hide()
-        title = "   " + title if title else ""
-        self.setWindowTitle(title)
+        # 设置窗口属性
+        self.setWindowTitle("    " + title if title else "")
         self.title = title
-        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowMinMaxButtonsHint)  # 设置窗口无边框
         self.setFixedSize(size)
-        self.topH = 30
+        self.setAttribute(Qt.WA_TranslucentBackground)
+
+        self.topH = 36
         self.TitleFont = YAHEI[10]
         self.ContentFont = YAHEI[15]
         # 设置边框阴影
         self.shadow = QGraphicsDropShadowEffect(self)
-        self.shadow.setOffset(0)
-        self.shadow.setColor(QColor(0, 0, 0, 50))
-        self.shadow.setBlurRadius(15)
+        self.shadow.setOffset(5)
+        self.shadow.setColor(QColor(10, 10, 10, 65))
+        self.shadow.setBlurRadius(45)
         self.setGraphicsEffect(self.shadow)
+        # 底色控件，使得窗口不全透明
+        self.outer_layout = QVBoxLayout()
+        self.outer_widget = QWidget()
+        self.outer_layout.addWidget(self.outer_widget)
+        self.setLayout(self.outer_layout)
+        # 设置样式
         if isinstance(border_radius, int):
-            border_command = f"border-radius:{border_radius}px;"
+            border_style = f"border-radius:{border_radius}px;"
         elif isinstance(border_radius, tuple):
-            border_command = f"""
+            border_style = f"""
             border-top-left-radius:{border_radius[0]}px;
             border-top-right-radius:{border_radius[1]}px;
             border-bottom-left-radius:{border_radius[2]}px;
             border-bottom-right-radius:{border_radius[3]}px;
             """
         else:
-            border_command = f"border-radius:10px;"
-        self.setStyleSheet(f"""
-            QDialog{{
+            border_style = f"border-radius:10px;"
+        self.outer_widget.setStyleSheet(f"""
+            QWidget{{
                 background-color:{BG_COLOR1};
-                {border_command}
+                {border_style}
             }}
         """)
+        # self.setStyleSheet(f"""
+        #     QDialog{{
+        #         background-color:{BG_COLOR1};
+        #     }}
+        #     QLabel{{
+        #         background-color:{BG_COLOR1};
+        #         color:{FG_COLOR0};
+        #     }}
+        #     QWidget{{
+        #         background-color:{BG_COLOR1};
+        #         color:{FG_COLOR0};
+        #     }}
+        # """)
         # 设置主题
         self.main_layout = QVBoxLayout()
-        self.setLayout(self.main_layout)
+        self.outer_widget.setLayout(self.main_layout)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
         if not hide_top:
@@ -250,8 +260,8 @@ class BasicDialog(QDialog):
             # 分割线
             self.main_layout.addWidget(HorSpliter(), alignment=Qt.AlignTop)
         # 主体-----------------------------------------------------------------------------------------------
-        self._center_layout = center_layout
-        self.init_center_layout()
+        self._center_layout = center_layout if center_layout else QVBoxLayout()
+        self.__init_center_layout()
         self.main_layout.addStretch(1)
         if not hide_bottom:
             if not hide_top:
@@ -273,22 +283,22 @@ class BasicDialog(QDialog):
         if resizable:
             # 添加缩放功能，当鼠标移动到窗口边缘时，鼠标变成缩放样式
             self.drag = [False, False, False, False]  # 用于判断鼠标是否在窗口边缘
-            self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowMinMaxButtonsHint)  # 设置窗口无边框
             self.setMouseTracking(True)  # 设置widget鼠标跟踪
             self.resize_flag = False  # 用于判断是否拉伸窗口
             self.resize_dir = None  # 用于判断拉伸窗口的方向
             self.resize_area = 5  # 用于判断鼠标是否在边缘区域
             self.resize_min_size = QSize(200, 200)
             self.resize_max_size = QSize(WIN_WID, WIN_HEI)
+        self.init_center_layout()
 
     @abstractmethod
     def ensure(self):
         self.close()
 
     def close(self):
+        if hasattr(self, "Instance"):
+            self.Instance = None
         super().close()
-        if self._generate_self_parent:
-            self._parent.close()
 
     def add_top_bar(self):
         # 布局
@@ -304,13 +314,33 @@ class BasicDialog(QDialog):
         # 按钮
         cb_size = (self.topH + 8, self.topH)
         self.close_button.setIcon(self.close_bg)
-        self.close_button.setFocusPolicy(Qt.NoFocus)
         _set_buttons([self.close_button], sizes=cb_size, border=0, bg=(BG_COLOR1, "#F76677", "#F76677", "#F76677"))
         self.close_button.clicked.connect(self.close)
+        self.close_button.setFocusPolicy(Qt.NoFocus)
         self.top_layout.addWidget(self.close_button, alignment=Qt.AlignRight)
 
-    def init_center_layout(self):
+    def __init_center_layout(self):
         self.main_layout.addLayout(self._center_layout, stretch=1)
+
+    @abstractmethod
+    def init_center_layout(self):
+        """
+        初始化中心布局
+        在该函数中调用add_widget()添加控件，该函数会在基类初始化时调用
+        无需调用基类的该函数
+        :return:
+        """
+        pass
+
+    def add_widget(self, *args, alignment=Qt.AlignCenter):
+        """
+        QVBoxLayout或QHBoxLayout的参数：widget, stretch, alignment, *args
+        QGridLayout的参数：widget, row, column, rowSpan, columnSpan, alignment, *args
+        :param alignment:
+        :param args:
+        :return:
+        """
+        self._center_layout.addWidget(*args, alignment=alignment)
 
     def add_bottom_bar(self, ensure_bt_fill: bool):
         """
@@ -325,9 +355,9 @@ class BasicDialog(QDialog):
         if not ensure_bt_fill:
             self.bottom_layout.addWidget(self.cancel_button)
             self.bottom_layout.addWidget(self.ensure_button)
-            _set_buttons([self.cancel_button], sizes=(80, 30), border=0, bd_radius=10,
+            _set_buttons([self.cancel_button], sizes=(80, 30), border=0, bd_radius=10, font=YAHEI[9],
                          bg=(BG_COLOR1, LIGHTER_RED, LIGHTER_RED, BG_COLOR2))
-            _set_buttons([self.ensure_button], sizes=(80, 30), border=0, bd_radius=10,
+            _set_buttons([self.ensure_button], sizes=(80, 30), border=0, bd_radius=10, font=YAHEI[9],
                          bg=(BG_COLOR1, LIGHTER_GREEN, LIGHTER_GREEN, BG_COLOR2))
             self.cancel_button.clicked.connect(self.close)
             self.ensure_button.clicked.connect(self.ensure)
@@ -342,33 +372,34 @@ class BasicDialog(QDialog):
 
     def mousePressEvent(self, event):
         # 鼠标按下时，记录当前位置，若在标题栏内且非最大化，则允许拖动
-        if event.button() == Qt.LeftButton and event.x() < self.topH and self.isMaximized() is False:
+        if event.button() == Qt.LeftButton and event.y() < self.topH and not self.isMaximized():
             self.m_flag = True
             self.m_Position = event.globalPos() - self.pos()
             event.accept()
         elif event.button() == Qt.LeftButton and self.resizable:
             self.resize_flag = True
             self.m_Position = event.globalPos()
-            _pos = event.__pos()
+            _pos = QPoint(event.x(), event.y())
             # 判断鼠标所在的位置是否为边缘
             if _pos.x() < self.resize_area:
                 self.drag[0] = True
             if _pos.x() > self.width() - self.resize_area:
                 self.drag[1] = True
-            if _pos.x() < self.resize_area:
+            if _pos.y() < self.resize_area:
                 self.drag[2] = True
-            if _pos.x() > self.height() - self.resize_area:
+            if _pos.y() > self.height() - self.resize_area:
                 self.drag[3] = True
             # 判断鼠标所在的位置是否为角落
-            if _pos.x() < self.resize_area and _pos.x() < self.resize_area:
+            if _pos.x() < self.resize_area and _pos.y() < self.resize_area:
                 self.resize_dir = 'lt'
-            elif self.resize_area > _pos.x() > self.height() - self.resize_area:
+            elif self.resize_area > _pos.y() > self.height() - self.resize_area:
                 self.resize_dir = 'lb'
             elif self.width() - self.resize_area < _pos.x() < self.resize_area:
                 self.resize_dir = 'rt'
-            elif _pos.x() > self.width() - self.resize_area and _pos.x() > self.height() - self.resize_area:
+            elif _pos.x() > self.width() - self.resize_area and _pos.y() > self.height() - self.resize_area:
                 self.resize_dir = 'rb'
             event.accept()
+        # 刷新
         self.update()
 
     def mouseReleaseEvent(self, _):
@@ -382,26 +413,34 @@ class BasicDialog(QDialog):
     def mouseMoveEvent(self, event):
         # 当鼠标在标题栏按下且非最大化时，移动窗口
         if Qt.LeftButton and self.m_flag:
-            self.move(event.globalPos() - self.m_Position)
+            target_pos = event.globalPos() - self.m_Position
+            # 去除窗口移动到屏幕外的情况
+            if target_pos.x() < 0:
+                target_pos.setX(0)
+            if target_pos.y() < 0:
+                target_pos.setY(0)
+            self.move(target_pos)
             event.accept()
+            # 刷新
+            self.update()
         if self.resizable:
             # 检查是否需要改变鼠标样式
-            _pos = event.__pos()
+            _pos = QPoint(event.x(), event.y())
             if _pos.x() < self.resize_area:
                 self.setCursor(Qt.SizeHorCursor)
             elif _pos.x() > self.width() - self.resize_area:
                 self.setCursor(Qt.SizeHorCursor)
-            elif _pos.x() < self.resize_area:
+            elif _pos.y() < self.resize_area:
                 self.setCursor(Qt.SizeVerCursor)
-            elif _pos.x() > self.height() - self.resize_area:
+            elif _pos.y() > self.height() - self.resize_area:
                 self.setCursor(Qt.SizeVerCursor)
-            elif _pos.x() < self.resize_area and _pos.x() < self.resize_area:
+            elif _pos.x() < self.resize_area and _pos.y() < self.resize_area:
                 self.setCursor(Qt.SizeFDiagCursor)
-            elif self.resize_area > _pos.x() > self.height() - self.resize_area:
+            elif self.resize_area > _pos.y() > self.height() - self.resize_area:
                 self.setCursor(Qt.SizeBDiagCursor)
             elif self.width() - self.resize_area < _pos.x() < self.resize_area:
                 self.setCursor(Qt.SizeBDiagCursor)
-            elif _pos.x() > self.width() - self.resize_area and _pos.x() > self.height() - self.resize_area:
+            elif _pos.x() > self.width() - self.resize_area and _pos.y() > self.height() - self.resize_area:
                 self.setCursor(Qt.SizeFDiagCursor)
             else:
                 self.setCursor(Qt.ArrowCursor)
@@ -409,7 +448,7 @@ class BasicDialog(QDialog):
             if self.resize_flag:
                 _pos = event.__pos()
                 _dx = event.globalPos().x() - self.m_Position.x()
-                _dy = event.globalPos().x() - self.m_Position.x()
+                _dy = event.globalPos().y() - self.m_Position.y()
                 if self.resize_dir == 'lt':
                     self.setGeometry(self.x() + _dx, self.y() + _dy, self.width() - _dx, self.height() - _dy)
                 elif self.resize_dir == 'lb':
@@ -428,6 +467,8 @@ class BasicDialog(QDialog):
                     self.setGeometry(self.x(), self.y(), self.width(), self.height() + _dy)
                 self.m_Position = event.globalPos()
                 event.accept()
+                # 刷新
+                self.update()
 
     def _emerge_animation(self):
         self.animation = QPropertyAnimation(self.parent(), QByteArray(b"windowOpacity"))
