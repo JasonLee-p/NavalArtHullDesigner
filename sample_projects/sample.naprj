@@ -1,8 +1,8 @@
 {
-  "check_code": "24de983beae0351b786ab72e8684d4864bace29d",
+  "check_code": "073f351ea23d9b555a388195a78eece4627649d1",
   "project_name": "SampleProject",
   "author": "JasonLee",
-  "edit_time": "2024-7-20 23:32:45",
+  "edit_time": "2024-9-4 15:2:27",
   "hull_section_group": [
     {
       "name": "\u4e3b\u4f53",
@@ -281,7 +281,7 @@
   ],
   "model": [
     {
-      "name": "Missouri",
+      "name": "Hindenburg",
       "pos": [
         0.0,
         -6.0,
@@ -297,7 +297,7 @@
         1,
         1
       ],
-      "file_path": "E:\\JasonLee\\python_projects\\NavalArtPluginNew\\resources\\models\\KMS-Hindenburg.obj"
+      "file_path": "D:\\Program Files (x86)\\Steam\\steamapps\\common\\NavalArt\\NavalArt_Data\\3DPrinting\\KMS-Hindenburg.obj"
     }
   ]
 }
