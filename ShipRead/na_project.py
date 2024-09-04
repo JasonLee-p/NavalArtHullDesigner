@@ -124,6 +124,8 @@ class ShipProject(QObject):
             ]
         }
         """
+    TAG = "ShipProject"
+
     add_hull_section_group_s = pyqtSignal(str)  # noqa  # 添加船体截面组的信号，传出截面组id
     add_armor_section_group_s = pyqtSignal(str)  # noqa  # 添加装甲截面组的信号，传出截面组id
     add_bridge_s = pyqtSignal(str)  # noqa  # 添加舰桥的信号，传出舰桥id
