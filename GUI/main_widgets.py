@@ -420,6 +420,14 @@ class GLWidgetGUI(GLViewWidget):
     clear_selected_items = pyqtSignal()  # noqa
     after_selection = pyqtSignal()  # noqa
 
+    def selectAll(self):
+        self.selected_items.clear()
+        for item in self.items:
+            if hasattr(item, "handler"):
+                if item.setSelected(True):
+                    self.selected_items.append(item)
+        self._after_selection()
+
     def __init__(self, left_hand=True):
         """
         """

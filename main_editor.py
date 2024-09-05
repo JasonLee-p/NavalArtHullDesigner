@@ -197,7 +197,8 @@ class MainEditor(MainEditorGUI):
     def paste(self):
         sections = set()
         for item in self.gl_widget.clipboard:
-            sections.add(item.handler)
+            if hasattr(item, "handler"):
+                sections.add(item.handler)
         self._current_prj.add_sections(list(sections))
 
     def __init__(self, gl_widget, logger):
