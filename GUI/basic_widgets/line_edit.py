@@ -70,7 +70,7 @@ class NumberEdit(TextEdit):
             num_type: Union[Type[int], Type[float]] = int,
             num_range: tuple = (-100000, 100000),
             rounding: int = 0,
-            default_value: int = 0,
+            default_value: Union[int, float] = 0,
             step: Union[int, float] = int(1),
             font=YAHEI[10],
             bg="transparent",
@@ -98,8 +98,8 @@ class NumberEdit(TextEdit):
         self.num_type = num_type
         self.num_range = num_range
         self.rounding = None if self.num_type == int else rounding
-        self.default_value = default_value
-        self.current_value = round(self.num_type(default_value), self.rounding) if self.rounding else int(default_value)
+        self.default_value = num_type(default_value)
+        self.current_value: Union[int, float] = round(self.num_type(default_value), self.rounding) if self.rounding else int(default_value)
         self.step = step
         # 设置属性
         if size:
@@ -114,6 +114,7 @@ class NumberEdit(TextEdit):
             self.setValidator(QDoubleValidator(self.num_range[0], self.num_range[1], self.rounding))
         # 绑定值改变事件
         self.textChanged.connect(self.text_changed)
+        # 注意，textChanged信号会被撤回操作触发，所以不要在这里触发value_changed信号
 
     def setValue(self, value):
         if self.rounding:
@@ -140,6 +141,9 @@ class NumberEdit(TextEdit):
         event.accept()
 
     def text_changed(self):
+        """
+        文本改变时触发
+        """
         pass
         # if self.textChanging:
         #     return
@@ -164,6 +168,19 @@ class NumberEdit(TextEdit):
         # 将回车绑定到焦点离开事件
         if event.key() == Qt.Key_Return:
             self.clearFocus()
+        else:
+            # 更新值
+            self.update_mutex.lock()
+            try:
+                self.current_value = round(float(self.text()), self.rounding) if self.rounding else int(self.text())
+                # 显示到控件
+                self.setText(str(self.current_value))
+            except ValueError:
+                pass
+            self.value_changed.emit(self.current_value)
+            if self.root_parent:
+                self.root_parent.update()
+            self.update_mutex.unlock()
         super().keyPressEvent(event)
 
     def focusInEvent(self, event):

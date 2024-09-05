@@ -4,7 +4,43 @@ import xml.etree.ElementTree as ET
 DESKTOP = os.path.join(os.path.expanduser("~"), "Desktop")
 
 
-def offset_position(xml_str, offset_x, offset_y, offset_z):
+def get_avg_position(xml_str):
+    """
+    :param xml_str: 输入的XML文件字符串
+    :return: 平均位置的元组
+    """
+    # 解析XML字符串
+    root = ET.fromstring(xml_str)
+
+    # 初始化位置的累加值和计数
+    x_sum = 0
+    y_sum = 0
+    z_sum = 0
+    count = 0
+
+    # 查找所有的<position>标签
+    for position in root.findall(".//position"):
+        # 获取当前的x, y, z值
+        x = float(position.get('x'))
+        y = float(position.get('y'))
+        z = float(position.get('z'))
+
+        # 累加
+        x_sum += x
+        y_sum += y
+        z_sum += z
+        count += 1
+
+    # 计算平均值
+    avg_x = round(x_sum / count, 4)
+    avg_y = round(y_sum / count, 4)
+    avg_z = round(z_sum / count, 4)
+
+    # 返回平均位置元组
+    return avg_x, avg_y, avg_z
+
+
+def offset_position(xml_str, offset_x, offset_y, offset_z) -> str:
     """
     :param xml_str: 输入的XML文件字符串
     :param offset_x: X轴的偏移量

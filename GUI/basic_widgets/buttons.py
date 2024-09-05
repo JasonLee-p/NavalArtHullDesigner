@@ -19,7 +19,7 @@ def _set_buttons(
     """
     设置按钮样式
     :param buttons: 按钮列表
-    :param sizes:
+    :param sizes: 按钮大小，可以是一个元组，也可以是一个元组的列表
     :param font: QFont对象
     :param border: 边框宽度
     :param bd_color: 边框颜色
@@ -32,8 +32,12 @@ def _set_buttons(
     buttons = list(buttons)
     if isinstance(bd_radius, int):
         bd_radius = (bd_radius, bd_radius, bd_radius, bd_radius)
-    if type(sizes[0]) in [int, None]:
+    if type(sizes[0]) in [tuple, list]:
         sizes = [sizes] * len(buttons)
+    elif sizes is None:
+        pass
+    else:
+        sizes = [(sizes[0], sizes[1])] * len(buttons)
     if border != 0:
         border_text = f"{border}px solid {bd_color}"
     else:
@@ -45,13 +49,15 @@ def _set_buttons(
     if isinstance(fg, (str, ThemeColor)):
         fg = (fg, fg, fg, fg)
     for button in buttons:
-        if sizes[buttons.index(button)][0] is None:
+        if sizes is None:
+            pass
+        elif sizes[buttons.index(button)][0] is None:
             # 宽度拉伸
-            button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+            button.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
             button.setFixedHeight(sizes[buttons.index(button)][1])
         elif sizes[buttons.index(button)][1] is None:
             # 高度拉伸
-            button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Maximum)
+            button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding)
             button.setFixedWidth(sizes[buttons.index(button)][0])
         else:
             button.setFixedSize(*sizes[buttons.index(button)])
@@ -323,6 +329,10 @@ class TextButton(Button):
         # 设置样式
         if _set_text:
             self.setText(text)
+
+    def setText(self, text):
+        self.text = text
+        super().setText(text)
 
 
 class ImageButton(QPushButton):

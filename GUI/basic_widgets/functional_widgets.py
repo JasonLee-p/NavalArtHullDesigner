@@ -193,13 +193,15 @@ class BasicDialog(QDialog):
         """
         self.close_bg = QIcon(QPixmap.fromImage(CLOSE_IMAGE))
         super().__init__(parent=parent)
-        self._emerge_animation()
+        # self._emerge_animation()
         # self.hide()
         # 设置窗口属性
         self.setWindowTitle("    " + title if title else "")
         self.title = title
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowMinMaxButtonsHint)  # 设置窗口无边框
         self.setFixedSize(size)
+        self.sizeX = size.width()
+        self.sizeY = size.height()
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.topH = 36
@@ -290,6 +292,7 @@ class BasicDialog(QDialog):
             self.resize_min_size = QSize(200, 200)
             self.resize_max_size = QSize(WIN_WID, WIN_HEI)
         self.init_center_layout()
+        self.setFocusPolicy(Qt.StrongFocus)
 
     @abstractmethod
     def ensure(self):
@@ -358,8 +361,8 @@ class BasicDialog(QDialog):
         self.bottom_layout.setContentsMargins(0, 0, 0, 0)
         self.bottom_layout.setSpacing(0)
         self.main_layout.addLayout(self.bottom_layout)
-        self.bottom_layout.addStretch(1)
         if not ensure_bt_fill:
+            self.bottom_layout.addStretch(1)
             self.bottom_layout.addWidget(self.cancel_button)
             self.bottom_layout.addWidget(self.ensure_button)
             _set_buttons([self.cancel_button], sizes=(80, 30), border=0, bd_radius=10, font=YAHEI[9],
@@ -371,9 +374,9 @@ class BasicDialog(QDialog):
             self.cancel_button.setFocusPolicy(Qt.NoFocus)
             self.ensure_button.setFocusPolicy(Qt.NoFocus)
         else:
-            self.bottom_layout.addWidget(self.ensure_button)
-            _set_buttons([self.ensure_button], sizes=(300, 35), border=0, bd_radius=(0, 0, 15, 15),
+            _set_buttons([self.ensure_button], sizes=(None, 35), border=0, bd_radius=(0, 0, 15, 15),
                          bg=(BG_COLOR2, LIGHTER_GREEN, LIGHTER_GREEN, BG_COLOR2))
+            self.bottom_layout.addWidget(self.ensure_button)
             self.ensure_button.setFocusPolicy(Qt.NoFocus)
             self.ensure_button.clicked.connect(self.ensure)
 
