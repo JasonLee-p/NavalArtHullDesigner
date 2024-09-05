@@ -409,27 +409,11 @@ class ToolsTab(MutiDirectionTab):
         self.button_widget.layout().setAlignment(Qt.AlignLeft)
         self.button_widget.layout().setContentsMargins(15, 15, 15, 15)
         self.button_widget.layout().setSpacing(10)
-        self.moveButton.clicked.connect(self.move_dialog)
-        self.scaleButton.clicked.connect(self.scale_dialog)
+        self.moveButton.clicked.connect(MoveDialog.open_dialog)
+        self.scaleButton.clicked.connect(ScaleDialog.open_dialog)
 
         self.button_widget.layout().addWidget(self.moveButton, alignment=Qt.AlignLeft)
         self.button_widget.layout().addWidget(self.scaleButton, alignment=Qt.AlignLeft)
-
-    def move_dialog(self):
-        if MoveDialog.Instance:
-            MoveDialog.Instance.raise_()
-            MoveDialog.Instance.activateWindow()
-        else:
-            dialog = MoveDialog()
-            dialog.show()
-
-    def scale_dialog(self):
-        if ScaleDialog.Instance:
-            ScaleDialog.Instance.raise_()
-            ScaleDialog.Instance.activateWindow()
-        else:
-            dialog = ScaleDialog()
-            dialog.show()
 
 
 class GLWidgetGUI(GLViewWidget):

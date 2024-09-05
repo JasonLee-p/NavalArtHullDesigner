@@ -534,3 +534,9 @@ class ImageTextButton(TextButton):
                          _set_text=False)
         self.setLayout(self.layout)
         self.layout.setAlignment(align)
+
+    def get_text(self) -> str:
+        """
+        获取文本
+        """
+        return self.text_label.text()

@@ -1,8 +1,9 @@
 import os
+from typing import Callable
 
-from GUI import ScrollArea, ButtonGroup, ImageTextButton, TextButton
+from GUI import ScrollArea, ButtonGroup, ImageTextButton, TextButton, NumberEdit
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QFrame, QGridLayout, QSizePolicy
+from PyQt5.QtWidgets import QFrame, QGridLayout, QSizePolicy, QMessageBox
 
 from .basic_widgets import BasicDialog
 from GUI.basic_data import *
@@ -12,8 +13,10 @@ from string_src import *
 
 class NaDesignSelectDialog(BasicDialog):
     Instance: Optional['NaDesignSelectDialog'] = None
+    select_design_s = pyqtSignal(str)  # noqa
 
     def __init__(self, parent=None):
+        self.selected_design = None
         self.design_map = {
             # "图纸名称（不含后缀）": 图纸的预览图对象（QPixMap）
             # 图纸文件在NA_SHIP_PATH目录下，图片文件在NA_SHIP_PATH/Thumbnails目录下
@@ -92,16 +95,26 @@ class NaDesignSelectDialog(BasicDialog):
         self._center_layout.addWidget(self.scroll_area, stretch=1)
 
     @classmethod
-    def select_design(cls):
-        design = None
+    def select_design(cls, func: Optional[Callable[[str], None]] = None):
+        """
+        选择图纸
+        :param func: 回调函数，当选择图纸后调用，参数为图纸名称。
+        """
         # 选择图纸
         if NaDesignSelectDialog.Instance is None:
-            dialog = NaDesignSelectDialog(None)
-        else:
-            dialog = NaDesignSelectDialog.Instance
-        dialog.show()
+            NaDesignSelectDialog(None)
+        NaDesignSelectDialog.Instance.show()
+        # 绑定回调函数
+        if func is not None:
+            NaDesignSelectDialog.Instance.select_design_s.connect(func)
 
     def ensure(self):
+        selected_design_bt = self.button_group.current
+        if selected_design_bt is None:
+            QMessageBox.warning(self, "警告", "您尚未选择图纸！", QMessageBox.Ok)
+            return
+        self.selected_design = selected_design_bt.get_text()
+        self.select_design_s.emit(self.selected_design)
         self.close()
 
 
@@ -110,20 +123,42 @@ class MoveDialog(BasicDialog):
 
     def __init__(self, parent=None):
         self.select_design_button = TextButton(None, "选择图纸", "选择要移动的图纸",
-                                               bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3), fg=FG_COLOR0,
-                                               font=YAHEI[9])
+                                               bg=(BG_COLOR0, BG_COLOR3, BG_COLOR2, BG_COLOR3), fg=FG_COLOR0,
+                                               font=YAHEI[10], size=(200, 38))
+        self.input_widget = QFrame(None)
+        self.x_input = NumberEdit(None, None, (68, 28), float,
+                                  rounding=4, default_value=0, step=0.1)
+        self.y_input = NumberEdit(None, None, (68, 28), float,
+                                  rounding=4, default_value=0, step=0.1)
+        self.z_input = NumberEdit(None, None, (68, 28), float,
+                                    rounding=4, default_value=0, step=0.1)
         super().__init__(parent, title="整体移动na图纸", hide_bottom=True)
         self.bind_signals()
         MoveDialog.Instance = self
 
     def init_center_layout(self):
         self.add_widget(self.select_design_button)
+        self.add_widget(self.input_widget)
+        input_layout = QGridLayout()
+        input_layout.addWidget(self.x_input, 0, 0)
+        input_layout.addWidget(self.y_input, 0, 1)
+        input_layout.addWidget(self.z_input, 0, 2)
+        self.input_widget.setLayout(input_layout)
 
     def bind_signals(self):
-        self.select_design_button.clicked.connect(NaDesignSelectDialog.select_design)
+        self.select_design_button.clicked.connect(lambda: NaDesignSelectDialog.select_design(self.design_selected))
+
+    def design_selected(self, design_name: str):
+        print(f"Selected Design: {design_name}")
 
     def ensure(self):
         self.close()
+
+    @classmethod
+    def open_dialog(cls):
+        if cls.Instance is None:
+            cls(None)
+        cls.Instance.show()
 
 
 class ScaleDialog(BasicDialog):
@@ -141,7 +176,16 @@ class ScaleDialog(BasicDialog):
         self.add_widget(self.select_design_button)
 
     def bind_signals(self):
-        self.select_design_button.clicked.connect(NaDesignSelectDialog.select_design)
+        self.select_design_button.clicked.connect(lambda: NaDesignSelectDialog.select_design(self.design_selected))
+
+    def design_selected(self, design_name: str):
+        print(f"Selected Design: {design_name}")
 
     def ensure(self):
         self.close()
+
+    @classmethod
+    def open_dialog(cls):
+        if cls.Instance is None:
+            cls(None)
+        cls.Instance.show()

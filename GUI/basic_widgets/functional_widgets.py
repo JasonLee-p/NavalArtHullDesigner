@@ -5,7 +5,7 @@
 from abc import abstractmethod
 
 from ..basic_data import *
-from .buttons import *
+from .line_edit import NumberEdit, TextEdit
 from .buttons import _set_buttons
 from .other_widgets import *
 
@@ -295,6 +295,13 @@ class BasicDialog(QDialog):
     def ensure(self):
         self.close()
 
+    def show(self):
+        super().show()
+        self.close_button.setFocusPolicy(Qt.NoFocus)
+        # 置顶
+        self.raise_()
+        self.activateWindow()
+
     def close(self):
         if hasattr(self, "Instance"):
             self.Instance = None
@@ -372,7 +379,7 @@ class BasicDialog(QDialog):
 
     def mousePressEvent(self, event):
         # 鼠标按下时，记录当前位置，若在标题栏内且非最大化，则允许拖动
-        if event.button() == Qt.LeftButton and event.y() < self.topH and not self.isMaximized():
+        if event.button() == Qt.LeftButton and event.y() <= self.topH and not self.isMaximized():
             self.m_flag = True
             self.m_Position = event.globalPos() - self.pos()
             event.accept()
@@ -409,6 +416,7 @@ class BasicDialog(QDialog):
             self.resize_flag = False if self.resize_flag else self.resize_flag
             self.drag = [False, False, False, False]
             self.resize_dir = None
+        self.update()
 
     def mouseMoveEvent(self, event):
         # 当鼠标在标题栏按下且非最大化时，移动窗口
