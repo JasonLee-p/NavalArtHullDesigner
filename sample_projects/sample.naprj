@@ -1,8 +1,8 @@
 {
-  "check_code": "34ad8689e87fa0d917b3509050e10879829ee227",
+  "check_code": "17a15d3606801123460c36b7d67979e890acf25b",
   "project_name": "SampleProject",
   "author": "JasonLee",
-  "edit_time": "2024-9-7 3:35:11",
+  "edit_time": "2024-9-7 4:13:51",
   "hull_section_group": [
     {
       "name": "\u4e3b\u4f53",
@@ -284,7 +284,7 @@
       "name": "Hindenburg",
       "pos": [
         0.0,
-        -6.0,
+        0.0,
         0.0
       ],
       "rot": [
@@ -297,7 +297,7 @@
         1,
         1
       ],
-      "file_path": "D:\\Program Files (x86)\\Steam\\steamapps\\common\\NavalArt\\NavalArt_Data\\3DPrinting\\KMS-Hindenburg.obj"
+      "file_path": "E:\\JasonLee\\python_projects\\NavalArtPluginNew\\sample_projects\\KMS Hindenburg.obj"
     }
   ],
   "ref_image": [
@@ -305,8 +305,8 @@
       "name": "Fuso",
       "pos": [
         0.0,
-        -15.0,
-        0.0
+        -18.0,
+        8.5
       ],
       "rot": [
         90.0,
@@ -314,8 +314,8 @@
         0
       ],
       "scl": [
-        80.0,
-        10.0,
+        114.0,
+        12.4,
         1
       ],
       "file_path": "E:\\JasonLee\\python_projects\\NavalArtPluginNew\\sample_projects\\Fuso.png"

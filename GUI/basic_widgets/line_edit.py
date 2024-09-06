@@ -154,9 +154,10 @@ class NumberEdit(TextEdit):
 
     def keyPressEvent(self, event):
         super().keyPressEvent(event)
-        # 当按下删除，退格，回车，上下键，tab键时，将值设置为当前值
-        if event.key() in [Qt.Key_Delete, Qt.Key_Backspace, Qt.Key_Return, Qt.Key_Up, Qt.Key_Down, Qt.Key_Tab]:
-            self.valueSetted(False)
+        self.valueSetted(False)
+        # # 当按下删除，退格，回车，上下键，tab键时，将值设置为当前值
+        # if event.key() in [Qt.Key_Delete, Qt.Key_Backspace, Qt.Key_Return, Qt.Key_Up, Qt.Key_Down, Qt.Key_Tab]:
+        #     self.valueSetted(False)
 
     def inputMethodEvent(self, event):
         """
