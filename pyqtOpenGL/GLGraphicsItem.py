@@ -127,6 +127,7 @@ class GLGraphicsItem(QtCore.QObject):
         self.__view = None
         self.__children: list[GLGraphicsItem] = list()
         self.__transform = Matrix4x4()  # local transform
+        self.__scale_transform = Matrix4x4()
         self.__visible = True
         self.__selectable = selectable
         self.__selected = False
@@ -373,7 +374,7 @@ class GLGraphicsItem(QtCore.QObject):
         return self.__initialized
 
     def drawItemTree(self, model_matrix=Matrix4x4()):
-        model_matrix = model_matrix * self.transform()
+        model_matrix = model_matrix * self.__transform * self.__scale_transform
         self.initialize()
 
         if self.visible():
@@ -385,7 +386,7 @@ class GLGraphicsItem(QtCore.QObject):
     def drawItemTree_pickMode(self, model_matrix=Matrix4x4()):
         if not self.__selectable:
             return
-        model_matrix = model_matrix * self.transform()
+        model_matrix = model_matrix * self.__transform * self.__scale_transform
         self.initialize()
 
         if self.visible():
@@ -469,6 +470,13 @@ class GLGraphicsItem(QtCore.QObject):
         If *local* is False, then scale takes place in the parent's coordinates.
         """
         self.__transform.scale(x, y, z, local=local)
+        return self
+
+    def setScale(self, x, y, z):
+        """
+        Set the scale of the object to (*dx*, *dy*, *dz*) directly in its local coordinate system.
+        """
+        self.__scale_transform = Matrix4x4().scale(x, y, z)
         return self
 
     # The following methods must be implemented by subclasses:
