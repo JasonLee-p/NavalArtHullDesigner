@@ -46,6 +46,7 @@ class RefImage(PrjComponent):
             self.setPaintItem(imageItem)
             self.setPos(pos)
             self.setRot(rot)
+            self.setScl(scl)
 
     def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
         super()._init_showButton(type_)
@@ -64,6 +65,7 @@ class RefImage(PrjComponent):
             self.setPaintItem(imageItem)
             self.setPos(self.Pos)
             self.setRot(self.Rot)
+            self.setScl(self.Scl)
             self.hullProject.gl_widget.paintGL_outside()
         # 更新右侧属性栏
         self.update_path_s.emit(self.file_path)

@@ -283,10 +283,16 @@ class PrjComponent(QObject):
         self.Rot[2] = z
         self.paintItem.setEuler(self.Rot[0], self.Rot[1], z)
 
-    def setScl(self, scl: QVector3D):
+    def setScl(self, scl: Union[list, np.ndarray]):
         """
         """
-        self.paintItem.scale(scl.x(), scl.y(), scl.z())
+        if hasattr(self, "Scl"):
+            self.Scl = scl  # noqa
+        else:
+            Log().warning(self.TAG, f"{self} 没有Scl属性")
+        self.paintItem.setScale(scl[0], scl[1], scl[2])
+
+
 
     @classmethod
     def get_by_id(cls, id_):

@@ -32,6 +32,9 @@ class EditTabWidget(QWidget):
         self.rotX_edit = NumberEdit(None, self, (68, 24), float, (-180, 180), 2, step=0.5, font=_font)
         self.rotY_edit = NumberEdit(None, self, (68, 24), float, (-180, 180), 2, step=0.5, font=_font)
         self.rotZ_edit = NumberEdit(None, self, (68, 24), float, (-180, 180), 2, step=0.5, font=_font)
+        self.sclX_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), 4, 1, 0.1, YAHEI[9])
+        self.sclY_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), 4, 1, 0.1, YAHEI[9])
+        self.sclZ_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), 4, 1, 0.1, YAHEI[9])
 
     def _getMainEditor(self):
         """
@@ -96,6 +99,12 @@ class EditTabWidget(QWidget):
             lambda y: self.setRotY(y, [self.rotX_edit, self.rotY_edit, self.rotZ_edit]))
         self.rotZ_edit.value_changed.connect(
             lambda z: self.setRotZ(z, [self.rotX_edit, self.rotY_edit, self.rotZ_edit]))
+        self.sclX_edit.value_changed.connect(
+            lambda x: self.setSclX(x, [self.sclX_edit, self.sclY_edit, self.sclZ_edit]))
+        self.sclY_edit.value_changed.connect(
+            lambda y: self.setSclY(y, [self.sclX_edit, self.sclY_edit, self.sclZ_edit]))
+        self.sclZ_edit.value_changed.connect(
+            lambda z: self.setSclZ(z, [self.sclX_edit, self.sclY_edit, self.sclZ_edit]))
 
     @abstractmethod
     def updateSectionHandler(self, item):
@@ -129,6 +138,18 @@ class EditTabWidget(QWidget):
 
     def setRotZ(self, z, edits):
         op = RotateOperation(self._current_item, [self._current_item.Rot[0], self._current_item.Rot[1], z], edits)
+        self.operationStack.execute(op)
+
+    def setSclX(self, x, edits):
+        op = ScaleOperation(self._current_item, [x, self._current_item.Scl[1], self._current_item.Scl[2]], edits)
+        self.operationStack.execute(op)
+
+    def setSclY(self, y, edits):
+        op = ScaleOperation(self._current_item, [self._current_item.Scl[0], y, self._current_item.Scl[2]], edits)
+        self.operationStack.execute(op)
+
+    def setSclZ(self, z, edits):
+        op = ScaleOperation(self._current_item, [self._current_item.Scl[0], self._current_item.Scl[1], z], edits)
         self.operationStack.execute(op)
 
 
@@ -385,8 +406,11 @@ class EditRefImageWidget(EditTabWidget):
     TAG = "EditRefImageWidget"
     Instance: Optional['EditRefImageWidget'] = None
 
+    scl_changed_s = pyqtSignal(list)  # noqa
+
     def __init__(self):
         super().__init__()
+
         self.pathButton = Button(None, "单击：重新选择图片路径", bg=('transparent', BG_COLOR3, BG_COLOR2, BG_COLOR3),
                                  bd_radius=5, size=None,
                                  font=YAHEI[9], bd=1, padding=3)
@@ -412,6 +436,9 @@ class EditRefImageWidget(EditTabWidget):
         self.rotX_edit.setValue(item.Rot[0])
         self.rotY_edit.setValue(item.Rot[1])
         self.rotZ_edit.setValue(item.Rot[2])
+        self.sclX_edit.setValue(item.Scl[0])
+        self.sclY_edit.setValue(item.Scl[1])
+        self.sclZ_edit.setValue(item.Scl[2])
 
     def updatePath(self, path):
         self.pathButton.setText(path)
@@ -420,8 +447,13 @@ class EditRefImageWidget(EditTabWidget):
         super()._init_basic_info_ui()
         _font = YAHEI[9]
         self.basic_info_layout.addWidget(ColoredTextLabel(
-            None, "图片路径", _font, bg='transparent'), 2, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
-        self.basic_info_layout.addWidget(self.pathButton, 2, 1, 1, 3)
+            None, "缩放大小", _font, bg='transparent'), 2, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
+        self.basic_info_layout.addWidget(self.sclX_edit, 2, 1)
+        self.basic_info_layout.addWidget(self.sclY_edit, 2, 2)
+        self.basic_info_layout.addWidget(self.sclZ_edit, 2, 3)
+        self.basic_info_layout.addWidget(ColoredTextLabel(
+            None, "图片路径", _font, bg='transparent'), 3, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
+        self.basic_info_layout.addWidget(self.pathButton, 3, 1, 1, 3)
         self.pathButton.setFixedHeight(24)
         self.pathButton.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
         self.pathButton.setIcon(QIcon(QPixmap(FOLDER_IMAGE)))

@@ -106,3 +106,37 @@ class RotateOperation(Operation):
         self.edits[0].setValue(self.target_rot[0])
         self.edits[1].setValue(self.target_rot[1])
         self.edits[2].setValue(self.target_rot[2])
+
+
+class ScaleOperation(Operation):
+    """
+    缩放操作
+    """
+    def __init__(self, sectionHandler, target_scl: list = None, edits=None):
+        """
+        缩放操作
+        :param sectionHandler: 被缩放的元素
+        :param target_scl: 目标缩放
+        :param edits: 相关的显示控件
+        """
+        super().__init__()
+        self.name = f"缩放 {sectionHandler.name} 到 ({round(target_scl[0], 4)}, {round(target_scl[1], 4)}, {round(target_scl[2], 4)})"
+        self.sectionHandler = sectionHandler
+        self.target_scl = target_scl if target_scl else sectionHandler.Scl
+        self.origin_scl = sectionHandler.Scl
+        self.edits = edits
+
+    def execute(self):
+        self.sectionHandler.setScl(self.target_scl)
+
+    def undo(self):
+        self.sectionHandler.setScl(self.origin_scl)
+        self.edits[0].setValue(self.origin_scl[0])
+        self.edits[1].setValue(self.origin_scl[1])
+        self.edits[2].setValue(self.origin_scl[2])
+
+    def redo(self):
+        self.execute()
+        self.edits[0].setValue(self.target_scl[0])
+        self.edits[1].setValue(self.target_scl[1])
+        self.edits[2].setValue(self.target_scl[2])
