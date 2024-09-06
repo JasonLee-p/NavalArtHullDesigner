@@ -226,6 +226,8 @@ class DesignerProject(QObject):
             self.add_ladder_s.emit(ladder_.getId())
         for model_ in self.__model:
             self.add_model_s.emit(model_.getId())
+        for ref_image_ in self.__ref_image:
+            self.add_ref_image_s.emit(ref_image_.getId())
 
     def new_hullSectionGroup(self):
         """
@@ -463,7 +465,8 @@ class DesignerProject(QObject):
             "armor_section_group": [as_group.to_dict() for as_group in self.__armor_section_group],
             "bridge": [bridge_.to_dict() for bridge_ in self.__bridge],
             "ladder": [ladder_.to_dict() for ladder_ in self.__ladder],
-            "model": [model_.to_dict() for model_ in self.__model]
+            "model": [model_.to_dict() for model_ in self.__model],
+            "ref_image": [ref_image_.to_dict() for ref_image_ in self.__ref_image]
         }
 
     def save(self):
@@ -530,6 +533,8 @@ class DesignerPrjReader:
         self.load_ladder(data['ladder'])
         # 读取模型
         self.load_model(data['model'])
+        # 读取参考图片
+        self.load_ref_image(data['ref_image'])
         return True
 
     def load_rail(self, data, parent):
