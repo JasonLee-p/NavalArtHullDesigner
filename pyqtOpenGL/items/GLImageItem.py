@@ -53,6 +53,8 @@ class GLImageItem(GLGraphicsItem):
 
     def initializeGL(self):
         self.shader = Shader(vertex_shader, fragment_shader)
+        self.pick_shader = Shader(vertex_shader, self.pick_fragment_shader)
+        self.selected_shader = Shader(vertex_shader, self.selected_fragment_shader)
         self.vao = VAO()
         self.vbo = VBO([self.vertices], [[3, 2]], usage=gl.GL_STATIC_DRAW)
         self.vbo.setAttrPointer([0], attr_id=[[0, 1]])
@@ -100,17 +102,46 @@ class GLImageItem(GLGraphicsItem):
     def paint(self, model_matrix=Matrix4x4()):
         if self._img is None:
             return
+        if not self.selected():
+            self.updateGL()
+            self.setupGLState()
+
+            self.shader.set_uniform("proj", self.proj_matrix().glData, "mat4")  # 投影矩阵
+            self.shader.set_uniform("view", self.view_matrix().glData, "mat4")  # 视图矩阵
+            self.shader.set_uniform("model", model_matrix.glData, "mat4")  # 模型矩阵
+
+            self.texture.bind()
+            self.shader.set_uniform("texture1", self.texture, "sample2D")
+
+            with self.shader:
+                self.vao.bind()
+                gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
+        else:
+            self.paint_selected(model_matrix)
+
+    def paint_selected(self, model_matrix=Matrix4x4()):
         self.updateGL()
         self.setupGLState()
 
-        self.shader.set_uniform("proj", self.proj_matrix().glData, "mat4")  # 投影矩阵
-        self.shader.set_uniform("view", self.view_matrix().glData, "mat4")  # 视图矩阵
-        self.shader.set_uniform("model", model_matrix.glData, "mat4")  # 模型矩阵
+        self.shader.set_uniform("proj", self.proj_matrix().glData, "mat4")
+        self.shader.set_uniform("view", self.view_matrix().glData, "mat4")
+        self.shader.set_uniform("model", model_matrix.glData, "mat4")
 
         self.texture.bind()
         self.shader.set_uniform("texture1", self.texture, "sample2D")
 
         with self.shader:
+            self.vao.bind()
+            gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
+
+    def paint_pickMode(self, model_matrix=Matrix4x4()):
+        self.updateGL()
+        self.setupGLState()
+        self.pick_shader.set_uniform("proj", self.proj_matrix().glData, "mat4")
+        self.pick_shader.set_uniform("view", self.view_matrix().glData, "mat4")
+        self.pick_shader.set_uniform("model", model_matrix.glData, "mat4")
+        self.pick_shader.set_uniform("pickColor", self.pickColor(), "float")
+        with self.pick_shader:
             self.vao.bind()
             gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
