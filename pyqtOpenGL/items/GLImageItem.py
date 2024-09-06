@@ -17,13 +17,21 @@ class GLImageItem(GLGraphicsItem):
 
     def __init__(
             self,
-            img=None,
+            img: np.ndarray = None,
             left_bottom=(0, 0),  # 左下角坐标 0 ~ 1
             width_height=(1, 1),  # 宽高 0 ~ 1
-            glOptions='opaque',
-            parentItem=None
+            glOptions='translucent',
+            parentItem=None,
+            selectable=True
     ):
-        super().__init__(parentItem=parentItem)
+        """
+        :param img: image data, np.ndarray, shape=(h, w, 3), dtype=np.uint8
+        :param left_bottom: left bottom position, (0, 0) ~ (1, 1)
+        :param width_height: width and height, (0, 0) ~ (1, 1)
+        :param glOptions: 'opaque' or 'translucent'
+
+        """
+        super().__init__(parentItem=parentItem, selectable=selectable, depthValue=0)
         self.setGLOptions(glOptions)
 
         self._tex_update_flag = False
@@ -95,9 +103,10 @@ class GLImageItem(GLGraphicsItem):
         self.updateGL()
         self.setupGLState()
 
-        self.shader.set_uniform("proj", self.proj_matrix().glData, "mat4")
-        self.shader.set_uniform("view", self.view_matrix().glData, "mat4")
-        self.shader.set_uniform("model", model_matrix.glData, "mat4")
+        self.shader.set_uniform("proj", self.proj_matrix().glData, "mat4")  # 投影矩阵
+        self.shader.set_uniform("view", self.view_matrix().glData, "mat4")  # 视图矩阵
+        self.shader.set_uniform("model", model_matrix.glData, "mat4")  # 模型矩阵
+
         self.texture.bind()
         self.shader.set_uniform("texture1", self.texture, "sample2D")
 
@@ -119,9 +128,10 @@ layout (location = 1) in vec2 iTexCoord;
 out vec2 TexCoord;
 
 void main() {
-    gl_Position = vec4(iPos, 1.0);
-    TexCoord =iTexCoord;
+    gl_Position = proj * view * model * vec4(iPos, 1.0);  // 添加矩阵变换
+    TexCoord = iTexCoord;
 }
+
 """
 
 fragment_shader = """

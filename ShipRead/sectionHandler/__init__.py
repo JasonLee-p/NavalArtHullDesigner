@@ -7,3 +7,4 @@ from .armorSectionGroup import ArmorSectionGroup, ArmorSection
 from .bridge import Bridge, Handrail, Railing
 from .ladder import Ladder
 from .model import Model
+from .refImage import RefImage

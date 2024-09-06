@@ -96,6 +96,7 @@ class HierarchyTab(MutiDirectionTab):
         self._bridge_tab = QWidget()
         self._ladder_tab = QWidget()  # 梯子
         self._model_tab = QWidget()  # 外部模型
+        self._refImage_tab = QWidget()  # 参考图片
 
         self.__init_main_widget()
 
@@ -110,11 +111,13 @@ class HierarchyTab(MutiDirectionTab):
         self.tab_widget.addTab(self._bridge_tab, "舰桥")
         self.tab_widget.addTab(self._ladder_tab, "梯子")
         self.tab_widget.addTab(self._model_tab, "外部模型")
+        self.tab_widget.addTab(self._refImage_tab, "参考图片")
         self.hullSectionGroup_tab = HullSectionGroupESW(self.main_editor, self._hullSectionGroup_tab)
         self.armorSectionGroup_tab = ArmorSectionGroupESW(self.main_editor, self._armorSectionGroup_tab)
         self.bridge_tab = BridgeESW(self.main_editor, self._bridge_tab)
         self.ladder_tab = LadderESW(self.main_editor, self._ladder_tab)
         self.model_tab = ModelESW(self.main_editor, self._model_tab)
+        self.refImage_tab = RefImageESW(self.main_editor, self._refImage_tab)
         # 总布局
         self.main_layout.addWidget(self.tab_widget)
 
@@ -140,6 +143,9 @@ class HierarchyTab(MutiDirectionTab):
     def add_model(self, model):
         self.model_tab.add_item(model)
 
+    def add_ref_image(self, refImage):
+        self.refImage_tab.add_item(refImage)
+
     def del_hull_section_group(self, hull_section_group):
         self.hullSectionGroup_tab.del_item(hull_section_group)
 
@@ -155,12 +161,16 @@ class HierarchyTab(MutiDirectionTab):
     def del_model(self, model):
         self.model_tab.del_item(model)
 
+    def del_ref_image(self, refImage):
+        self.refImage_tab.del_item(refImage)
+
     def clear(self):
         self.hullSectionGroup_tab.clear()
         self.armorSectionGroup_tab.clear()
         self.bridge_tab.clear()
         self.ladder_tab.clear()
         self.model_tab.clear()
+        self.refImage_tab.clear()
 
 
 class EditTab(MutiDirectionTab):
@@ -182,12 +192,14 @@ class EditTab(MutiDirectionTab):
         self.edit_bridge_widget = EditBridgeWidget()
         self.edit_ladder_widget = EditLadderWidget()
         self.edit_model_widget = EditModelWidget()
+        self.edit_refImage_widget = EditRefImageWidget()
         self.edit_widgets = {
             self.edit_hullSectionGroup_widget: HULL_SECTION_GROUP_STR,
             self.edit_armorSectionGroup_widget: ARMOR_SECTION_GROUP_STR,
             self.edit_bridge_widget: "舰桥",
             self.edit_ladder_widget: "梯子",
-            self.edit_model_widget: "外部模型"
+            self.edit_model_widget: "外部模型",
+            self.edit_refImage_widget: "参考图片"
         }
         self.current_edit_widget: Union[None, QWidget] = None
 
@@ -291,6 +303,9 @@ class EditTab(MutiDirectionTab):
 
     def edit_model(self, model):
         self.edit_model_widget.updateSectionHandler(model)
+
+    def edit_refImage(self, refImage):
+        self.edit_refImage_widget.updateSectionHandler(refImage)
 
 
 class SettingTab(MutiDirectionTab):
@@ -673,6 +688,9 @@ class GLWidgetGUI(GLViewWidget):
         super()._after_selection()
 
     def clearResources(self):
+        """
+        清除所有的物体和光源
+        """
         # self.animation_timer.stop()
         # self.animation_timer.deleteLater()
         for _ in self.items:
@@ -723,7 +741,7 @@ class MainEditorGUI(Window):
         """
         file_dialog = QFileDialog(None)
         file_dialog.setFileMode(QFileDialog.ExistingFiles)
-        file_dialog.setNameFilter("NA Hull Editor工程文件 (*.naprj)")
+        file_dialog.setNameFilter(f"{DESIGNER_PRJ_STR}文件 (*.naprj)")
         file_dialog.setViewMode(QFileDialog.Detail)
         prjs = self.configHandler.get_config("Projects")
         if prjs:

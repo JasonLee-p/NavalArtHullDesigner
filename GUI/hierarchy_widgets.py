@@ -6,6 +6,8 @@ from .basic_widgets import *
 
 
 class ESW(QObject):
+    """
+    """
     def __init__(self, main_editor, tab_widget):
         """
         Element Structure Widget
@@ -93,6 +95,8 @@ class ESW(QObject):
 
 
 class HullSectionGroupESW(ESW):
+    """
+    """
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget)
         self.title = "船体截面组："
@@ -101,6 +105,8 @@ class HullSectionGroupESW(ESW):
 
 
 class ArmorSectionGroupESW(ESW):
+    """
+    """
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget)
         self.title = "装甲截面组："
@@ -109,6 +115,8 @@ class ArmorSectionGroupESW(ESW):
 
 
 class BridgeESW(ESW):
+    """
+    """
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget)
         self.title = "舰桥："
@@ -117,6 +125,8 @@ class BridgeESW(ESW):
 
 
 class LadderESW(ESW):
+    """
+    """
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget)
         self.title = "梯子："
@@ -125,6 +135,8 @@ class LadderESW(ESW):
 
 
 class ModelESW(ESW):
+    """
+    """
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget)
         tab_widget.setMinimumWidth(250)
@@ -136,3 +148,19 @@ class ModelESW(ESW):
         if not super().create_item():
             return False
         self.main_editor.getCurrentPrj().new_model()  # 经过一圈信号传递，最终也调用了self.add_item
+
+
+class RefImageESW(ESW):
+    """
+    """
+    def __init__(self, main_editor, tab_widget):
+        super().__init__(main_editor, tab_widget)
+        tab_widget.setMinimumWidth(250)
+        self.title = "参考图片："
+        self._setup_ui()
+        self._bind_signal()
+
+    def create_item(self):
+        if not super().create_item():
+            return False
+        self.main_editor.getCurrentPrj().new_refImage()  # 经过一圈信号传递，最终也调用了self.add_item

@@ -405,6 +405,13 @@ class MainEditor(MainEditorGUI):
         """
         pass
 
+    @update_structure('add')
+    def add_ref_image_s(self, ref_image_id):
+        """
+        添加参考图片
+        """
+        pass
+
     @update_structure('del')
     def del_hull_section_group_s(self, group_id):
         """
@@ -437,6 +444,13 @@ class MainEditor(MainEditorGUI):
     def del_model_s(self, model_id):
         """
         删除外部模型
+        """
+        pass
+
+    @update_structure('del')
+    def del_ref_image_s(self, ref_image_id):
+        """
+        删除参考图片
         """
         pass
 
@@ -473,6 +487,9 @@ class MainEditor(MainEditorGUI):
         elif isinstance(item, Model):
             self.edit_tab.set_editing_widget("外部模型")
             self.edit_tab.edit_model(item)
+        elif isinstance(item, RefImage):
+            self.edit_tab.set_editing_widget("参考图片")
+            self.edit_tab.edit_refImage(item)
 
     def __del__(self):
         Log().info(self.TAG, "MainEditor对象已销毁")

@@ -9,6 +9,9 @@ _TAG = "APIClient"
 
 
 def request_url(url, data=None):
+    """
+    请求url
+    """
     if data is None:
         response = requests.get(url)
     else:
@@ -17,6 +20,9 @@ def request_url(url, data=None):
 
 
 class APIClient:
+    """
+    和服务器通信
+    """
     def __init__(self):
         self.base_url = "http://"
         self._register_url = f"{self.base_url}/user/register"
@@ -59,6 +65,7 @@ class APIClient:
             'password': password
         }
         response = requests.post(self._register_url, json=data)
+        Log().info(_TAG, response.json())
         return response.json()
 
     def _login_request(self, email, password):

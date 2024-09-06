@@ -122,6 +122,14 @@ class DesignerProject(QObject):
                     "file_path": "path/to/file/with/name.obj"
                 }
             ]
+            "ref_image": [
+                {
+                    "name": "userdefined",
+                    "pos": [0, 0, 0],
+                    "rot": [0, 0, 0],
+                    "file_path": "path/to/file/with/name.png"
+                }
+            ]
         }
         """
     TAG = "ShipProject"
@@ -131,12 +139,14 @@ class DesignerProject(QObject):
     add_bridge_s = pyqtSignal(str)  # noqa  # 添加舰桥的信号，传出舰桥id
     add_ladder_s = pyqtSignal(str)  # noqa  # 添加梯子的信号，传出梯子id
     add_model_s = pyqtSignal(str)  # noqa  # 添加模型的信号，传出模型id
+    add_ref_image_s = pyqtSignal(str)  # noqa  # 添加参考图片的信号，传出参考图片id
 
     del_hull_section_group_s = pyqtSignal(str)  # noqa  # 删除船体截面组的信号，传出截面组id
     del_armor_section_group_s = pyqtSignal(str)  # noqa  # 删除装甲截面组的信号，传出截面组id
     del_bridge_s = pyqtSignal(str)  # noqa  # 删除舰桥的信号，传出舰桥id
     del_ladder_s = pyqtSignal(str)  # noqa  # 删除梯子的信号，传出梯子id
     del_model_s = pyqtSignal(str)  # noqa  # 删除模型的信号，传出模型id
+    del_ref_image_s = pyqtSignal(str)  # noqa  # 删除参考图片的信号，传出参考图片id
 
     def __init__(self, gl_widget: 'GLWidgetGUI', path: str):  # noqa
         """
@@ -161,6 +171,7 @@ class DesignerProject(QObject):
         self.__bridge: List[Bridge] = []
         self.__ladder: List[Ladder] = []
         self.__model: List[Model] = []
+        self.__ref_image: List[RefImage] = []
 
     def bind_signal_to_editor(self, main_editor):
         """
@@ -173,6 +184,8 @@ class DesignerProject(QObject):
         self.add_bridge_s.connect(main_editor.add_bridge_s)
         self.add_ladder_s.connect(main_editor.add_ladder_s)
         self.add_model_s.connect(main_editor.add_model_s)
+        self.add_ref_image_s.connect(main_editor.add_ref_image_s)
+
         self.del_hull_section_group_s.connect(main_editor.del_hull_section_group_s)
         self.del_armor_section_group_s.connect(main_editor.del_armor_section_group_s)
         self.del_bridge_s.connect(main_editor.del_bridge_s)
@@ -256,6 +269,20 @@ class DesignerProject(QObject):
         file_dialog.fileSelected.connect(lambda p: self.add_model_byPath(p))  # noqa
         file_dialog.exec_()
 
+    def new_refImage(self):
+        """
+        产生交互界面，根据用户需求产生相应对象
+        :return: PrjSection
+        """
+        file_dialog = QFileDialog(None)
+        file_dialog.setFileMode(QFileDialog.ExistingFiles)
+        file_dialog.setNameFilter("图片文件 (*.png *.jpg *.bmp *.jpeg)")
+        file_dialog.setViewMode(QFileDialog.Detail)
+        find_path = configHandler.get_config("FindModelFolder")
+        file_dialog.setDirectory(find_path)
+        file_dialog.fileSelected.connect(lambda p: self.add_refImage_byPath(p))
+        file_dialog.exec_()
+
     def add_section(self, prjsection: Union[HullSectionGroup, ArmorSectionGroup, Bridge, Ladder, Model]):
         """
         添加截面组到工程中，同时发出信号，通知视图更新
@@ -272,6 +299,8 @@ class DesignerProject(QObject):
             self.add_ladder(prjsection)
         elif isinstance(prjsection, Model):
             self.add_model(prjsection)
+        elif isinstance(prjsection, RefImage):
+            self.add_refImage(prjsection)
         else:
             raise TypeError(f"未知的类型{prjsection}")
 
@@ -287,6 +316,7 @@ class DesignerProject(QObject):
         """
         将船体截面组添加到工程中，同时发出信号，通知视图更新
         :param prjsection: 船体截面组
+        :param init: 是否是在工程文件初始化时添加
         """
         if prjsection in self.__hull_section_group:
             self.__hull_section_group.append(prjsection.getCopy())
@@ -299,6 +329,7 @@ class DesignerProject(QObject):
         """
         将装甲截面组添加到工程中，同时发出信号，通知视图更新
         :param prjsection: 装甲截面组
+        :param init: 是否是在工程文件初始化时添加
         """
         if prjsection in self.__armor_section_group:
             self.__armor_section_group.append(prjsection.getCopy())
@@ -311,6 +342,7 @@ class DesignerProject(QObject):
         """
         将舰桥添加到工程中，同时发出信号，通知视图更新
         :param prjsection: 舰桥
+        :param init: 是否是在工程文件初始化时添加
         """
         if prjsection in self.__bridge:
             self.__bridge.append(prjsection.getCopy())
@@ -323,6 +355,7 @@ class DesignerProject(QObject):
         """
         将梯子添加到工程中，同时发出信号，通知视图更新
         :param prjsection: 梯子
+        :param init: 是否是在工程文件初始化时添加
         """
         if prjsection in self.__ladder:
             self.__ladder.append(prjsection.getCopy())
@@ -335,6 +368,7 @@ class DesignerProject(QObject):
         """
         将模型添加到工程中，同时发出信号，通知视图更新
         :param prjsection: 模型
+        :param init: 是否是在工程文件初始化时添加
         """
         if prjsection in self.__model:
             self.__model.append(prjsection.getCopy())
@@ -342,6 +376,19 @@ class DesignerProject(QObject):
             self.__model.append(prjsection)
         if not init:
             self.add_model_s.emit(prjsection.getId())
+
+    def add_refImage(self, prjsection: RefImage, init=False):
+        """
+        将参考图片添加到工程中，同时发出信号，通知视图更新
+        :param prjsection: 参考图片
+        :param init: 是否是在工程文件初始化时添加
+        """
+        if prjsection in self.__ref_image:
+            self.__ref_image.append(prjsection.getCopy())
+        else:
+            self.__ref_image.append(prjsection)
+        if not init:
+            self.add_ref_image_s.emit(prjsection.getId())
 
     def add_model_byPath(self, path: str, init=False):  # TODO
         """
@@ -354,6 +401,16 @@ class DesignerProject(QObject):
         path = os.path.abspath(path)
         model_ = Model(self, name, QVector3D(0, 0, 0), [0, 0, 0], [1, 1, 1], path)
         self.add_model(model_)
+
+    def add_refImage_byPath(self, path: str, init=False):  # TODO
+        """
+        通过路径添加参考图片到工程中，同时发出信号，通知视图更新
+        """
+        name = os.path.basename(path)
+        name = name[:name.rfind(".")]
+        path = os.path.abspath(path)
+        ref_image = RefImage(self, name, QVector3D(0, 0, 0), [0, 0, 0], [1, 1, 1], path)
+        self.add_refImage(ref_image)
 
     def del_section(self, prjsection: Union[HullSectionGroup, ArmorSectionGroup, Bridge, Ladder, Railing, Handrail]):
         """
@@ -375,6 +432,9 @@ class DesignerProject(QObject):
         elif isinstance(prjsection, Model):
             self.__model.remove(prjsection)
             self.del_model_s.emit(prjsection.getId())
+        elif isinstance(prjsection, RefImage):
+            self.__ref_image.remove(prjsection)
+            self.del_ref_image_s.emit(prjsection.getId())
         else:
             raise TypeError(f"未知的类型{prjsection}")
 
@@ -435,6 +495,11 @@ class DesignerPrjReader:
     TAG = "DesignerPrjReader"
 
     def __init__(self, main_editor, path, shipProject: DesignerProject):
+        """
+        :param main_editor: 主编辑器
+        :param path: 文件路径
+        :param shipProject: 工程对象
+        """
         self.main_editor = main_editor
         self.path = path
         self.hullProject = shipProject
@@ -575,7 +640,34 @@ class DesignerPrjReader:
                 raise KeyError(f"模型 {model_['name']} 的数据不完整")
             self.hullProject.add_model(model_handler, True)
 
+    def load_ref_image(self, data):
+        """
+        从工程文件中读取参考图片（模式和model一样）
+        :param data:
+        :return:
+        """
+        for ref_image_ in data:
+            img_p = ref_image_['file_path']
+            if img_p.startswith("resources/"):  # 说明是内置图片，需要转换为绝对路径
+                img_p = os.path.join(CURRENT_PATH, img_p)
+            try:
+                ref_image_handler = RefImage(
+                    self.hullProject, ref_image_['name'], QVector3D(*ref_image_['pos']),
+                    ref_image_['rot'], ref_image_['scl'], img_p)
+                # 加载失败的图片不添加
+                if hasattr(ref_image_handler, "load_failed") and ref_image_handler.load_failed:
+                    QMessageBox.warning(None, "警告",
+                                        f"图片 {ref_image_['name']} 加载失败，文件路径：{img_p}\n"
+                                        f"请检查该路径是否正确，或者重新绑定路径！",
+                                        QMessageBox.Ok)
+            except KeyError:
+                raise KeyError(f"图片 {ref_image_['name']} 的数据不完整")
+            self.hullProject.add_refImage(ref_image_handler, True)
+
     def check_checkCode(self, data: dict):
+        """
+        检查校验码是否正确
+        """
         data.pop("check_code")
         if self.hullProject.__check_code == str(sha1(str(data).encode("utf-8")).hexdigest()):
             return True

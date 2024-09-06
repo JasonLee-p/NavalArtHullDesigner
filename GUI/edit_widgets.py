@@ -379,3 +379,66 @@ class EditModelWidget(EditTabWidget):
             return
         op = ChangeModelPathOperation(self._current_item, path, self.pathButton.text())
         self.operationStack.execute(op)
+
+
+class EditRefImageWidget(EditTabWidget):
+    TAG = "EditRefImageWidget"
+    Instance: Optional['EditRefImageWidget'] = None
+
+    def __init__(self):
+        super().__init__()
+        self.pathButton = Button(None, "单击：重新选择图片路径", bg=('transparent', BG_COLOR3, BG_COLOR2, BG_COLOR3),
+                                 bd_radius=5, size=None,
+                                 font=YAHEI[9], bd=1, padding=3)
+        self._init_ui()
+        self._bind_signals()
+        EditModelWidget.Instance = self
+
+    def updateSectionHandler(self, item):
+        # # 解绑原信号  # TODO
+        # if self._current_item:
+        #     try:
+        #         self._current_item.update_path_s.disconnect(self.updatePath)
+        #     except TypeError:
+        #         Log().error(traceback.format_exc(), self.TAG, "解绑信号失败")
+        #     except Exception as _e:
+        #         Log().error(traceback.format_exc(), self.TAG, f"解绑信号失败：{_e}")
+        #         raise _e
+        # 链接路径修改信号
+        if hasattr(item, 'update_path_s'):
+            item.update_path_s.connect(self.updatePath)
+        super().updateSectionHandler(item)
+        self.pathButton.setText(item.file_path)
+        self.rotX_edit.setValue(item.Rot[0])
+        self.rotY_edit.setValue(item.Rot[1])
+        self.rotZ_edit.setValue(item.Rot[2])
+
+    def updatePath(self, path):
+        self.pathButton.setText(path)
+
+    def _init_basic_info_ui(self):
+        super()._init_basic_info_ui()
+        _font = YAHEI[9]
+        self.basic_info_layout.addWidget(ColoredTextLabel(
+            None, "图片路径", _font, bg='transparent'), 2, 0, alignment=Qt.AlignLeft | Qt.AlignVCenter)
+        self.basic_info_layout.addWidget(self.pathButton, 2, 1, 1, 3)
+        self.pathButton.setFixedHeight(24)
+        self.pathButton.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
+        self.pathButton.setIcon(QIcon(QPixmap(FOLDER_IMAGE)))
+        self.pathButton.clicked.connect(self.selectRefImagePath)
+
+    def _bind_signals(self):
+        super()._bind_signals()
+
+    def selectRefImagePath(self):
+        """
+        选择图片路径
+        :return:
+        """
+        # 打开文件选择对话框，路径就是当前button的text
+        path = QFileDialog.getOpenFileName(self, "选择图片文件", "", "图片文件 (*.jpg *.png *.bmp *.jpeg)")[0]
+        # 过滤掉空路径
+        if not path or path == '.':
+            return
+        op = ChangeRefImagePathOperation(self._current_item, path, self.pathButton.text())
+        self.operationStack.execute(op)

@@ -17,6 +17,9 @@ from pyqtOpenGL import GLMeshItem, sphere, cube, EditItemMaterial, GLGraphicsIte
 
 
 class PrjComponent(QObject):
+    """
+    项目组件基类，定义了组件的基本属性和方法，包括渲染，GUI控制，相关操作等。
+    """
     TAG = "PrjComponent"
     SPHERE_VER, SHPERE_IDX, SPHERE_UV, SPHERE_NORM = sphere(2, 16, 16, calc_uv_norm=True)
     CUBE_VER, CUBE_NORM, CUBE_TEX = cube(1, 1, 1)
@@ -30,48 +33,65 @@ class PrjComponent(QObject):
     _bridge_tab = None
     _ladder_tab = None
     _model_tab = None
+    _image_tab = None
+
     _hsg_bt_scroll_widget = None
     _asg_bt_scroll_widget = None
     _bridge_bt_scroll_widget = None
     _ladder_bt_scroll_widget = None
     _model_bt_scroll_widget = None
+    _image_bt_scroll_widget = None
 
     @classmethod
     def update_sphere(cls, radius, rows, cols):
+        """
+        """
         cls.SPHERE_VER, cls.SHPERE_IDX, cls.SPHERE_UV, cls.SPHERE_NORM = sphere(radius, rows, cols, calc_uv_norm=True)
 
     @classmethod
     def init_ref(cls, main_editor):
+        """
+        """
         cls._main_editor = main_editor
         cls._gl_widget = cls._main_editor.gl_widget
         cls._structure_tab = cls._main_editor.structure_tab
         cls._edit_tab = cls._main_editor.edit_tab
+
         cls._hsg_tab = cls._structure_tab.hullSectionGroup_tab
         cls._asg_tab = cls._structure_tab.armorSectionGroup_tab
         cls._bridge_tab = cls._structure_tab.bridge_tab
         cls._ladder_tab = cls._structure_tab.ladder_tab
         cls._model_tab = cls._structure_tab.model_tab
+        cls._image_tab = cls._structure_tab.refImage_tab
+
         cls._hsg_bt_scroll_widget = cls._hsg_tab.scroll_widget
         cls._asg_bt_scroll_widget = cls._asg_tab.scroll_widget
         cls._bridge_bt_scroll_widget = cls._bridge_tab.scroll_widget
         cls._ladder_bt_scroll_widget = cls._ladder_tab.scroll_widget
         cls._model_bt_scroll_widget = cls._model_tab.scroll_widget
+        cls._image_bt_scroll_widget = cls._image_tab.scroll_widget
 
     @classmethod
     def clear_widgets(cls):
+        """
+        """
         cls._main_editor = None
         cls._gl_widget = None
         cls._structure_tab = None
+
         cls._hsg_tab = None
         cls._asg_tab = None
         cls._bridge_tab = None
         cls._ladder_tab = None
         cls._model_tab = None
+        cls._image_tab = None
+
         cls._hsg_bt_scroll_widget = None
         cls._asg_bt_scroll_widget = None
         cls._bridge_bt_scroll_widget = None
         cls._ladder_bt_scroll_widget = None
         cls._model_bt_scroll_widget = None
+        cls._image_bt_scroll_widget = None
 
     def __init__(self, showButton_type: Literal['PosShow', 'PosRotShow'] = 'PosRotShow'):
         """
@@ -102,12 +122,16 @@ class PrjComponent(QObject):
         self.idMap[self._custom_id] = self  # noqa
 
     def hasPrj(self):
+        """
+        """
         if hasattr(self, "hullProject"):
             if self.hullProject is not None:
                 return True
         return False
 
     def hasPaintItem(self):
+        """
+        """
         return self.paintItem is not None
 
     def setPaintItem(self, paintItem: Literal["default", GLGraphicsItem]):
@@ -134,7 +158,10 @@ class PrjComponent(QObject):
                 selectable=True
             ).translate(self.Pos.x(), self.Pos.y(), self.Pos.z())
         else:
-            paintItem.addLight([PrjComponent._gl_widget.light])
+            if hasattr(paintItem, "addLight"):
+                paintItem.addLight([PrjComponent._gl_widget.light])
+            else:
+                Log().warning(self.TAG, f"{self} paintItem没有addLight方法")
         self.paintItem = paintItem
         # 绑定handler
         self.paintItem.set_selected_s.connect(self.set_showButton_checked)
@@ -143,6 +170,8 @@ class PrjComponent(QObject):
         self.setSelected(False, set_button=True)
 
     def getId(self):
+        """
+        """
         return self._custom_id
 
     @abstractmethod
@@ -158,12 +187,18 @@ class PrjComponent(QObject):
 
     @abstractmethod
     def getCopy(self):
+        """
+        """
         return PrjComponent()
 
     def addLight(self, lights: list):
+        """
+        """
         self.paintItem.addLight(lights)
 
     def setVisable(self, visable: bool):
+        """
+        """
         self.paintItem.setVisible(visable, recursive=True)
 
     def setSelected(self, selected: bool, set_button=True):
@@ -177,12 +212,18 @@ class PrjComponent(QObject):
         self.set_showButton_checked(selected) if set_button else None
 
     def set_showButton_checked(self, selected: bool):
+        """
+        """
         self._showButton.setChecked(selected)
 
     def selected(self):
+        """
+        """
         return self.paintItem.selected()
 
     def setPos(self, pos: QVector3D):
+        """
+        """
         self.Pos = pos
         self._showButton.setPos(pos)
         if self.paintItem:
@@ -191,46 +232,66 @@ class PrjComponent(QObject):
             Log().warning(self.TAG, f"{self} 没有paintItem")
 
     def setPosX(self, x: float):
+        """
+        """
         self.Pos.setX(x)
         self._showButton.setPosX(round(x, 4))
         self.paintItem.moveTo(x, self.Pos.y(), self.Pos.z())
 
     def setPosY(self, y: float):
+        """
+        """
         self.Pos.setY(y)
         self._showButton.setPosY(round(y, 4))
         self.paintItem.moveTo(self.Pos.x(), y, self.Pos.z())
 
     def setPosZ(self, z: float):
+        """
+        """
         self.Pos.setZ(z)
         self._showButton.setPosZ(round(z, 4))
         self.paintItem.moveTo(self.Pos.x(), self.Pos.y(), z)
 
     def addPos(self, vec: QVector3D):
+        """
+        """
         self.Pos += vec
         self.paintItem.moveTo(self.Pos.x(), self.Pos.y(), self.Pos.z())
 
     def setRot(self, rot: List[float]):
+        """
+        """
         self.Rot = rot
         if self.paintItem:
             self.paintItem.setEuler(rot[0], rot[1], rot[2])
 
     def setRotX(self, x: float):
+        """
+        """
         self.Rot[0] = x
         self.paintItem.setEuler(x, self.Rot[1], self.Rot[2])
 
     def setRotY(self, y: float):
+        """
+        """
         self.Rot[1] = y
         self.paintItem.setEuler(self.Rot[0], y, self.Rot[2])
 
     def setRotZ(self, z: float):
+        """
+        """
         self.Rot[2] = z
         self.paintItem.setEuler(self.Rot[0], self.Rot[1], z)
 
     def setScl(self, scl: QVector3D):
+        """
+        """
         self.paintItem.scale(scl.x(), scl.y(), scl.z())
 
     @classmethod
     def get_by_id(cls, id_):
+        """
+        """
         if isinstance(id_, str):
             # noinspection PyUnresolvedReferences
             return cls.idMap.get(id_)
@@ -272,6 +333,8 @@ class PrjComponent(QObject):
 
     @abstractmethod
     def to_dict(self):
+        """
+        """
         ...
 
     def __str__(self):
@@ -279,6 +342,9 @@ class PrjComponent(QObject):
 
 
 class SubPrjComponent(QObject):
+    """
+    子项目组件基类，定义了组件的基本属性和方法，包括渲染，GUI控制，相关操作等。
+    """
     TAG = "SubPrjComponent"
     _main_editor = None
     _gl_widget: Optional[GLViewWidget] = None
@@ -310,9 +376,13 @@ class SubPrjComponent(QObject):
         self.idMap[self._custom_id] = self  # noqa
 
     def getId(self):
+        """
+        """
         return self._custom_id
 
     def hasParent(self):
+        """
+        """
         return self._parent is not None
 
     def showButton(self):
@@ -373,6 +443,8 @@ class SubPrjComponent(QObject):
         self.setSelected(False)
 
     def addLight(self, lights: list):
+        """
+        """
         if hasattr(self.paintItem, "addLight"):
             self.paintItem.addLight(lights)
         else:
@@ -388,13 +460,19 @@ class SubPrjComponent(QObject):
         self.paintItem.setSelected(selected)
 
     def set_showButton_checked(self, selected: bool):
+        """
+        """
         self.showButton().setChecked(selected)
 
     def selected(self):
+        """
+        """
         return self.paintItem.selected()
 
     @abstractmethod
     def getCopy(self):
+        """
+        """
         return SubPrjComponent()
 
     @abstractmethod
@@ -416,6 +494,8 @@ class ComponentNodeXY(SubPrjComponent):
         super().delete_by_user()
 
     def getCopy(self):
+        """
+        """
         node = ComponentNodeXY(self._parent)
         node.x = self.x
         node.y = self.y
@@ -435,7 +515,10 @@ class ComponentNodeXY(SubPrjComponent):
         super().__init__()
 
     @property
-    def vector(self):
+    def vector(self) -> QVector3D:
+        """
+        返回节点的局部坐标
+        """
         return QVector3D(self.x, self.y, self._parent.z)
 
 
@@ -449,6 +532,8 @@ class ComponentNodeXZ(SubPrjComponent):
         super().delete_by_user()
 
     def getCopy(self):
+        """
+        """
         node = ComponentNodeXZ(self._parent)
         node.x = self.x
         node.z = self.z
@@ -468,4 +553,6 @@ class ComponentNodeXZ(SubPrjComponent):
 
     @property
     def vector(self):
+        """
+        """
         return QVector3D(self.x, self._parent.y, self.z)

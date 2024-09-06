@@ -24,7 +24,7 @@ NOT_IMPLEMENTED_WARNING_FULL_STR = '此功能暂未实现，请期待后续版�
 FATAL_ERROR_CONTACT_AUTHOR_FULL_STR = '发生致命错误，请联系开发者：E-mail: 2593292614@qq.com 或 Github: JasonLee-p'
 
 if Language == 'en':
-    APP_FULL_NAME_STR = ' NavalArt Hull Editor'
+    APP_FULL_NAME_STR = ' NavalArt Hull Designer'
     APP_SHORT_NAME_STR = 'Hull Editor'
     NA_DESIGN_STR = 'NavalArt Design'
     DESIGNER_PRJ_STR = 'Designer Project'
