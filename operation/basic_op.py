@@ -10,11 +10,10 @@ from utils.funcs_utils import operationMutexLock
 
 
 class Operation:
+    """
+    操作栈中的操作基类
+    """
     def __init__(self):
-        """
-        操作栈中的操作基类
-        在state_history.py中，
-        """
         self.name = f"未命名操作 {self.__class__.__name__}"
         pass
 

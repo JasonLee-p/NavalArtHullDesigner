@@ -5,6 +5,9 @@ from .basic_op import Operation
 
 
 class ChangeModelPathOperation(Operation):
+    """
+    修改模型路径操作
+    """
     def __init__(self, modelItem, newPath, formerPath):
         """
         修改模型路径操作

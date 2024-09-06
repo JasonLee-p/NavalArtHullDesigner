@@ -7,7 +7,9 @@ from .basic_op import Operation
 
 
 class MoveToOperation(Operation):
-
+    """
+    移动到操作
+    """
     def __init__(self, sectionHandler, target_pos: QVector3D = None, edits=None):
         """
         移动到操作
@@ -39,6 +41,9 @@ class MoveToOperation(Operation):
 
 
 class MoveOperation(Operation):
+    """
+    移动操作
+    """
     def __init__(self, sectionHandler, move_vec: QVector3D = None, edits=None):
         """
         移动操作
@@ -70,6 +75,9 @@ class MoveOperation(Operation):
 
 
 class RotateOperation(Operation):
+    """
+    旋转操作
+    """
     def __init__(self, setctionHandler, target_rot: list = None, edits=None):
         """
         旋转操作
