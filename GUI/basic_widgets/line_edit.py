@@ -112,11 +112,14 @@ class NumberEdit(TextEdit):
             self.setValidator(QIntValidator(self.num_range[0], self.num_range[1]))
         elif self.num_type == float:
             self.setValidator(QDoubleValidator(self.num_range[0], self.num_range[1], self.rounding))
-        # 绑定值改变事件
-        self.textChanged.connect(self.text_changed)
+        # # 绑定值改变事件
+        # self.textChanged.connect(self.text_changed)
         # 注意，textChanged信号会被撤回操作触发，所以不要在这里触发value_changed信号
 
     def setValue(self, value):
+        """
+        设置值，触发value_changed信号
+        """
         if self.rounding:
             self.current_value = round(value, self.rounding)
         elif self.rounding == 0:
@@ -124,6 +127,9 @@ class NumberEdit(TextEdit):
         self.setText(str(self.current_value))
 
     def wheelEvent(self, event):
+        """
+        滚轮事件，滚动时改变值，然后触发value_changed信号
+        """
         self.update_mutex.lock()
         if event.angleDelta().y() > 0:
             self.current_value += self.step
@@ -140,57 +146,37 @@ class NumberEdit(TextEdit):
         # 不传递事件
         event.accept()
 
-    def text_changed(self):
-        """
-        文本改变时触发
-        """
-        pass
-        # if self.textChanging:
-        #     return
-        # self.textChanging = True
-        # if self.text() != "":
-        #     if self.text()[0] == "0" and len(self.text()) > 1:
-        #         self.setText(self.text()[1:])
-        #     try:
-        #         if self.num_range[0] <= self.num_type(self.text()) <= self.num_range[1]:
-        #             self.current_value = round(self.num_type(self.text()), self.rounding) if self.rounding else int(
-        #                 self.text())
-        #     except ValueError:
-        #         pass
-        # else:
-        #     self.current_value = 0
-        # self.setText(str(self.current_value))
-        # self.value_changed.emit(self.current_value)
-        # self.root_parent.update()
-        # self.textChanging = False
+    # def text_changed(self):
+    #     """
+    #     文本改变时触发
+    #     """
+    #     pass
 
     def keyPressEvent(self, event):
-        # 将回车绑定到焦点离开事件
-        if event.key() == Qt.Key_Return:
-            self.clearFocus()
-        else:
-            # 更新值
-            self.update_mutex.lock()
-            try:
-                self.current_value = round(float(self.text()), self.rounding) if self.rounding else int(self.text())
-                # 显示到控件
-                self.setText(str(self.current_value))
-            except ValueError:
-                pass
-            self.value_changed.emit(self.current_value)
-            if self.root_parent:
-                self.root_parent.update()
-            self.update_mutex.unlock()
         super().keyPressEvent(event)
+        # 当按下删除，退格，回车，上下键，tab键时，将值设置为当前值
+        if event.key() in [Qt.Key_Delete, Qt.Key_Backspace, Qt.Key_Return, Qt.Key_Up, Qt.Key_Down, Qt.Key_Tab]:
+            self.valueSetted(False)
 
-    def focusInEvent(self, event):
-        super().focusInEvent(event)
+    def inputMethodEvent(self, event):
+        """
+        输入法事件，当输入法输入时，将值设置为当前值
+        """
+        super().inputMethodEvent(event)
+        self.valueSetted(False)
 
-    # 当光标离开时，将值设置为当前值
-    def focusOutEvent(self, event):
+    # # 当光标离开时，将值设置为当前值
+    # def focusOutEvent(self, event):
+    #     self.valueSetted()
+    #     super().focusOutEvent(event)
+
+    def valueSetted(self, change_ui_value=True):
+        """
+        将属性值设置为控件显示的值，然后触发value_changed信号
+        """
         self.update_mutex.lock()
         if self.text() != "":
-            if self.text()[0] == "0" and len(self.text()) > 1:
+            if self.text()[0] == "0" and len(self.text()) > 1 and self.text() != "0.":
                 self.setText(self.text()[1:])
             try:
                 if self.num_range[0] <= self.num_type(self.text()) <= self.num_range[1]:
@@ -199,13 +185,13 @@ class NumberEdit(TextEdit):
             except ValueError:
                 pass
         else:
-            self.current_value = 0
-        self.setText(str(self.current_value))
+            self.current_value = self.num_type(0)
+        if change_ui_value:
+            self.setText(str(self.current_value))
         self.value_changed.emit(self.current_value)
         if self.root_parent:
             self.root_parent.update()
         self.update_mutex.unlock()
-        super().focusOutEvent(event)
 
     def clear(self):
         """
