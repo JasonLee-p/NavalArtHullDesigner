@@ -9,7 +9,10 @@ from path_lib import *
 
 
 class ConfigHandler:
-    DEFAULT_CONFIG = {
+    """
+    读取配置文件信息，保存配置信息
+    """
+    DEFAULT_CONFIG = {  # 默认配置
         "Config": {
             "Language": "Chinese",
             "Sensitivity": {
@@ -74,7 +77,9 @@ class ConfigHandler:
         self.load_config()
 
     def load_config(self):
-        # 到注册表寻找配置文件路径
+        """
+        寻找配置文件，若不存在则创建默认配置文件
+        """
         if os.path.exists(CONFIG_PATH):
             try:
                 with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
@@ -91,19 +96,29 @@ class ConfigHandler:
             self.save_config()
 
     def save_config(self):
+        """
+        保存配置文件
+        """
         with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
             ujson.dump(self.__config, f, ensure_ascii=False, indent=2)
 
     def get_config(self, key: str):
+        """
+        根据键值获取配置信息
+        """
         return self._get_key__(self.__config, key)
 
     def _get_key__(self, dict_, key):
+        """
+        递归获取键值，若键值不存在则返回None
+        """
         if key in dict_:
             return dict_[key]
         else:
             for k, v in dict_.items():
                 if isinstance(v, dict):
                     return self._get_key__(v, key)
+        return None
 
     def set_config(self, key: str, value, new_key=False):
         """
@@ -121,10 +136,16 @@ class ConfigHandler:
         return value
 
     def add_prj(self, prj_name, prj_path):
+        """
+        添加项目，保存配置
+        """
         self.__config["Projects"][prj_name] = prj_path
         self.save_config()
 
     def _set_key__(self, dict_, key, value):
+        """
+        递归设置键值，若键值不存在则返回False
+        """
         if key in dict_:
             dict_[key] = value
             return True

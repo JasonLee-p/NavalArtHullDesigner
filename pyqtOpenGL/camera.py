@@ -1,5 +1,5 @@
 """
-
+相机类，和相机动画类
 """
 from typing import Literal
 

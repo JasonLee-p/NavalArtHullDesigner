@@ -13,7 +13,7 @@ from typing import Optional
 from GUI.dialogs import MoveDialog, ScaleDialog
 from GUI.hierarchy_widgets import *
 from string_src import *
-from ShipRead.na_project import ShipProject
+from ShipRead.designer_project import DesignerProject
 from utils.funcs_utils import not_implemented
 from path_lib import CURRENT_PATH, DESKTOP_PATH
 from pyqtOpenGL import *
@@ -830,7 +830,7 @@ class MainEditorGUI(Window):
         self.prj_menu = self.__init_prjMenu()
         self.__init_cust_top_widget()
         # 状态变量池
-        self._current_prj: Union[None, ShipProject] = None
+        self._current_prj: Union[None, DesignerProject] = None
         MainEditorGUI.all.append(self)
 
     def __init_cust_top_widget(self):

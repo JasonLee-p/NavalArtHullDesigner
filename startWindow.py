@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """
+开始界面
 
+由于StartWindow是从老版本的NavalArtHullPlugin中迁移过来的，所以使用了老版本的控件类（带下划线前缀的私有类）
+请不要在新的代码中使用这些控件类，而是使用GUI模块中的控件类；
 """
 
 from GUI import *
@@ -374,6 +377,9 @@ class _BasicDialog(QDialog):
 
 
 class StartWindow(_BasicDialog):
+    """
+    开始界面，提供信号接口：lastEdit_signal, newPrj_signal, openPrj_signal, setting_signal, help_signal, about_signal
+    """
     TAG = "StartWindow"
     lastEdit_signal = pyqtSignal()  # noqa
     newPrj_signal = pyqtSignal()  # noqa

@@ -190,10 +190,9 @@ class MoveDialog(BasicDialog):
         self.select_design_button.clicked.connect(lambda: NaDesignSelectDialog.select_design(self.design_selected))
 
     def design_selected(self, design_name: str):
-        # 更新标签
-        self.selected_design_label.setText(design_name)
-        QMetaObject.invokeMethod(self.selected_design_label, "update", Qt.QueuedConnection)
-        # self._update_selected_design_label_s.emit(design_name)
+        """
+        选择图纸后的回调函数
+        """
         # 获得路径
         design_path = os.path.join(NA_SHIP_PATH, f"{design_name}.na")
         # 读取XML文件（utf-8）
@@ -211,6 +210,9 @@ class MoveDialog(BasicDialog):
         # self._update_avg_x_label_s.emit(str(avg_x))
         # self._update_avg_y_label_s.emit(str(avg_y))
         # self._update_avg_z_label_s.emit(str(avg_z))
+        # 更新选择的图纸名称
+        self.selected_design_label.setText(str(design_name))
+        self._center_layout.update()
         # 通知所有的子控件刷新
         QMetaObject.invokeMethod(self, "repaint", Qt.QueuedConnection)
         for widget in self.input_widget.findChildren(QWidget):
@@ -262,9 +264,9 @@ class MoveDialog(BasicDialog):
     def closeEvent(self, event):
         self.design_xml_str = None
         self.selected_design_label.setText("尚未选择")
-        self.avg_x.setText("0")
-        self.avg_y.setText("0")
-        self.avg_z.setText("0")
+        self.avg_x.setText("0.0")
+        self.avg_y.setText("0.0")
+        self.avg_z.setText("0.0")
         self.x_input.clear()
         self.y_input.clear()
         self.z_input.clear()
@@ -279,6 +281,9 @@ class MoveDialog(BasicDialog):
 
 
 class ScaleDialog(BasicDialog):
+    """
+    缩放图纸对话框
+    """
     Instance = None
 
     def __init__(self, parent=None):

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-GUI基础参数
+GUI基础参数，包括字体加载器，颜色配置，图片处理等
+由于颜色和图标被动态加载，一些变量名例如 BG_COLOR0，BYTES_USER，USER_IMAGE 等是动态生成的，其他模块会在静态检查时报错，但是运行时不会有问题
 """
 import ctypes
 from base64 import b64decode
@@ -18,6 +19,10 @@ import GUI.UI_design.ImgPng_night as _ImgPng_night
 
 
 class LazyFontLoader:
+    """
+    惰性加载字体，根据字体大小加载字体对象
+    惰性加载可以减少内存占用，只有在需要时才加载字体对象
+    """
     def __init__(self, font_family, bold=False, italic=False):
         self.font_family = font_family
         self.weight = QFont.Bold if bold else QFont.Normal
@@ -165,8 +170,8 @@ PINK = '#FFC0CB'
 BROWN = '#A52A2A'
 CYAN = '#00FFFF'
 GOLD = '#FFD700'
-LIGHTER_RED = '#F76677'
-LIGHTER_GREEN = '#6DDF6D'
+LIGHTER_RED = '#F76677'  # 可以被用作警告按钮的颜色
+LIGHTER_GREEN = '#6DDF6D'  # 可以被用作确认按钮的颜色
 LIGHTER_BLUE = '#6D9DDF'
 DARKER_RED = '#C00010'
 DARKER_GREEN = '#00C000'

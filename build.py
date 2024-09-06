@@ -1,21 +1,17 @@
 """
-用nuitka构建py程序
+用nuitka构建主程序
 """
 import subprocess
-
 
 """
 必要设置
 """
-# 程序名称（必须）
 PROGRAM_NAME = "NavalArtHullDesigner.py"
-# 输出目录（必须）
 OUTPUT_DIR = "release"
 
 """
 基础设置
 """
-# 图标路径（如./icon.ico）
 ICON_PATH = './GUI/UI_design/ICO.ico'
 # 是否生成独立包（推荐启用）
 STANDALONE = True
@@ -42,7 +38,7 @@ FILE_DESCRIPTION = "NavalArtHullDesigner"
 # 启用的库，例如pyqt5
 ENABLED_PLUGINS = ['pyqt5']
 # 不导入的模块（自己的或第三方的）
-#（加*表示
+# （加*表示不导入该模块下的所有子模块，例如：*.tests 表示不导入tests包下的所有模块）
 NOFOLLOW_IMPORT_TO = [
     "*.tests", "*.tests.*", "tests.*", "*.test", "*.test.*", "test.*", "test"
 ]
@@ -86,7 +82,7 @@ def build_command(_program_name: str) -> str:
         f"nuitka "
         f"{'--standalone ' if STANDALONE else ''}"
         f"{'--onefile ' if ONE_FILE else ''} "
-        
+
         f"{'--python-debug ' if DEBUG else ''}"
         f"--lto=no "
         f"--mingw64 "
@@ -98,12 +94,12 @@ def build_command(_program_name: str) -> str:
         f"{file_version_param}"
         f"{product_version_param}"
         f"{file_description_param}"
-        
+
         f"{enabled_plugin_param}"
         f"{nofollow_import_to_param}"
         f"{include_package_data_param}"
         f"{include_data_files_param}"
-        
+
         f"--output-dir={OUTPUT_DIR} "
         f"{icon_param}"
         f"{_program_name}"

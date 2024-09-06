@@ -42,6 +42,8 @@ class Log:
     WARNING = "[WARNING] "
     ERROR = "[ERROR]   "
 
+    GLOBAL_TAG = "GLOBAL"
+
     def __init__(self, path="logging.txt"):
         self._stdout = sys.stdout
         self._stderr = sys.stderr

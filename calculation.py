@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-数学运算
+多种数学运算，该文件暂时没有被使用
 """
 
 from PyQt5.QtGui import QVector3D

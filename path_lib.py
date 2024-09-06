@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 寻找游戏目录，如果找不到就返回桌面位置
-不可导入Log模块，会造成循环导入
+不可在此导入Log模块，会造成循环导入，引发ImportError
 """
 import os
 import sys

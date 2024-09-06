@@ -5,11 +5,14 @@
 import webbrowser
 
 import psutil
+
+
 from GUI import MainEditorGUI, EditTabWidget
 from GUI.sub_component_edt_widgets import SubElementShow
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QFileDialog
-from ShipRead.na_project import *
+from PyQt5.QtWidgets import QFileDialog, QAction
+
+from ShipRead.designer_project import *
 from utils.funcs_utils import not_implemented, snake_to_camel
 from main_logger import Log, StatusBarHandler
 from operation import OperationStack
@@ -25,6 +28,7 @@ def update_structure(action):
     """
 
     def decorator(func):
+        """_"""
         # 蛇形命名
         snake_component_type = func.__name__[4:-2]  # 去除开头add_/del_四个字符以及_s结尾
 
@@ -54,9 +58,9 @@ def update_structure(action):
     return decorator
 
 
-class MemoryThread(QThread):
+class MemoryThread(QtCore.QThread):
     """
-    内存监控线程
+    内存监控线程，随时发出信号，通知主窗口相应的控件更新
     """
     TAG = "MemoryThread"
     memory_updated_s = pyqtSignal(int)  # noqa
@@ -80,6 +84,9 @@ class MemoryThread(QThread):
 
 
 class MainEditor(MainEditorGUI):
+    """
+    主编辑器，用户交互的主要界面，提供几乎所有的功能，主要为设计器图纸编辑器。
+    """
     TAG = "MainEditor"
 
     def excute(self, operation: Operation):
@@ -105,14 +112,19 @@ class MainEditor(MainEditorGUI):
         self.operationStack.redo()
 
     def clearOperationStack(self):
+        """
+        清空操作栈
+        """
         self.operationStack.clear()
         Log().info(self.TAG, "操作栈已清空")
 
     def open_prj(self, path):
-        # 打开path路径的工程文件
-        prj = ShipProject(self.gl_widget, path)
+        """
+        打开path路径的工程文件
+        """
+        prj = DesignerProject(self.gl_widget, path)
         # 加载工程文件
-        loader = NaPrjReader(self, path, prj)
+        loader = DesignerPrjReader(self, path, prj)
         if not loader.successed:
             Log().warning(self.TAG, f"打开工程失败：{prj.project_name}")
             return False
@@ -130,6 +142,9 @@ class MainEditor(MainEditorGUI):
         return True
 
     def select_prj_toOpen(self):
+        """
+        打开工程文件选择窗口
+        """
         prjs = self.configHandler.get_config("Projects")
         # 从配置文件读取曾经打开过的所有文件
         if prjs != {}:
@@ -143,6 +158,9 @@ class MainEditor(MainEditorGUI):
             file_dialog.setDirectory(DESKTOP_PATH)
 
     def load_last_project(self):
+        """
+        打开
+        """
         prjs = self.configHandler.get_config("Projects")
         if not prjs:
             return
@@ -151,50 +169,83 @@ class MainEditor(MainEditorGUI):
 
     @not_implemented
     def new_prj(self):
+        """
+        新建
+        """
         # 弹出临时窗口，让用于选择创建新工程的方式
         # 若确定了创建新工程，则询问是否保存当前工程
         pass
 
     def setting(self):
+        """
+        设置
+        """
         # 打开设置窗口
         pass
 
     @not_implemented
     def help(self):
+        """
+        帮助
+        """
         pass
 
     def about(self):
+        """
+        关于
+        """
         Log().info(self.TAG, "打开关于页面")
         webbrowser.open("http://naval_plugins.e.cn.vc/")
 
     def save_prj(self):
+        """
+        保存当前工程
+        """
         self._current_prj.save() if self._current_prj else None
         self.show_statu_(f"保存工程：{self._current_prj.project_name}", "success")
 
     @not_implemented
     def save_as_prj(self):
+        """
+        另存为当前工程
+        """
         # 打开文件夹选择窗口，选择保存位置
         pass
 
     @not_implemented
     def export_to_na(self):
+        """
+        导出为NavalArt工程文件
+        """
         # 将当前工程导出为 NavalArt 工程文件
         # 先打开文件夹选择窗口，选择保存位置，默认为NavalArt工程文件的保存位置
         pass
 
     @not_implemented
     def set_theme(self):
+        """
+        设置主题
+        """
         pass
 
     @not_implemented
     def set_camera(self):
+        """
+        设置相机
+        """
         pass
 
     @not_implemented
     def tutorial(self):
+        """
+        打开教程
+        """
         pass
 
     def paste(self):
+        """
+        粘贴剪贴板内容
+        """
         sections = set()
         for item in self.gl_widget.clipboard:
             if hasattr(item, "handler"):
@@ -245,6 +296,9 @@ class MainEditor(MainEditorGUI):
         SubPrjComponent.init_ref(self)
 
     def _bind_glWidget_menu(self):
+        """
+        绑定gl_widget的右键菜单
+        """
         for action_name, func in self._glWidget_menu_actions.items():
             action = QAction(self)
             action.setText(action_name)
@@ -252,6 +306,9 @@ class MainEditor(MainEditorGUI):
             self.gl_widget.menu.addAction(action)
 
     def _bind_signal(self):
+        """
+        绑定信号和函数
+        """
         # 内存监控线程
         self.memoryThread.memory_updated_s.connect(self.memory_widget.set_values)
         # self.memoryThread.cpu_updated_s.connect(self.update_cpu)
@@ -265,6 +322,9 @@ class MainEditor(MainEditorGUI):
         self.gl_widget.keyReleaseEvent = self.keyReleaseEvent
 
     def keyPressEvent(self, ev, qKeyEvent=None) -> None:
+        """
+        键盘事件，显示快捷键指南
+        """
         ctrl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
         shift_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ShiftModifier)
         alt_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier)
@@ -305,49 +365,85 @@ class MainEditor(MainEditorGUI):
         self._current_prj = prj
 
     def getCurrentPrj(self):
+        """
+        获取当前正在编辑的工程
+        """
         return self._current_prj
 
     @update_structure('add')
     def add_hull_section_group_s(self, group_id):
+        """
+        添加船体截面组
+        """
         pass
 
     @update_structure('add')
     def add_armor_section_group_s(self, group_id):
+        """
+        添加装甲截面组
+        """
         pass
 
     @update_structure('add')
     def add_bridge_s(self, bridge_id):
+        """
+        添加舰桥
+        """
         pass
 
     @update_structure('add')
     def add_ladder_s(self, ladder_id):
+        """
+        添加梯子
+        """
         pass
 
     @update_structure('add')
     def add_model_s(self, model_id):
+        """
+        添加外部模型
+        """
         pass
 
     @update_structure('del')
     def del_hull_section_group_s(self, group_id):
+        """
+        删除船体截面组
+        """
         pass
 
     @update_structure('del')
     def del_armor_section_group_s(self, group_id):
+        """
+        删除装甲截面组
+        """
         pass
 
     @update_structure('del')
     def del_bridge_s(self, bridge_id):
+        """
+        删除舰桥
+        """
         pass
 
     @update_structure('del')
     def del_ladder_s(self, ladder_id):
+        """
+        删除梯子
+        """
         pass
 
     @update_structure('del')
     def del_model_s(self, model_id):
+        """
+        删除外部模型
+        """
         pass
 
     def show_editor(self, item):
+        """
+        （选择某item后）显示编辑器，根据item的类型显示不同的编辑器
+        """
         if isinstance(item, list):
             if len(item) == 0:
                 self.edit_tab.clear_editing_widget()

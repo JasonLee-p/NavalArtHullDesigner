@@ -1023,6 +1023,9 @@ class Window(QWidget):
 
     @abstractmethod
     def init_center_widget(self):
+        """
+        客制化添加中间控件，需要调用基类的方法
+        """
         self.center_widget.setStyleSheet(f"""QWidget{{
             background-color: {self.bg};
             color: {self.fg};

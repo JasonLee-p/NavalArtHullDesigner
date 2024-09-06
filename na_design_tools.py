@@ -1,3 +1,7 @@
+"""
+这是一个用于处理NavalArt图纸的工具集合，包括获取平均位置和偏移位置等功能
+"""
+
 import os
 import xml.etree.ElementTree as ET
 
@@ -42,6 +46,7 @@ def get_avg_position(xml_str):
 
 def offset_position(xml_str, offset_x, offset_y, offset_z) -> str:
     """
+    将XML文件中的所有position标签进行偏移
     :param xml_str: 输入的XML文件字符串
     :param offset_x: X轴的偏移量
     :param offset_y: Y轴的偏移量
@@ -88,7 +93,7 @@ def offset_design_position(file_path, x, y, z):
 
 
 if __name__ == "__main__":
-
+    # 测试
     file_name = "KMS Hindenburg.na"
     path = os.path.join(DESKTOP, file_name)
     offset_design_position(path, 0.0, -6.0, 0.0)

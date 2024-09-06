@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-各类按钮
+定义了各类按钮，包括普通按钮，图片按钮，最大化按钮，最小化按钮，关闭按钮等等
 """
 from .other_widgets import *
 from ..basic_data import *
@@ -107,7 +107,9 @@ def _set_buttons(
 
 
 class Button(QPushButton):
-
+    """
+    按钮类，不含字符和图标
+    """
     def __init__(
             self, parent,
             tool_tip: str = None,
@@ -309,6 +311,9 @@ class Button(QPushButton):
 
 
 class TextButton(Button):
+    """
+    文字按钮
+    """
     def __init__(
             self, parent,
             text: str = '',
@@ -336,6 +341,9 @@ class TextButton(Button):
 
 
 class ImageButton(QPushButton):
+    """
+    图片按钮，不含文字
+    """
     def __init__(self, parent, img_bytes: bytes, img_size: Union[int, Tuple[int, int]], bd_radius: int = 0,
                  bg: Union[ThemeColor, str] = BG_COLOR0, tool_tip=None):
         super().__init__(parent)
@@ -372,6 +380,9 @@ class ImageButton(QPushButton):
 
 
 class MaximizeButton(Button):
+    """
+    最大化按钮，窗口顶部专用，可以自动切换图标
+    """
     def __init__(self, parent, size=(55, 36), bd_radius: Union[int, Tuple[int, int, int, int]] = 0):
         super().__init__(parent, None, 0, BG_COLOR0,
                          bd_radius, 0,
@@ -393,6 +404,9 @@ class MaximizeButton(Button):
 
 
 class MinimizeButton(Button):
+    """
+    最小化按钮，窗口顶部专用
+    """
     def __init__(self, parent, size=(55, 36), bd_radius: Union[int, Tuple[int, int, int, int]] = 0):
         super().__init__(parent, None, 0, BG_COLOR0,
                          bd_radius, 0,
@@ -406,6 +420,9 @@ class MinimizeButton(Button):
 
 
 class CloseButton(Button):
+    """
+    关闭按钮，窗口顶部专用
+    """
     def __init__(self, parent, size=(55, 36), bd_radius: Union[int, Tuple[int, int, int, int]] = 5):
         if isinstance(bd_radius, int):
             bd_radius = (0, bd_radius, 0, 0)
@@ -422,6 +439,9 @@ class CloseButton(Button):
 
 
 class CancelButton(Button):
+    """
+    取消按钮，对话框底部专用
+    """
     def __init__(self, parent, size=(55, 36), bd_radius: Union[int, Tuple[int, int, int, int]] = 5):
         super().__init__(parent, None, 0, BG_COLOR0,
                          bd_radius, 0,
@@ -433,6 +453,9 @@ class CancelButton(Button):
 
 
 class EnsureButton(Button):
+    """
+    确定按钮，对话框底部专用
+    """
     def __init__(self, parent, size=(55, 36), bd_radius: Union[int, Tuple[int, int, int, int]] = 5):
         super().__init__(parent, None, 0, BG_COLOR0,
                          bd_radius, 0,
@@ -445,6 +468,9 @@ class EnsureButton(Button):
 
 
 class CircleSelectButton(Button):
+    """
+    圆形选择按钮，可以与其他按钮绑定，实现互斥
+    """
     def __init__(self, parent, relative_widgets: list, tool_tip, radius, color: str, hover_color: str,
                  check_color: str):
         """
@@ -473,6 +499,9 @@ class CircleSelectButton(Button):
 
 
 class CircleBtWithTextLabel(QPushButton):
+    """
+    圆形按钮，左侧带有文本，单击文本或按钮都会触发按钮的点击事件
+    """
     def __init__(self, parent, text, tool_tip, color, check_color, radius, size=(100, 26), spacing=5):
         super().__init__(parent)
         self.layout = QHBoxLayout()
@@ -489,6 +518,9 @@ class CircleBtWithTextLabel(QPushButton):
 
 
 class ImageTextButton(TextButton):
+    """
+    图片按钮，带有文本，图片和文本的方向可以自定义
+    """
     ImgLeft = "ImgLeft"
     ImgRight = "ImgRight"
     ImgTop = "ImgTop"

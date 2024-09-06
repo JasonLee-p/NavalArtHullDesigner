@@ -32,6 +32,10 @@ VERSION = "1.0.0.0"
 
 @singleton
 class MainEditorHandler(list):
+    """
+    主编辑窗口管理器，用于管理所有的主编辑窗口，提供打开、关闭、新建等功能
+    主窗口数量上限为3
+    """
     TAG = "MainEditorHandler"
 
     def __init__(self, logger_):
@@ -41,8 +45,11 @@ class MainEditorHandler(list):
         self.statusBarHandler = StatusBarHandler()
 
     def new(self, mode: Literal["lastEdit", "newPrj", "openPrj", "setting", "help"] = "lastEdit"):
+        """
+        新建主编辑窗口
+        """
         global startWindow
-        if len(self) < 5:
+        if len(self) < 3:
             # 新建主编辑窗口
             self.append(MainEditor(GLWidgetGUI(), self.logger))
             # 绑定mainWindow的close信号到该类的close函数
@@ -62,12 +69,15 @@ class MainEditorHandler(list):
             self.statusBarHandler.message.connect(lambda message, color: self[-1].show_status(message, color))
             return self[-1]
         else:
-            QMessageBox().warning(None, "警告", "编辑窗口数量已达上限（5）", QMessageBox.Ok)
+            QMessageBox().warning(None, "警告", "编辑窗口数量已达上限（3）", QMessageBox.Ok)
             return None
 
     def open(self, path: str):
+        """
+        打开项目
+        """
         global startWindow
-        if len(self) < 5:
+        if len(self) < 3:
             # 新建主编辑窗口
             self.append(MainEditor(GLWidgetGUI(), self.logger))
             # 绑定mainWindow的close信号到该类的close函数
@@ -78,10 +88,13 @@ class MainEditorHandler(list):
             self.statusBarHandler.message.connect(lambda message, color: self[-1].show_status(message, color))
             return self[-1]
         else:
-            QMessageBox().warning(None, "警告", "编辑窗口数量已达上限（5）", QMessageBox.Ok)
+            QMessageBox().warning(None, "警告", "编辑窗口数量已达上限（3）", QMessageBox.Ok)
             return None
 
     def close(self, main_editor: MainEditor):
+        """
+        关闭主编辑窗口
+        """
         global startWindow
         # 将窗口从数组删除
         self.remove(main_editor)
@@ -95,47 +108,67 @@ class MainEditorHandler(list):
 
 
 def lastEdit():
-    Log().info(GLOBAL_TAG, "最近编辑")
+    """
+    打开最近编辑的项目，由开始界面调用
+    """
+    Log().info(Log().GLOBAL_TAG, "最近编辑")
     _mainEditor = mainEditors.new("lastEdit")
     if not _mainEditor:
         return
 
 
 def newPrj():
-    Log().info(GLOBAL_TAG, "单击：新建项目")
+    """
+    新建项目，由开始界面调用（未完成）
+    """
+    Log().info(Log().GLOBAL_TAG, "单击：新建项目")
     _mainEditor = mainEditors.new()
     if not _mainEditor:
         return
 
 
 def openPrj():
-    Log().info(GLOBAL_TAG, "单击：打开项目")
+    """
+    打开选择对话框，选择要打开的项目，由开始界面调用（未完成）
+    """
+    Log().info(Log().GLOBAL_TAG, "单击：打开项目")
     _mainEditor = mainEditors.new()
     if not _mainEditor:
         return
 
 
 def setting():
-    Log().info(GLOBAL_TAG, "单击：设置")
+    """
+    打开设置页面，由开始界面调用（未完成）
+    """
+    Log().info(Log().GLOBAL_TAG, "单击：设置")
     _mainEditor = mainEditors.new()
     if not _mainEditor:
         return
 
 
 def _help():
-    Log().info(GLOBAL_TAG, "单击：帮助")
+    """
+    打开帮助页面，由开始界面调用（未完成）
+    """
+    Log().info(Log().GLOBAL_TAG, "单击：帮助")
     _mainEditor = mainEditors.new()
     if not _mainEditor:
         return
 
 
 def about():
-    Log().info(GLOBAL_TAG, "单击：关于")
+    """
+    打开关于页面，由开始界面调用
+    """
+    Log().info(Log().GLOBAL_TAG, "单击：关于")
     webbrowser.open("http://naval_plugins.e.cn.vc/")
 
 
 def linkSignal(startwindow: StartWindow):
-    # 链接开始界面信号
+    """
+    将开始界面的信号连接到对应的槽函数
+    """
     startwindow.lastEdit_signal.connect(lastEdit)
     startwindow.newPrj_signal.connect(newPrj)
     startwindow.openPrj_signal.connect(openPrj)
@@ -146,17 +179,16 @@ def linkSignal(startwindow: StartWindow):
 
 if __name__ == '__main__':
     Log()  # 初始化日志
-    GLOBAL_TAG = "GLOBAL"
-    Log().info(GLOBAL_TAG, f"启动NavalArt船体编辑器 V{VERSION}")
-    Log().info(GLOBAL_TAG, f"命令行参数：{sys.argv}")
-    print()
-    Log().info(GLOBAL_TAG, f"""初始化路径常量：
-DESKTOP_PATH: {DESKTOP_PATH}
-PTB_PATH: {PTB_PATH}
-NA_SHIP_PATH: {NA_SHIP_PATH}
-NA_ROOT_PATH: {NA_ROOT_PATH}
-CONFIG_PATH: {CONFIG_PATH}
-CURRENT_PATH: {CURRENT_PATH}""")
+    Log().info(Log().GLOBAL_TAG, f"启动NavalArt船体编辑器 V{VERSION}")
+    Log().info(Log().GLOBAL_TAG, f"命令行参数：{sys.argv}")
+    # 路径前一共15个字符
+    Log().info(Log().GLOBAL_TAG, f"""初始化路径常量：
+DeskTop:      {DESKTOP_PATH}
+PTB:          {PTB_PATH}
+NA design:    {NA_SHIP_PATH}
+NA root:      {NA_ROOT_PATH}
+Config file:  {CONFIG_PATH}
+Current env:  {CURRENT_PATH}""")
     try:
         # 读取命令行参数
         opened_file_path = sys.argv[1] if len(sys.argv) > 1 else None
@@ -167,7 +199,7 @@ CURRENT_PATH: {CURRENT_PATH}""")
         QApp.setApplicationVersion(VERSION)
         QApp.setOrganizationName("JasonLee")
         QApp.setAttribute(Qt.AA_DisableHighDpiScaling)
-        Log().info(GLOBAL_TAG, f"QApp初始化完成")
+        Log().info(Log().GLOBAL_TAG, f"QApp初始化完成")
         # 设置全局的提示框字体
         QToolTip.setFont(YAHEI[9])
         # 打开欢迎界面
@@ -186,4 +218,4 @@ CURRENT_PATH: {CURRENT_PATH}""")
         sys.exit(QApp.exec_())
     except Exception as e:
         QMessageBox().critical(None, "错误", f"发生未知错误：{e}", QMessageBox.Ok)
-        Log().error(traceback.format_exc(), GLOBAL_TAG, f"发生错误：{e}")
+        Log().error(traceback.format_exc(), Log().GLOBAL_TAG, f"发生错误：{e}")

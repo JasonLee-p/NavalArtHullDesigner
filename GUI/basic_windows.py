@@ -45,9 +45,12 @@ class MessageBox(QDialog):
 
 
 class LoadingWindow(Window):
+    """
+    加载窗口，用于加载大量数据时显示
+    """
     def __init__(self):
         super().__init__(None, "加载中...", BYTES_ICO, size=(300, 150))
         self.show()
 
     def init_center_widget(self):
-        ...
+        super().init_center_widget()
