@@ -4,6 +4,7 @@ main_editor的功能性子控件，例如专门显示船体截面组的控件
 """
 import traceback
 
+import const
 from main_logger import Log
 
 from .basic_widgets import *
@@ -26,15 +27,15 @@ class EditTabWidget(QWidget):
         self.sub_elements_widget = QWidget()
         self.sub_elements_layout = QVBoxLayout()
         _font = YAHEI[9]
-        self.posX_edit = NumberEdit(None, self, (68, 24), float, rounding=4, step=0.1, font=_font)
-        self.posY_edit = NumberEdit(None, self, (68, 24), float, rounding=4, step=0.1, font=_font)
-        self.posZ_edit = NumberEdit(None, self, (68, 24), float, rounding=4, step=0.1, font=_font)
+        self.posX_edit = NumberEdit(None, self, (68, 24), float, rounding=const.DECIMAL_PRECISION, step=0.1, font=_font)
+        self.posY_edit = NumberEdit(None, self, (68, 24), float, rounding=const.DECIMAL_PRECISION, step=0.1, font=_font)
+        self.posZ_edit = NumberEdit(None, self, (68, 24), float, rounding=const.DECIMAL_PRECISION, step=0.1, font=_font)
         self.rotX_edit = NumberEdit(None, self, (68, 24), float, (-180, 180), 2, step=0.5, font=_font)
         self.rotY_edit = NumberEdit(None, self, (68, 24), float, (-180, 180), 2, step=0.5, font=_font)
         self.rotZ_edit = NumberEdit(None, self, (68, 24), float, (-180, 180), 2, step=0.5, font=_font)
-        self.sclX_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), 4, 1, 0.1, YAHEI[9])
-        self.sclY_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), 4, 1, 0.1, YAHEI[9])
-        self.sclZ_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), 4, 1, 0.1, YAHEI[9])
+        self.sclX_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), const.DECIMAL_PRECISION, 1, 0.1, YAHEI[9])
+        self.sclY_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), const.DECIMAL_PRECISION, 1, 0.1, YAHEI[9])
+        self.sclZ_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), const.DECIMAL_PRECISION, 1, 0.1, YAHEI[9])
 
     def _getMainEditor(self):
         """
@@ -277,15 +278,15 @@ class EditHullSectionGroupWidget(EditTabWidget):
     def updateSize(self):
         _frontSection = self._current_item._frontSection
         _backSection = self._current_item._backSection
-        self.sizeX_show.setText(str(round(2 * self._current_item.getMaxX(), 4)))
-        self.sizeY_show.setText(str(round(_frontSection.nodes[-1].y - _frontSection.nodes[0].y, 4)))
-        self.sizeZ_show.setText(str(round(_frontSection.z - _backSection.z, 4)))
+        self.sizeX_show.setText(str(round(2 * self._current_item.getMaxX(), const.DECIMAL_PRECISION)))
+        self.sizeY_show.setText(str(round(_frontSection.nodes[-1].y - _frontSection.nodes[0].y, const.DECIMAL_PRECISION)))
+        self.sizeZ_show.setText(str(round(_frontSection.z - _backSection.z, const.DECIMAL_PRECISION)))
 
     def updateFrontZ(self):
-        self.sizeZ_show.setText(str(round(self._current_item._frontSection.z - self._current_item._backSection.z, 4)))
+        self.sizeZ_show.setText(str(round(self._current_item._frontSection.z - self._current_item._backSection.z, const.DECIMAL_PRECISION)))
 
     def updateBackZ(self):
-        self.sizeZ_show.setText(str(round(self._current_item._frontSection.z - self._current_item._backSection.z, 4)))
+        self.sizeZ_show.setText(str(round(self._current_item._frontSection.z - self._current_item._backSection.z, const.DECIMAL_PRECISION)))
 
     def updateNum(self):
         self.section_num_show.setText(str(len(self._current_item.get_sections())))

@@ -1,6 +1,7 @@
 """
 定义了子组件在父组件的编辑窗口的显示控件
 """
+import const
 from main_logger import Log
 from operation.section_op import SectionZMoveOperation
 
@@ -98,7 +99,7 @@ class SubSectionShow(SubElementShow):
         """
         super().__init__(gl_widget, scroll_widget, item_handler)
         _font = YAHEI[9]
-        self.posZ_edit = NumberEdit(None, self, (68, 24), float, rounding=4, step=0.1, font=_font)
+        self.posZ_edit = NumberEdit(None, self, (68, 24), float, rounding=const.DECIMAL_PRECISION, step=0.1, font=_font)
         self.editNodes_btn = Button(None, None, 0, BG_COLOR1, 6,
                                     bg=("transparent", "transparent", "transparent", "transparent"), size=24)
         self.editNodes_btn.setIcon(QIcon(QPixmap(EDIT_IMAGE)))

@@ -2,6 +2,8 @@
 定义了单个组件在结构视图的显示控件
 """
 import numpy as np
+
+import const
 from main_logger import Log
 
 from .basic_widgets import *
@@ -164,13 +166,13 @@ class PosShow(ShowButton):
         设置按钮内TextLabel显示的位置
         """
         if isinstance(pos, np.ndarray):
-            self.posX_show.setText(str(round(pos[0], 4)))
-            self.posY_show.setText(str(round(pos[1], 4)))
-            self.posZ_show.setText(str(round(pos[2], 4)))
+            self.posX_show.setText(str(round(pos[0], const.DECIMAL_PRECISION)))
+            self.posY_show.setText(str(round(pos[1], const.DECIMAL_PRECISION)))
+            self.posZ_show.setText(str(round(pos[2], const.DECIMAL_PRECISION)))
         elif isinstance(pos, QVector3D):
-            self.posX_show.setText(str(round(pos.x(), 4)))
-            self.posY_show.setText(str(round(pos.y(), 4)))
-            self.posZ_show.setText(str(round(pos.z(), 4)))
+            self.posX_show.setText(str(round(pos.x(), const.DECIMAL_PRECISION)))
+            self.posY_show.setText(str(round(pos.y(), const.DECIMAL_PRECISION)))
+            self.posZ_show.setText(str(round(pos.z(), const.DECIMAL_PRECISION)))
 
     def setPosX(self, x):
         """
@@ -242,13 +244,13 @@ class PosRotShow(ShowButton):
 
     def setPos(self, pos):
         if isinstance(pos, np.ndarray):
-            self.posX_show.setText(str(round(pos[0], 4)))
-            self.posY_show.setText(str(round(pos[1], 4)))
-            self.posZ_show.setText(str(round(pos[2], 4)))
+            self.posX_show.setText(str(round(pos[0], const.DECIMAL_PRECISION)))
+            self.posY_show.setText(str(round(pos[1], const.DECIMAL_PRECISION)))
+            self.posZ_show.setText(str(round(pos[2], const.DECIMAL_PRECISION)))
         elif isinstance(pos, QVector3D):
-            self.posX_show.setText(str(round(pos.x(), 4)))
-            self.posY_show.setText(str(round(pos.y(), 4)))
-            self.posZ_show.setText(str(round(pos.z(), 4)))
+            self.posX_show.setText(str(round(pos.x(), const.DECIMAL_PRECISION)))
+            self.posY_show.setText(str(round(pos.y(), const.DECIMAL_PRECISION)))
+            self.posZ_show.setText(str(round(pos.z(), const.DECIMAL_PRECISION)))
 
     def setPosX(self, x):
         self.posX_show.setText(str(x))

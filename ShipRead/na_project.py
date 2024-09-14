@@ -27,6 +27,8 @@ from typing import List, Dict
 
 import numpy as np
 from PyQt5.QtCore import pyqtSignal
+
+import const
 from main_logger import Log
 
 
@@ -174,7 +176,7 @@ class NaDesignReader:
             _rot = part.find('rotation').attrib
             _scl = part.find('scale').attrib
             _pos = np.array([float(_pos['x']), float(_pos['y']), float(_pos['z'])])
-            _rot = np.array([round(float(_rot['x']), 4), round(float(_rot['y']), 4), round(float(_rot['z']), 4)])
+            _rot = np.array([round(float(_rot['x']), const.DECIMAL_PRECISION), round(float(_rot['y']), const.DECIMAL_PRECISION), round(float(_rot['z']), const.DECIMAL_PRECISION)])
             _scl = np.array([float(_scl['x']), float(_scl['y']), float(_scl['z'])])
             _scl = np.array([abs(i) for i in _scl])
             _col = str(part.find('color').attrib['hex'])

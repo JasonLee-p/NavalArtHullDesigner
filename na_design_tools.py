@@ -5,6 +5,8 @@
 import os
 import xml.etree.ElementTree as ET
 
+import const
+
 DESKTOP = os.path.join(os.path.expanduser("~"), "Desktop")
 
 
@@ -36,9 +38,9 @@ def get_avg_position(xml_str):
         count += 1
 
     # 计算平均值
-    avg_x = round(x_sum / count, 4)
-    avg_y = round(y_sum / count, 4)
-    avg_z = round(z_sum / count, 4)
+    avg_x = round(x_sum / count, const.DECIMAL_PRECISION)
+    avg_y = round(y_sum / count, const.DECIMAL_PRECISION)
+    avg_z = round(z_sum / count, const.DECIMAL_PRECISION)
 
     # 返回平均位置元组
     return avg_x, avg_y, avg_z
@@ -53,12 +55,12 @@ def get_range_position(xml_str):
     root = ET.fromstring(xml_str)
 
     # 初始化位置的最大最小值
-    min_x = 10000000
-    min_y = 10000000
-    min_z = 10000000
-    max_x = -10000000
-    max_y = -10000000
-    max_z = -10000000
+    min_x = const.MAX_VALUE
+    min_y = const.MAX_VALUE
+    min_z = const.MAX_VALUE
+    max_x = const.MIN_VALUE
+    max_y = const.MIN_VALUE
+    max_z = const.MIN_VALUE
 
     # 查找所有的<position>标签
     for position in root.findall(".//position"):
@@ -94,14 +96,14 @@ def offset_position(xml_str, offset_x, offset_y, offset_z) -> str:
     # 查找所有的<position>标签
     for position in root.findall(".//position"):
         # 获取当前的x, y, z值并偏移
-        x = round(float(position.get('x')) + offset_x, 4)
-        y = round(float(position.get('y')) + offset_y, 4)
-        z = round(float(position.get('z')) + offset_z, 4)
+        x = round(float(position.get('x')) + offset_x, const.DECIMAL_PRECISION)
+        y = round(float(position.get('y')) + offset_y, const.DECIMAL_PRECISION)
+        z = round(float(position.get('z')) + offset_z, const.DECIMAL_PRECISION)
 
         # 更新<position>标签的属性值
-        position.set('x', f"{x:.4f}")
-        position.set('y', f"{y:.4f}")
-        position.set('z', f"{z:.4f}")
+        position.set('x', f"{x}")
+        position.set('y', f"{y}")
+        position.set('z', f"{z}")
 
     # 返回修改后的XML字符串
     return ET.tostring(root, encoding='unicode')

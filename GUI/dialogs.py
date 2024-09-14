@@ -4,9 +4,10 @@ from typing import Callable
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFrame, QGridLayout, QSizePolicy, QMessageBox, QApplication, QWidget
 
+import const
 from .basic_data import *
 from .basic_widgets import BasicDialog, ButtonGroup, ImageTextButton, ScrollArea, TextButton, NumberEdit
-from na_design_tools import get_avg_position, offset_position
+from na_design_tools import get_avg_position, offset_position, get_range_position
 from path_lib import NA_SHIP_PATH
 from string_src import *
 
@@ -135,11 +136,11 @@ class MoveDialog(BasicDialog):
                                                font=YAHEI[10], size=(320, 28), bd_radius=8)
         self.input_widget = QFrame(None)
         self.x_input = NumberEdit(None, None, (68, 28), float,
-                                  rounding=4, default_value=0.0, step=0.1)
+                                  rounding=const.DECIMAL_PRECISION, default_value=0.0, step=0.1)
         self.y_input = NumberEdit(None, None, (68, 28), float,
-                                  rounding=4, default_value=0.0, step=0.1)
+                                  rounding=const.DECIMAL_PRECISION, default_value=0.0, step=0.1)
         self.z_input = NumberEdit(None, None, (68, 28), float,
-                                  rounding=4, default_value=0.0, step=0.1)
+                                  rounding=const.DECIMAL_PRECISION, default_value=0.0, step=0.1)
         self.avg_x = TextButton(None, "0.0", "图纸的平均位置X坐标",
                                 bg=BG_COLOR0, fg=FG_COLOR0,
                                 font=YAHEI[10], size=(68, 28), bd_radius=8)
@@ -222,9 +223,9 @@ class MoveDialog(BasicDialog):
             QMessageBox.warning(self, "警告", f"写入文件时出错：{_e}", QMessageBox.Ok)
             return
         # 更新平均位置
-        self.avg_x.setText(str(round(float(self.avg_x.text) + self.x_input.current_value, 4)))
-        self.avg_y.setText(str(round(float(self.avg_y.text) + self.y_input.current_value, 4)))
-        self.avg_z.setText(str(round(float(self.avg_z.text) + self.z_input.current_value, 4)))
+        self.avg_x.setText(str(round(float(self.avg_x.text) + self.x_input.current_value, const.DECIMAL_PRECISION)))
+        self.avg_y.setText(str(round(float(self.avg_y.text) + self.y_input.current_value, const.DECIMAL_PRECISION)))
+        self.avg_z.setText(str(round(float(self.avg_z.text) + self.z_input.current_value, const.DECIMAL_PRECISION)))
         # 通知所有的子控件刷新
         self.child_repaint()
         QMessageBox.information(self, "提示", "图纸移动成功！", QMessageBox.Ok)
@@ -276,11 +277,11 @@ class ScaleDialog(BasicDialog):
                                                font=YAHEI[10], size=(320, 28), bd_radius=8)
         self.input_widget = QFrame(None)
         self.x_input = NumberEdit(None, None, (68, 28), float,
-                                  rounding=4, default_value=0.0, step=0.1)
+                                  rounding=const.DECIMAL_PRECISION, default_value=0.0, step=0.1)
         self.y_input = NumberEdit(None, None, (68, 28), float,
-                                  rounding=4, default_value=0.0, step=0.1)
+                                  rounding=const.DECIMAL_PRECISION, default_value=0.0, step=0.1)
         self.z_input = NumberEdit(None, None, (68, 28), float,
-                                  rounding=4, default_value=0.0, step=0.1)
+                                  rounding=const.DECIMAL_PRECISION, default_value=0.0, step=0.1)
         self.range_x = TextButton(None, "0.0", "图纸的X坐标范围",
                                   bg=BG_COLOR0, fg=FG_COLOR0,
                                   font=YAHEI[10], size=(68, 28), bd_radius=8)
@@ -363,9 +364,9 @@ class ScaleDialog(BasicDialog):
             QMessageBox.warning(self, "警告", f"写入文件时出错：{_e}", QMessageBox.Ok)
             return
         # 更新坐标范围
-        self.range_x.setText(str(round(float(self.range_x.text) * self.x_input.current_value, 4)))
-        self.range_y.setText(str(round(float(self.range_y.text) * self.y_input.current_value, 4)))
-        self.range_z.setText(str(round(float(self.range_z.text) * self.z_input.current_value, 4)))
+        self.range_x.setText(str(round(float(self.range_x.text) * self.x_input.current_value, const.DECIMAL_PRECISION)))
+        self.range_y.setText(str(round(float(self.range_y.text) * self.y_input.current_value, const.DECIMAL_PRECISION)))
+        self.range_z.setText(str(round(float(self.range_z.text) * self.z_input.current_value, const.DECIMAL_PRECISION)))
         # 通知所有的子控件刷新
         self.child_repaint()
         QMessageBox.information(self, "提示", "图纸缩放成功！", QMessageBox.Ok)
