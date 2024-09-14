@@ -30,7 +30,7 @@ from .transform3d import Vector3
 __TAG = "GLViewWidget"
 
 
-def _draw_item(item):
+def _drawItemTree(item):
     try:
         item.drawItemTree()
     except np_core_exc._ArrayMemoryError as _:  # noqa
@@ -374,25 +374,22 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
     def drawItems(self, pickMode=False, update=True):
         if pickMode:  # 拾取模式
             for it in self.items:
-                try:
-                    it.drawItemTree_pickMode()
-                except np_core_exc._ArrayMemoryError as _:  # noqa
-                    QMessageBox().warning(None, "严重错误", "申请内存错误，程序即将退出")
-                    Log().error(traceback.format_exc(), self.TAG, "申请内存错误，程序即将退出")
-                    sys.exit(1)
-                except Exception as e:  # noqa
-                    printExc()
-                    Log().error(traceback.format_exc(), self.TAG, "Error while drawing item %s in pick mode." % str(it))
+                # try:
+                it.drawItemTree_pickMode()
+                # except np_core_exc._ArrayMemoryError as _:  # noqa
+                #     QMessageBox().warning(None, "严重错误", "申请内存错误，程序即将退出")
+                #     Log().error(traceback.format_exc(), self.TAG, "申请内存错误，程序即将退出")
+                #     sys.exit(1)
+                # except Exception as e:  # noqa
+                #     printExc()
+                #     Log().error(traceback.format_exc(), self.TAG, "Error while drawing item %s in pick mode." % str(it))
         else:
-            for it in self.items:  # 正常模式
-                if it.selected():
-                    pass
-                _draw_item(it)
-            for it in self.selected_items:
-                _draw_item(it)
-            # draw lights
-            for light in self.lights:
-                light.paint(self.get_proj_view_matrix())
+            for it in self.items:
+                # _drawItemTree(it)
+                it.drawItemTree()
+            # # draw lights
+            # for light in self.lights:
+            #     light.paint(self.get_proj_view_matrix())
 
     def get_selected_item(self):
         """
