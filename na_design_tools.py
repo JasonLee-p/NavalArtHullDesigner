@@ -129,6 +129,42 @@ def offset_design_position(file_path, x, y, z):
         inf.write(new_str)
 
 
+def scale_position(xml_str, scale_x, scale_y, scale_z) -> str:
+    """
+    将XML文件中的所有position标签进行缩放
+    :param xml_str: 输入的XML文件字符串
+    :param scale_x: X轴的缩放比例
+    :param scale_y: Y轴的缩放比例
+    :param scale_z: Z轴的缩放比例
+    :return: 缩放后的XML字符串
+    """
+    # 解析XML字符串
+    root = ET.fromstring(xml_str)
+
+    # 查找所有带有position子标签的标签
+    for tag in root.findall(".//*[@position]"):
+        # 获取要修改的属性值
+        position = tag.get('position')
+        scale = tag.get('scale')
+
+        # 解析属性
+        px, py, pz = map(float, position.split())
+        sx, sy, sz = map(float, scale.split())
+
+        # 更新属性值
+        tag.set('position',
+                f"{round(px * scale_x, const.DECIMAL_PRECISION)} "
+                f"{round(py * scale_y, const.DECIMAL_PRECISION)} "
+                f"{round(pz * scale_z, const.DECIMAL_PRECISION)}")
+        tag.set('scale',
+                f"{round(sx * scale_x, const.DECIMAL_PRECISION)} "
+                f"{round(sy * scale_y, const.DECIMAL_PRECISION)} "
+                f"{round(sz * scale_z, const.DECIMAL_PRECISION)}")
+
+    # 返回修改后的XML字符串
+    return ET.tostring(root, encoding='unicode')
+
+
 if __name__ == "__main__":
     # 测试
     file_name = "KMS Hindenburg.na"

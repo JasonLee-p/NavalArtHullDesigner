@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QFrame, QGridLayout, QSizePolicy, QMessageBox, QAppl
 import const
 from .basic_data import *
 from .basic_widgets import BasicDialog, ButtonGroup, ImageTextButton, ScrollArea, TextButton, NumberEdit
-from na_design_tools import get_avg_position, offset_position, get_range_position
+from na_design_tools import get_avg_position, offset_position, get_range_position, scale_position
 from path_lib import NA_SHIP_PATH
 from string_src import *
 
@@ -76,7 +76,7 @@ class NaDesignSelectDialog(BasicDialog):
                 _button = ImageTextButton(None, design_name, design_name, image_bytes,
                                           ImageTextButton.ImgTop, img_size, 10,
                                           bd_radius=15, spacing=5, padding=8,
-                                          bg=(BG_COLOR0, BG_COLOR3, BG_COLOR2, BG_COLOR3), fg=FG_COLOR0, font=YAHEI[9],
+                                          bg=(BG_COLOR0, BG_COLOR2, BG_COLOR3, BG_COLOR2), fg=FG_COLOR0, font=YAHEI[9],
                                           size=(220, 165))
                 self.widget_map[design_name] = _button
                 self.scroll_layout.addWidget(_button, self.current_row, self.current_col, alignment=Qt.AlignCenter)
@@ -350,8 +350,14 @@ class ScaleDialog(BasicDialog):
             QMessageBox.warning(self, "警告", "您尚未选择图纸！", QMessageBox.Ok)
             return
         # 获取缩放后的XML字符串
-        scale_design = scale_position(self.design_xml_str, self.x_input.current_value,
-                                      self.y_input.current_value, self.z_input.current_value)
+        sx = self.x_input.current_value
+        sy = self.y_input.current_value
+        sz = self.z_input.current_value
+        # 如果不是等比缩放，则警告用户
+        if not sx == sy == sz:
+            # QMessageBox.warning(self, "警告", "非等比缩放会导致旋转的零件出现比例问题！是否确定？", QMessageBox.Cancel | QMessageBox.Ok)
+            ...
+        scale_design = scale_position(self.design_xml_str, sx, sy, sz)
         # 写入新的XML文件
         design_name = self.selected_design_label.text
         if design_name == "尚未选择":
