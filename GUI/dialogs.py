@@ -12,6 +12,9 @@ from string_src import *
 
 
 class NaDesignSelectDialog(BasicDialog):
+    """
+    选择图纸对话框
+    """
     Instance: Optional['NaDesignSelectDialog'] = None
     select_design_s = pyqtSignal(str)  # noqa
 
@@ -120,6 +123,9 @@ class NaDesignSelectDialog(BasicDialog):
 
 
 class MoveDialog(BasicDialog):
+    """
+    移动图纸对话框
+    """
     Instance = None
     # _update_selected_design_label_s = pyqtSignal(str)  # noqa
     # _update_avg_x_label_s = pyqtSignal(str)  # noqa

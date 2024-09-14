@@ -336,6 +336,9 @@ class TextButton(Button):
             self.setText(text)
 
     def setText(self, text):
+        """
+        设置文本
+        """
         self.text = text
         super().setText(text)
 
