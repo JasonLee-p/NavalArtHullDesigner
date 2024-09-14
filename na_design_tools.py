@@ -44,6 +44,41 @@ def get_avg_position(xml_str):
     return avg_x, avg_y, avg_z
 
 
+def get_range_position(xml_str):
+    """
+    :param xml_str: 输入的XML文件字符串
+    :return: 位置的范围元组
+    """
+    # 解析XML字符串
+    root = ET.fromstring(xml_str)
+
+    # 初始化位置的最大最小值
+    min_x = 10000000
+    min_y = 10000000
+    min_z = 10000000
+    max_x = -10000000
+    max_y = -10000000
+    max_z = -10000000
+
+    # 查找所有的<position>标签
+    for position in root.findall(".//position"):
+        # 获取当前的x, y, z值
+        x = float(position.get('x'))
+        y = float(position.get('y'))
+        z = float(position.get('z'))
+
+        # 更新最大最小值
+        min_x = min(min_x, x)
+        min_y = min(min_y, y)
+        min_z = min(min_z, z)
+        max_x = max(max_x, x)
+        max_y = max(max_y, y)
+        max_z = max(max_z, z)
+
+    # 返回位置范围元组
+    return min_x, min_y, min_z, max_x, max_y, max_z
+
+
 def offset_position(xml_str, offset_x, offset_y, offset_z) -> str:
     """
     将XML文件中的所有position标签进行偏移
