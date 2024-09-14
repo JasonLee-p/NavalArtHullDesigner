@@ -110,6 +110,10 @@ class NaDesignSelectDialog(BasicDialog):
         NaDesignSelectDialog.Instance.show()
         NaDesignSelectDialog.Instance.select_design_s.connect(after_selection_func)
 
+    def child_repaint(self):
+        for button in self.button_group.buttons:
+            button.repaint()
+
     def ensure(self):
         selected_design_bt = self.button_group.current
         if selected_design_bt is None:
@@ -118,6 +122,10 @@ class NaDesignSelectDialog(BasicDialog):
         self.selected_design = selected_design_bt.get_text()
         self.select_design_s.emit(self.selected_design)
         self.close()
+
+    def closeEvent(self, *args):
+        self.child_repaint()
+        super().closeEvent(*args)
 
 
 class MoveDialog(BasicDialog):
@@ -236,7 +244,7 @@ class MoveDialog(BasicDialog):
             cls(None)
         cls.Instance.show()
 
-    def closeEvent(self, event):
+    def closeEvent(self, *args):
         self.design_xml_str = None
         self.selected_design_label.setText("尚未选择")
         self.avg_x.setText("0.0")
@@ -246,7 +254,7 @@ class MoveDialog(BasicDialog):
         self.y_input.clear()
         self.z_input.clear()
         self.child_repaint()
-        super().closeEvent(event)
+        super().closeEvent(*args)
 
     def child_repaint(self):
         """
@@ -395,7 +403,7 @@ class ScaleDialog(BasicDialog):
             cls(None)
         cls.Instance.show()
 
-    def closeEvent(self, event):
+    def closeEvent(self, *args):
         self.design_xml_str = None
         self.selected_design_label.setText("尚未选择")
         self.range_x.setText("1.0")
@@ -405,4 +413,4 @@ class ScaleDialog(BasicDialog):
         self.y_input.clear()
         self.z_input.clear()
         self.child_repaint()
-        super().closeEvent(event)
+        super().closeEvent(*args)
