@@ -49,7 +49,7 @@ def get_avg_position(xml_str):
 def get_range_position(xml_str):
     """
     :param xml_str: 输入的XML文件字符串
-    :return: 位置的范围元组
+    :return: 位置的范围元组：min_x, min_y, min_z, max_x, max_y, max_z
     """
     # 解析XML字符串
     root = ET.fromstring(xml_str)

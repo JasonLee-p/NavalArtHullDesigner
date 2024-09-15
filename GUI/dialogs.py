@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QFrame, QGridLayout, QSizePolicy, QMessageBox, QAppl
 
 import const
 from .basic_data import *
-from .basic_widgets import BasicDialog, ButtonGroup, ImageTextButton, ScrollArea, TextButton, NumberEdit
+from .basic_widgets import BasicDialog, ButtonGroup, ImageButton, ImageTextButton, ScrollArea, TextButton, NumberEdit
 from na_design_tools import get_avg_position, offset_position, get_range_position, scale_position
 from path_lib import NA_SHIP_PATH
 from string_src import *
@@ -276,34 +276,50 @@ class ScaleDialog(BasicDialog):
     Instance = None
 
     def __init__(self, parent=None):
+        self.last_values = (1.0, 1.0, 1.0)
         self.design_xml_str: Optional[str] = None
+        bdr = 8
         self.selected_design_label = TextButton(None, "尚未选择", "点击下面的按钮，选择要缩放的图纸",
                                                 bg=BG_COLOR0, fg=FG_COLOR0,
-                                                font=YAHEI[10], size=(320, 28), bd_radius=8)
+                                                font=YAHEI[10], size=(320, 28), bd_radius=bdr)
         self.select_design_button = TextButton(None, "点击选择图纸", "选择要缩放的图纸",
                                                bg=(BG_COLOR0, BG_COLOR3, BG_COLOR2, BG_COLOR3), fg=FG_COLOR1,
-                                               font=YAHEI[10], size=(320, 28), bd_radius=8)
+                                               font=YAHEI[10], size=(320, 28), bd_radius=bdr)
+        self.link_button = ImageButton(None, BYTES_LINK, (28, 28), bd_radius=bdr, tool_tip="数值是否等比缩放",
+                                       bg=(BG_COLOR0, BG_COLOR3, BG_COLOR2, BG_COLOR3))
         self.input_widget = QFrame(None)
-        self.x_input = NumberEdit(None, None, (68, 28), float,
-                                  rounding=const.DECIMAL_PRECISION, default_value=0.0, step=0.1)
-        self.y_input = NumberEdit(None, None, (68, 28), float,
-                                  rounding=const.DECIMAL_PRECISION, default_value=0.0, step=0.1)
-        self.z_input = NumberEdit(None, None, (68, 28), float,
-                                  rounding=const.DECIMAL_PRECISION, default_value=0.0, step=0.1)
-        self.range_x = TextButton(None, "0.0", "图纸的X坐标范围",
-                                  bg=BG_COLOR0, fg=FG_COLOR0,
-                                  font=YAHEI[10], size=(68, 28), bd_radius=8)
-        self.range_y = TextButton(None, "0.0", "图纸的Y坐标范围",
-                                  bg=BG_COLOR0, fg=FG_COLOR0,
-                                  font=YAHEI[10], size=(68, 28), bd_radius=8)
-        self.range_z = TextButton(None, "0.0", "图纸的Z坐标范围",
-                                  bg=BG_COLOR0, fg=FG_COLOR0,
-                                  font=YAHEI[10], size=(68, 28), bd_radius=8)
-        super().__init__(parent, title="整体缩放na图纸", ensure_bt_fill=True, size=QSize(400, 300))
+        num_range = (round(0.000001, const.DECIMAL_PRECISION), const.MAX_VALUE)
+        self.x_input = NumberEdit(None, None, (68, 28), float, num_range=num_range,
+                                  rounding=const.DECIMAL_PRECISION, default_value=1.0, step=0.1)
+        self.y_input = NumberEdit(None, None, (68, 28), float, num_range=num_range,
+                                  rounding=const.DECIMAL_PRECISION, default_value=1.0, step=0.1)
+        self.z_input = NumberEdit(None, None, (68, 28), float, num_range=num_range,
+                                  rounding=const.DECIMAL_PRECISION, default_value=1.0, step=0.1)
+        self.range_x_min = TextButton(None, "0.0", "图纸的X坐标最小值",
+                                      bg=BG_COLOR0, fg=FG_COLOR0,
+                                      font=YAHEI[10], size=(68, 28), bd_radius=bdr)
+        self.range_y_min = TextButton(None, "0.0", "图纸的Y坐标最小值",
+                                      bg=BG_COLOR0, fg=FG_COLOR0,
+                                      font=YAHEI[10], size=(68, 28), bd_radius=bdr)
+        self.range_z_min = TextButton(None, "0.0", "图纸的Z坐标最小值",
+                                      bg=BG_COLOR0, fg=FG_COLOR0,
+                                      font=YAHEI[10], size=(68, 28), bd_radius=bdr)
+        self.range_x_max = TextButton(None, "0.0", "图纸的X坐标最大值",
+                                      bg=BG_COLOR0, fg=FG_COLOR0,
+                                      font=YAHEI[10], size=(68, 28), bd_radius=bdr)
+        self.range_y_max = TextButton(None, "0.0", "图纸的Y坐标最大值",
+                                      bg=BG_COLOR0, fg=FG_COLOR0,
+                                      font=YAHEI[10], size=(68, 28), bd_radius=bdr)
+        self.range_z_max = TextButton(None, "0.0", "图纸的Z坐标最大值",
+                                      bg=BG_COLOR0, fg=FG_COLOR0,
+                                      font=YAHEI[10], size=(68, 28), bd_radius=bdr)
+        super().__init__(parent, title="整体缩放na图纸", ensure_bt_fill=True, size=QSize(400, 340))
         self.bind_signals()
         ScaleDialog.Instance = self
 
     def init_center_layout(self):
+        self.link_button.setCheckable(True)
+        self.link_button.setChecked(True)
         self._center_layout.setContentsMargins(10, 25, 10, 20)
         self._center_layout.setSpacing(5)
         self.add_widget(self.selected_design_label)
@@ -313,21 +329,40 @@ class ScaleDialog(BasicDialog):
         _layout.addWidget(TextButton(None, "坐标范围", "图纸当前的所有零件的坐标范围",
                                      bg=BG_COLOR0, fg=FG_COLOR0,
                                      font=YAHEI[10], size=(95, 28), bd_radius=8), 0, 0)
-        _layout.addWidget(self.range_x, 0, 1)
-        _layout.addWidget(self.range_y, 0, 2)
-        _layout.addWidget(self.range_z, 0, 3)
+        _layout.addWidget(self.range_x_max, 0, 1)
+        _layout.addWidget(self.range_y_max, 0, 2)
+        _layout.addWidget(self.range_z_max, 0, 3)
+        _layout.addWidget(self.range_x_min, 1, 1)
+        _layout.addWidget(self.range_y_min, 1, 2)
+        _layout.addWidget(self.range_z_min, 1, 3)
         _layout.addWidget(TextButton(None, "缩放量", "在此输入图纸缩放量",
                                      bg=BG_COLOR0, fg=FG_COLOR0,
-                                     font=YAHEI[10], size=(95, 28), bd_radius=8), 1, 0)
-        _layout.addWidget(self.x_input, 1, 1)
-        _layout.addWidget(self.y_input, 1, 2)
-        _layout.addWidget(self.z_input, 1, 3)
+                                     font=YAHEI[10], size=(95, 28), bd_radius=8), 2, 0)
+        _layout.addWidget(self.x_input, 2, 1)
+        _layout.addWidget(self.y_input, 2, 2)
+        _layout.addWidget(self.z_input, 2, 3)
+        _layout.addWidget(self.link_button, 2, 4)
 
         self.input_widget.setLayout(_layout)
 
-
     def bind_signals(self):
         self.select_design_button.clicked.connect(lambda: NaDesignSelectDialog.select_design(self.design_selected))
+        self.x_input.textChanged.connect(lambda: self.value_changed(self.x_input))
+        self.y_input.textChanged.connect(lambda: self.value_changed(self.y_input))
+        self.z_input.textChanged.connect(lambda: self.value_changed(self.z_input))
+
+    def value_changed(self, widget):
+        if self.link_button.isChecked():
+            if widget == self.x_input:
+                self.y_input.setText(widget.text())
+                self.z_input.setText(widget.text())
+            elif widget == self.y_input:
+                self.x_input.setText(widget.text())
+                self.z_input.setText(widget.text())
+            elif widget == self.z_input:
+                self.x_input.setText(widget.text())
+                self.y_input.setText(widget.text())
+        self.child_repaint()
 
     def design_selected(self, design_name: str):
         """
@@ -343,10 +378,14 @@ class ScaleDialog(BasicDialog):
             QMessageBox.warning(self, "警告", f"读取文件时出错：{_e}", QMessageBox.Ok)
             return
         # 计算坐标范围
-        range_x, range_y, range_z = get_range_position(self.design_xml_str)
-        self.range_x.setText(str(range_x))
-        self.range_y.setText(str(range_y))
-        self.range_z.setText(str(range_z))
+        min_x, min_y, min_z, max_x, max_y, max_z = get_range_position(self.design_xml_str)
+
+        self.range_x_max.setText(str(max_x))
+        self.range_x_min.setText(str(min_x))
+        self.range_y_max.setText(str(max_y))
+        self.range_y_min.setText(str(min_y))
+        self.range_z_max.setText(str(max_z))
+        self.range_z_min.setText(str(min_z))
         # 更新选择的图纸名称
         self.selected_design_label.setText(str(design_name))
         # 通知所有的子控件刷新
@@ -363,8 +402,9 @@ class ScaleDialog(BasicDialog):
         sz = self.z_input.current_value
         # 如果不是等比缩放，则警告用户
         if not sx == sy == sz:
-            # QMessageBox.warning(self, "警告", "非等比缩放会导致旋转的零件出现比例问题！是否确定？", QMessageBox.Cancel | QMessageBox.Ok)
-            ...
+            reply = QMessageBox.warning(self, "警告", "非等比缩放会导致旋转的零件出现比例问题！是否确定？", QMessageBox.Cancel | QMessageBox.Ok)
+            if reply == QMessageBox.Cancel:
+                return
         scale_design = scale_position(self.design_xml_str, sx, sy, sz)
         # 写入新的XML文件
         design_name = self.selected_design_label.text
@@ -378,9 +418,12 @@ class ScaleDialog(BasicDialog):
             QMessageBox.warning(self, "警告", f"写入文件时出错：{_e}", QMessageBox.Ok)
             return
         # 更新坐标范围
-        self.range_x.setText(str(round(float(self.range_x.text) * self.x_input.current_value, const.DECIMAL_PRECISION)))
-        self.range_y.setText(str(round(float(self.range_y.text) * self.y_input.current_value, const.DECIMAL_PRECISION)))
-        self.range_z.setText(str(round(float(self.range_z.text) * self.z_input.current_value, const.DECIMAL_PRECISION)))
+        self.range_x_max.setText(str(round(float(self.range_x_max.text) * self.x_input.current_value, const.DECIMAL_PRECISION)))
+        self.range_y_max.setText(str(round(float(self.range_y_max.text) * self.y_input.current_value, const.DECIMAL_PRECISION)))
+        self.range_z_max.setText(str(round(float(self.range_z_max.text) * self.z_input.current_value, const.DECIMAL_PRECISION)))
+        self.range_x_min.setText(str(round(float(self.range_x_min.text) * self.x_input.current_value, const.DECIMAL_PRECISION)))
+        self.range_y_min.setText(str(round(float(self.range_y_min.text) * self.y_input.current_value, const.DECIMAL_PRECISION)))
+        self.range_z_min.setText(str(round(float(self.range_z_min.text) * self.z_input.current_value, const.DECIMAL_PRECISION)))
         # 通知所有的子控件刷新
         self.child_repaint()
         QMessageBox.information(self, "提示", "图纸缩放成功！", QMessageBox.Ok)
@@ -390,9 +433,12 @@ class ScaleDialog(BasicDialog):
         通知所有的子控件刷新
         """
         self.selected_design_label.repaint()
-        self.range_x.repaint()
-        self.range_y.repaint()
-        self.range_z.repaint()
+        self.range_x_max.repaint()
+        self.range_y_max.repaint()
+        self.range_z_max.repaint()
+        self.range_x_min.repaint()
+        self.range_y_min.repaint()
+        self.range_z_min.repaint()
         self.x_input.repaint()
         self.y_input.repaint()
         self.z_input.repaint()
@@ -406,11 +452,14 @@ class ScaleDialog(BasicDialog):
     def closeEvent(self, *args):
         self.design_xml_str = None
         self.selected_design_label.setText("尚未选择")
-        self.range_x.setText("1.0")
-        self.range_y.setText("1.0")
-        self.range_z.setText("1.0")
-        self.x_input.clear()
-        self.y_input.clear()
-        self.z_input.clear()
+        self.range_x_min.setText("0.0")
+        self.range_y_min.setText("0.0")
+        self.range_z_min.setText("0.0")
+        self.range_x_max.setText("0.0")
+        self.range_y_max.setText("0.0")
+        self.range_z_max.setText("0.0")
+        self.x_input.setText("1.0")
+        self.y_input.setText("1.0")
+        self.z_input.setText("1.0")
         self.child_repaint()
         super().closeEvent(*args)

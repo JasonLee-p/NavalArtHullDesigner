@@ -1,8 +1,8 @@
 {
-  "check_code": "17a15d3606801123460c36b7d67979e890acf25b",
+  "check_code": "54faa77bf8b0fc53dde94fd97685227f8e1fe2dd",
   "project_name": "SampleProject",
   "author": "JasonLee",
-  "edit_time": "2024-9-7 4:13:51",
+  "edit_time": "2024-9-11 8:28:11",
   "hull_section_group": [
     {
       "name": "\u4e3b\u4f53",
@@ -279,27 +279,7 @@
       "material_width": 0.05
     }
   ],
-  "model": [
-    {
-      "name": "Hindenburg",
-      "pos": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "rot": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "scl": [
-        1,
-        1,
-        1
-      ],
-      "file_path": "E:\\JasonLee\\python_projects\\NavalArtPluginNew\\sample_projects\\KMS Hindenburg.obj"
-    }
-  ],
+  "model": [],
   "ref_image": [
     {
       "name": "Fuso",
