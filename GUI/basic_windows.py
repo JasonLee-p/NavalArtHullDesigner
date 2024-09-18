@@ -4,7 +4,7 @@
 """
 
 import numpy as np
-from .basic_widgets import *
+from .general_widgets import *
 
 
 def rotate_object(angle: float, axis: Union[list, tuple, np.ndarray]):

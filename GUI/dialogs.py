@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QFrame, QGridLayout, QSizePolicy, QMessageBox, QAppl
 
 import const
 from .basic_data import *
-from .basic_widgets import BasicDialog, ButtonGroup, ImageButton, ImageTextButton, ScrollArea, TextButton, NumberEdit
+from .general_widgets import BasicDialog, ButtonGroup, ImageButton, ImageTextButton, ScrollArea, TextButton, NumberEdit
 from na_design_tools import get_avg_position, offset_position, get_range_position, scale_position
 from path_lib import NA_SHIP_PATH
 from string_src import *
@@ -159,7 +159,7 @@ class MoveDialog(BasicDialog):
                                 bg=BG_COLOR0, fg=FG_COLOR0,
                                 font=YAHEI[10], size=(68, 28), bd_radius=8)
         super().__init__(parent, title="整体移动na图纸", ensure_bt_fill=True, size=QSize(400, 300))
-        self.bind_signals()
+        self._bind_signals()
         MoveDialog.Instance = self
 
     def init_center_layout(self):
@@ -184,7 +184,7 @@ class MoveDialog(BasicDialog):
 
         self.input_widget.setLayout(_layout)
 
-    def bind_signals(self):
+    def _bind_signals(self):
         self.select_design_button.clicked.connect(lambda: NaDesignSelectDialog.select_design(self.design_selected))
 
     def design_selected(self):
@@ -314,7 +314,7 @@ class ScaleDialog(BasicDialog):
                                       bg=BG_COLOR0, fg=FG_COLOR0,
                                       font=YAHEI[10], size=(68, 28), bd_radius=bdr)
         super().__init__(parent, title="整体缩放na图纸", ensure_bt_fill=True, size=QSize(400, 340))
-        self.bind_signals()
+        self._bind_signals()
         ScaleDialog.Instance = self
 
     def init_center_layout(self):
@@ -345,7 +345,7 @@ class ScaleDialog(BasicDialog):
 
         self.input_widget.setLayout(_layout)
 
-    def bind_signals(self):
+    def _bind_signals(self):
         self.select_design_button.clicked.connect(lambda: NaDesignSelectDialog.select_design(self.design_selected))
         self.x_input.textChanged.connect(lambda: self.value_changed(self.x_input))
         self.y_input.textChanged.connect(lambda: self.value_changed(self.y_input))

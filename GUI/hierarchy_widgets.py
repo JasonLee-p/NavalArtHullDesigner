@@ -1,10 +1,10 @@
 """
 左侧结构层级窗口中，各个组件类的控件容器，包含了添加按钮、滚动区域、元素列表等
 
-*添加图纸组件*请在此继承Hierarchy基类并实现create_item方法
+*添加图纸组件*请在此继承基类并实现create_item方法
 """
 from .hierarchy_single_component import *
-from .basic_widgets import *
+from .general_widgets import *
 
 
 class HierarchyContainer(QObject):
@@ -29,10 +29,10 @@ class HierarchyContainer(QObject):
         self.scroll_area = ScrollArea(None, self.scroll_widget, Qt.Vertical)
         self.add_button = Button(None, "添加", bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3),
                                  bd_radius=(12, 12, 12, 12), align=Qt.AlignLeft | Qt.AlignTop, size=None)
-        self._setup_ui()
-        self._bind_signal()
+        self._init_ui()
+        self._bind_signals()
 
-    def _setup_ui(self):
+    def _init_ui(self):
         self.add_button.setFixedHeight(26)
         self.add_button.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
         self.add_button.setCursor(Qt.PointingHandCursor)
@@ -47,7 +47,7 @@ class HierarchyContainer(QObject):
         self.scroll_widget.layout().addWidget(self.none_show)
         self.scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
-    def _bind_signal(self):
+    def _bind_signals(self):
         self.add_button.clicked.connect(self.create_item)
 
     def create_item(self) -> bool:
@@ -105,13 +105,16 @@ class HullSectionGroupHC(HierarchyContainer):
     """
     船体截面组的层次结构视图容器
     """
+
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget, "船体截面组：")
+
 
 class ArmorSectionGroupHC(HierarchyContainer):
     """
     装甲截面组的层次结构视图容器
     """
+
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget, "装甲截面组：")
 
@@ -120,6 +123,7 @@ class BridgeHC(HierarchyContainer):
     """
     舰桥的层次结构视图容器
     """
+
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget, "舰桥：")
 
@@ -128,6 +132,7 @@ class LadderHC(HierarchyContainer):
     """
     梯子的层次结构视图容器
     """
+
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget, "梯子：")
 
@@ -136,6 +141,7 @@ class ModelHC(HierarchyContainer):
     """
     外部模型的层次结构视图容器
     """
+
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget, "外部模型：")
         tab_widget.setMinimumWidth(250)
@@ -150,12 +156,10 @@ class RefImageHC(HierarchyContainer):
     """
     参考图片的层次结构视图容器
     """
+
     def __init__(self, main_editor, tab_widget):
-        super().__init__(main_editor, tab_widget)
+        super().__init__(main_editor, tab_widget, "参考图片：")
         tab_widget.setMinimumWidth(250)
-        self.title = "参考图片："
-        self._setup_ui()
-        self._bind_signal()
 
     def create_item(self):
         if not super().create_item():

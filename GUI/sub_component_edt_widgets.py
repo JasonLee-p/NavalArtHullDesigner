@@ -5,7 +5,7 @@ import const
 from main_logger import Log
 from operation.section_op import SectionZMoveOperation
 
-from .basic_widgets import *
+from .general_widgets import *
 
 
 class SubElementShow(Button):

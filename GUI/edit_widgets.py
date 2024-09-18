@@ -9,7 +9,7 @@ import traceback
 import const
 from main_logger import Log
 
-from .basic_widgets import *
+from .general_widgets import *
 from operation import *
 
 
