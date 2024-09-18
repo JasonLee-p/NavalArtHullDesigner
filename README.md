@@ -11,7 +11,7 @@ NavalArt Hull Designer 是一个扩展工具，用于设计 NavalArt 游戏中�
 ### 环境
 
 - Python 3.10
-- 需要的库请参考 `requirements.txt`
+- 依赖库请参考 `requirements.txt`
 
 ### 安装步骤
 
