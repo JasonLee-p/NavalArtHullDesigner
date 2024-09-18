@@ -6,7 +6,6 @@
 """
 
 
-from .basic_data import *
 from .general_widgets import *
 from .basic_windows import *
 from .main_widgets import *

@@ -2,7 +2,7 @@
 from typing import Union, Type, Tuple
 
 from .other_widgets import TextLabel
-from ..basic_data import *
+from ._basic_data import *
 
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QLineEdit, QFrame, QGridLayout

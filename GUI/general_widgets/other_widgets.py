@@ -4,7 +4,7 @@
 """
 from typing import Union, Tuple, Type
 
-from ..basic_data import *
+from ._basic_data import *
 
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QSlider, QSplitter, QScrollArea, QFrame, QLabel, QLineEdit, QProgressBar, QWidget, \

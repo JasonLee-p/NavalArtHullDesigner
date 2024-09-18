@@ -12,8 +12,8 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
 # 静态导入需要的模块
-import GUI.theme_config_color._day_color as _day_color
-import GUI.theme_config_color._night_color as _night_color
+import general_widgets.theme_config_color._day_color as _day_color
+import general_widgets.theme_config_color._night_color as _night_color
 import GUI.UI_design.ImgPng_day as _ImgPng_day
 import GUI.UI_design.ImgPng_night as _ImgPng_night
 

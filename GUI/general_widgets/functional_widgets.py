@@ -4,7 +4,7 @@
 """
 from abc import abstractmethod
 
-from ..basic_data import *
+from ._basic_data import *
 from .line_edit import NumberEdit, TextEdit
 from .buttons import _set_buttons
 from .other_widgets import *

@@ -3,7 +3,7 @@
 定义了各类按钮，包括普通按钮，图片按钮，最大化按钮，最小化按钮，关闭按钮等等
 """
 from .other_widgets import *
-from ..basic_data import *
+from ._basic_data import *
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
