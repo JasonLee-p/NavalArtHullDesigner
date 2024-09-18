@@ -43,6 +43,9 @@ def merge_dict(d1, d2):
 
 
 def open_url(url):
+    """
+    使用默认浏览器打开url
+    """
     def func(_):
         from PyQt5.QtCore import QUrl
         from PyQt5.QtGui import QDesktopServices
@@ -80,9 +83,13 @@ def singleton(cls):
 
 
 class dispatchmethod(singledispatchmethod):
-    """Dispatch a method to different implementations
+    """
+    Dispatch a method to different implementations
     depending upon the type of its first argument.
     If there is no argument, use 'object' instead.
+
+    将方法分派到不同的实现上，具体取决于其第一个参数的类型。
+    如果没有参数，则使用'object'代替。
     """
 
     def __init__(self, func):

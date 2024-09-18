@@ -24,6 +24,8 @@ from .edit_widgets import *
 
 
 class UserInfoTab(MutiDirectionTab):
+    TAG = "UserInfoTab"
+
     def __init__(self, parent):
         super().__init__(parent, CONST.DOWN, "用户", "", USER_IMAGE)
         self.set_layout(QVBoxLayout())
@@ -38,6 +40,8 @@ class UserInfoTab(MutiDirectionTab):
 
 
 class PrjInfoTab(MutiDirectionTab):
+    TAG = "PrjInfoTab"
+
     def __init__(self, parent):
         super().__init__(parent, CONST.RIGHT, "船体信息", f"{DESIGNER_PRJ_STR}的总体信息", ELEMENTS_IMAGE)
         self.set_layout(QVBoxLayout())
@@ -85,6 +89,8 @@ class PrjInfoTab(MutiDirectionTab):
 
 
 class HierarchyTab(MutiDirectionTab):
+    TAG = "HierarchyTab"
+
     def __init__(self, parent, main_editor):
         self.main_editor = main_editor
         super().__init__(parent, CONST.LEFT, HIERARCHY_STR, f"{DESIGNER_PRJ_STR}所有的部件都在这里", STRUCTURE_IMAGE)
@@ -178,9 +184,13 @@ class HierarchyTab(MutiDirectionTab):
         self.ladder_tab.clear()
         self.model_tab.clear()
         self.refImage_tab.clear()
+        Log().info(self.TAG, "已清空所有部件")
 
 
 class EditTab(MutiDirectionTab):
+    TAG = "EditTab"
+
+
     elementType_updated = pyqtSignal(str)  # noqa
 
     def __init__(self, parent):
@@ -325,6 +335,8 @@ class EditTab(MutiDirectionTab):
 
 
 class SettingTab(MutiDirectionTab):
+    TAG = "SettingTab"
+
     def __init__(self, parent, configHandler_, camera):
         self.__configHandler = configHandler_
         self.__camera_sensitivity = configHandler_.get_config("Sensitivity")
@@ -386,11 +398,14 @@ class SettingTab(MutiDirectionTab):
             "旋转": self.slider_rot.value()
         }
         self.__configHandler.set_config("Sensitivity", sensitivity)
+        self.__configHandler.save_config()
         if self.__camera:
             self.__camera.sensitivity = sensitivity
 
 
 class ToolsTab(MutiDirectionTab):
+    TAG = "ToolsTab"
+
     def __init__(self, parent):
         """
         元素编辑窗口
@@ -448,6 +463,8 @@ class ToolsTab(MutiDirectionTab):
 
 
 class GLWidgetGUI(GLViewWidget):
+    TAG = "GLWidgetGUI"
+
     clear_selected_items = pyqtSignal()  # noqa
     after_selection = pyqtSignal()  # noqa
 
@@ -469,7 +486,7 @@ class GLWidgetGUI(GLViewWidget):
         self.menu = Menu()
         # 切换视图模式的按钮
         self.camera_mode_button = Button(self, "切换视图模式", bd_radius=6, size=None, font=YAHEI[9])
-        self.__init_GUI()
+        self.__init_ui()
 
         # 主光照
         self.light = PointLight(
@@ -517,6 +534,8 @@ class GLWidgetGUI(GLViewWidget):
         # 信号连接
         self.__bind_axis_signal()
 
+        Log().info(self.TAG, "初始化完成")
+
         # self.addItem(self.model)
         # self.addItem(self.text)
 
@@ -534,7 +553,7 @@ class GLWidgetGUI(GLViewWidget):
         # self.paintGL_outside()
         ...
 
-    def __init_GUI(self):
+    def __init_ui(self):
         self.__init_top_buttons()
         self.__init_fps_label()
 
@@ -698,6 +717,7 @@ class GLWidgetGUI(GLViewWidget):
     def _clear_selected_items(self):
         self.clear_selected_items.emit()
         super()._clear_selected_items()
+        # Log().info(self.TAG, "已清空选中部件")
 
     def _after_selection(self):
         self.after_selection.emit()
@@ -716,6 +736,9 @@ class GLWidgetGUI(GLViewWidget):
             del _
         print(f"unref: {gc.collect()}")  # 手动垃圾回收
         self.lights = []
+        self.selected_items.clear()
+        self._clear_selected_items()
+        Log().info(self.TAG, "已清空所有物体和光源")
 
     def __del__(self):
         self.clearResources()
@@ -732,6 +755,7 @@ def sin_texture(t):
 
 
 class MainEditorGUI(Window):
+    TAG = "MainEditorGUI"
     active_window = None
     all = []
 

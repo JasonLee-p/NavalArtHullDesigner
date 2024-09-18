@@ -149,7 +149,7 @@ except Exception as e:
 
 # 主要颜色
 try:
-    from config_read import ConfigHandler
+    from config_handler import ConfigHandler
     configHandler = ConfigHandler()
     theme_details = configHandler.get_config("Theme")
     ThemeName = theme_details["Theme"]["ThemeName"]

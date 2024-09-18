@@ -5,6 +5,7 @@
 
 import ujson
 from utils.funcs_utils import merge_dict
+from main_logger import Log
 from path_lib import *
 
 
@@ -12,6 +13,8 @@ class ConfigHandler:
     """
     读取配置文件信息，保存配置信息
     """
+    TAG = "CONFIG"
+
     DEFAULT_CONFIG = {  # 默认配置
         "Config": {
             "Language": "Chinese",
@@ -88,9 +91,12 @@ class ConfigHandler:
                     dict_changed = merge_dict(self.__config, self.DEFAULT_CONFIG)
                     if dict_changed:
                         self.save_config()
+                Log().info(self.TAG, "成功加载配置文件")
             except ValueError and KeyError as _:
                 self.__config = self.DEFAULT_CONFIG
                 self.save_config()
+                Log().warning(self.TAG, "配置文件未初始化或损坏，已重置为默认配置")
+
         else:
             self.__config = self.DEFAULT_CONFIG
             self.save_config()
@@ -99,8 +105,11 @@ class ConfigHandler:
         """
         保存配置文件
         """
-        with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
-            ujson.dump(self.__config, f, ensure_ascii=False, indent=2)
+        try:
+            with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+                ujson.dump(self.__config, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            Log().error(self.TAG, f"保存配置文件失败：{e}")
 
     def get_config(self, key: str):
         """
@@ -143,6 +152,7 @@ class ConfigHandler:
         self.__config["Projects"].pop(prj_name, None)
         self.__config["Projects"][prj_name] = prj_path
         self.save_config()
+        Log().info(self.TAG, f"更新最新项目：{prj_name}")
 
     def _set_key__(self, dict_, key, value):
         """

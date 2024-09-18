@@ -6,7 +6,6 @@ import webbrowser
 
 import psutil
 
-
 from GUI import MainEditorGUI, EditTabWidget
 from GUI.sub_component_edt_widgets import SubElementShow
 from PyQt5 import QtCore
@@ -80,7 +79,7 @@ class MemoryThread(QtCore.QThread):
             self.sleep(2)
 
     def __del__(self):
-        Log().info(self.TAG, "MemoryThread已销毁")
+        Log().info(self.TAG, "线程已销毁")
 
 
 class MainEditor(MainEditorGUI):
@@ -163,7 +162,7 @@ class MainEditor(MainEditorGUI):
 
     def load_last_project(self):
         """
-        打开
+        打开最近编辑的工程
         """
         prjs = self.configHandler.get_config("Projects")
         if not prjs:
@@ -381,86 +380,62 @@ class MainEditor(MainEditorGUI):
 
     @update_structure('add')
     def add_hull_section_group_s(self, group_id):
-        """
-        添加船体截面组
-        """
+        """ 添加船体截面组 """
         pass
 
     @update_structure('add')
     def add_armor_section_group_s(self, group_id):
-        """
-        添加装甲截面组
-        """
+        """ 添加装甲截面组 """
         pass
 
     @update_structure('add')
     def add_bridge_s(self, bridge_id):
-        """
-        添加舰桥
-        """
+        """ 添加舰桥 """
         pass
 
     @update_structure('add')
     def add_ladder_s(self, ladder_id):
-        """
-        添加梯子
-        """
+        """ 添加梯子 """
         pass
 
     @update_structure('add')
     def add_model_s(self, model_id):
-        """
-        添加外部模型
-        """
+        """ 添加外部模型 """
         pass
 
     @update_structure('add')
     def add_ref_image_s(self, ref_image_id):
-        """
-        添加参考图片
-        """
+        """ 添加参考图片 """
         pass
 
     @update_structure('del')
     def del_hull_section_group_s(self, group_id):
-        """
-        删除船体截面组
-        """
+        """ 删除船体截面组 """
         pass
 
     @update_structure('del')
     def del_armor_section_group_s(self, group_id):
-        """
-        删除装甲截面组
-        """
+        """ 删除装甲截面组 """
         pass
 
     @update_structure('del')
     def del_bridge_s(self, bridge_id):
-        """
-        删除舰桥
-        """
+        """ 删除舰桥 """
         pass
 
     @update_structure('del')
     def del_ladder_s(self, ladder_id):
-        """
-        删除梯子
-        """
+        """ 删除梯子 """
         pass
 
     @update_structure('del')
     def del_model_s(self, model_id):
-        """
-        删除外部模型
-        """
+        """ 删除外部模型 """
         pass
 
     @update_structure('del')
     def del_ref_image_s(self, ref_image_id):
-        """
-        删除参考图片
-        """
+        """ 删除参考图片 """
         pass
 
     def show_editor(self, item):
