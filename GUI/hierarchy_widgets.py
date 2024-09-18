@@ -1,29 +1,36 @@
 """
-左侧结构树中的元素结构窗口
+左侧结构层级窗口中，各个组件类的控件容器，包含了添加按钮、滚动区域、元素列表等
+
+*添加图纸组件*请在此继承Hierarchy基类并实现create_item方法
 """
 from .hierarchy_single_component import *
 from .basic_widgets import *
 
 
-class ESW(QObject):
+class HierarchyContainer(QObject):
     """
+    元素结构窗口中元素容器的基类
     """
-    def __init__(self, main_editor, tab_widget):
+    main_editor = None  # 对主编辑器的引用
+
+    def __init__(self, main_editor, tab_widget, title=''):
         """
-        Element Structure Widget
-        :param main_editor:
-        :param tab_widget:
+        :param main_editor: 主编辑器
+        :param tab_widget: 用于显示的tab_widget
+        :param title: 窗口标题
         """
         super().__init__(None)
         self._items = []
-        self.title = ""
-        self.main_editor = main_editor
+        self.title = title
+        HierarchyContainer.main_editor = main_editor
         self.widget = tab_widget
         self.scroll_widget = QWidget()
         self.none_show = NoneShow(80)
         self.scroll_area = ScrollArea(None, self.scroll_widget, Qt.Vertical)
         self.add_button = Button(None, "添加", bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3),
                                  bd_radius=(12, 12, 12, 12), align=Qt.AlignLeft | Qt.AlignTop, size=None)
+        self._setup_ui()
+        self._bind_signal()
 
     def _setup_ui(self):
         self.add_button.setFixedHeight(26)
@@ -51,7 +58,7 @@ class ESW(QObject):
             return False
         :return: 是否可以添加
         """
-        if self.main_editor.getCurrentPrj() is None:
+        if HierarchyContainer.main_editor.getCurrentPrj() is None:
             QMessageBox.warning(self.main_editor, "警告", "请先打开或新建项目")
             return False
         return True
@@ -94,55 +101,44 @@ class ESW(QObject):
         self.none_show.show()
 
 
-class HullSectionGroupESW(ESW):
+class HullSectionGroupHC(HierarchyContainer):
     """
-    """
-    def __init__(self, main_editor, tab_widget):
-        super().__init__(main_editor, tab_widget)
-        self.title = "船体截面组："
-        self._setup_ui()
-        self._bind_signal()
-
-
-class ArmorSectionGroupESW(ESW):
-    """
+    船体截面组的层次结构视图容器
     """
     def __init__(self, main_editor, tab_widget):
-        super().__init__(main_editor, tab_widget)
-        self.title = "装甲截面组："
-        self._setup_ui()
-        self._bind_signal()
+        super().__init__(main_editor, tab_widget, "船体截面组：")
 
-
-class BridgeESW(ESW):
+class ArmorSectionGroupHC(HierarchyContainer):
     """
+    装甲截面组的层次结构视图容器
     """
     def __init__(self, main_editor, tab_widget):
-        super().__init__(main_editor, tab_widget)
-        self.title = "舰桥："
-        self._setup_ui()
-        self._bind_signal()
+        super().__init__(main_editor, tab_widget, "装甲截面组：")
 
 
-class LadderESW(ESW):
+class BridgeHC(HierarchyContainer):
     """
+    舰桥的层次结构视图容器
     """
     def __init__(self, main_editor, tab_widget):
-        super().__init__(main_editor, tab_widget)
-        self.title = "梯子："
-        self._setup_ui()
-        self._bind_signal()
+        super().__init__(main_editor, tab_widget, "舰桥：")
 
 
-class ModelESW(ESW):
+class LadderHC(HierarchyContainer):
     """
+    梯子的层次结构视图容器
     """
     def __init__(self, main_editor, tab_widget):
-        super().__init__(main_editor, tab_widget)
+        super().__init__(main_editor, tab_widget, "梯子：")
+
+
+class ModelHC(HierarchyContainer):
+    """
+    外部模型的层次结构视图容器
+    """
+    def __init__(self, main_editor, tab_widget):
+        super().__init__(main_editor, tab_widget, "外部模型：")
         tab_widget.setMinimumWidth(250)
-        self.title = "外部模型："
-        self._setup_ui()
-        self._bind_signal()
 
     def create_item(self):
         if not super().create_item():
@@ -150,8 +146,9 @@ class ModelESW(ESW):
         self.main_editor.getCurrentPrj().new_model()  # 经过一圈信号传递，最终也调用了self.add_item
 
 
-class RefImageESW(ESW):
+class RefImageHC(HierarchyContainer):
     """
+    参考图片的层次结构视图容器
     """
     def __init__(self, main_editor, tab_widget):
         super().__init__(main_editor, tab_widget)

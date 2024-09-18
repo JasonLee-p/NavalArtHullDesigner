@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 main_editor的功能性子控件，例如专门显示船体截面组的控件
+
+当你想要添加一个新的组件时，你需要继承EditTabWidget类，并实现updateSectionHandler方法。详情请看EditTabWidget类的注释。
 """
 import traceback
 
@@ -12,14 +14,22 @@ from operation import *
 
 
 class EditTabWidget(QWidget):
-    pos_changed_s = pyqtSignal(list)  # noqa
-    rot_changed_s = pyqtSignal(list)  # noqa
+    """
+    编辑控件的基类
+    该类已经初始化了一些基础的界面元素，你只需要在子类设置他们的布局方式，就能正常使用它们。
+    已经初始化的控件有：位置、旋转、缩放的编辑框。
+    """
+    pos_changed_s = pyqtSignal(list)  # noqa  # 当输入框的值发生变化时发射信号
+    rot_changed_s = pyqtSignal(list)  # noqa  # 当输入框的值发生变化时发射信号
 
     main_editor = None
     gl_widget = None
     operationStack: OperationStack = None
 
     def __init__(self):
+        """
+        请在调用super().__init__前，初始化附加的控件。
+        """
         super().__init__(None)
         self._current_item = None
         self.basic_info_widget = QWidget()
@@ -36,6 +46,8 @@ class EditTabWidget(QWidget):
         self.sclX_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), const.DECIMAL_PRECISION, 1, 0.1, YAHEI[9])
         self.sclY_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), const.DECIMAL_PRECISION, 1, 0.1, YAHEI[9])
         self.sclZ_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), const.DECIMAL_PRECISION, 1, 0.1, YAHEI[9])
+        self._init_ui()
+        self._bind_signals()
 
     def _getMainEditor(self):
         """
@@ -48,6 +60,9 @@ class EditTabWidget(QWidget):
         return widget
 
     def currentItem(self):
+        """
+        获取当前正在编辑的item
+        """
         return self._current_item
 
     def _init_ui(self):
@@ -88,6 +103,9 @@ class EditTabWidget(QWidget):
         self.sub_elements_layout.setSpacing(2)
 
     def _bind_signals(self):
+        """
+        绑定控件信号
+        """
         self.posX_edit.value_changed.connect(
             lambda x: self.setPosX(x, [self.posX_edit, self.posY_edit, self.posZ_edit]))
         self.posY_edit.value_changed.connect(
@@ -167,7 +185,6 @@ class EditHullSectionGroupWidget(EditTabWidget):
         self.sizeZ_show = ColoredTextLabel(None, "0", _font, bg=BG_COLOR0, bd=0, padding=3)
         self.section_num_show = ColoredTextLabel(None, "0", _font, bg=BG_COLOR0, bd=0, padding=3)
 
-        super().__init__()
         # TODO: 需要添加到结构层级控件中，由PrjHullSectionGroup进行管理以及信号传递
         self.front_addSection_bt = Button(None, "向前添加截面", bg=(BG_COLOR0, BG_COLOR3, BG_COLOR2, BG_COLOR3),
                                           bd_radius=(12, 12, 0, 0), align=Qt.AlignLeft | Qt.AlignTop, size=None)
@@ -177,8 +194,8 @@ class EditHullSectionGroupWidget(EditTabWidget):
         self.hullSections_layout = QVBoxLayout(self.hullSections_widget)
         self.hullSections_scroll = ScrollArea(
             None, self.hullSections_widget, Qt.Vertical, bd_radius=0, bg=BG_COLOR0, bar_bg=BG_COLOR1)
-        self._init_ui()
-        self._bind_signals()
+
+        super().__init__()
         EditHullSectionGroupWidget.Instance = self
 
     def _init_ui(self):
@@ -216,9 +233,6 @@ class EditHullSectionGroupWidget(EditTabWidget):
         # 设置按钮行为
         self.front_addSection_bt.clicked.connect(self.add_front_section)
         self.back_addSection_bt.clicked.connect(self.add_back_section)
-
-    def _bind_signals(self):
-        super()._bind_signals()
 
     def add_front_section(self):
         """
@@ -300,8 +314,6 @@ class EditArmorSectionGroupWidget(EditTabWidget):
 
     def __init__(self):
         super().__init__()
-        self._init_ui()
-        self._bind_signals()
         EditArmorSectionGroupWidget.Instance = self
 
     def updateSectionHandler(self, item):
@@ -316,8 +328,6 @@ class EditBridgeWidget(EditTabWidget):
 
     def __init__(self):
         super().__init__()
-        self._init_ui()
-        self._bind_signals()
         EditBridgeWidget.Instance = self
 
     def updateSectionHandler(self, item):
@@ -329,8 +339,6 @@ class EditLadderWidget(EditTabWidget):
 
     def __init__(self):
         super().__init__()
-        self._init_ui()
-        self._bind_signals()
         EditLadderWidget.Instance = self
 
     def updateSectionHandler(self, item):
@@ -345,12 +353,10 @@ class EditModelWidget(EditTabWidget):
     Instance: Optional['EditModelWidget'] = None
 
     def __init__(self):
-        super().__init__()
         self.pathButton = Button(None, "单击：重新选择模型路径", bg=('transparent', BG_COLOR3, BG_COLOR2, BG_COLOR3),
                                  bd_radius=5, size=None,
                                  font=YAHEI[9], bd=1, padding=3)
-        self._init_ui()
-        self._bind_signals()
+        super().__init__()
         EditModelWidget.Instance = self
 
     def updateSectionHandler(self, item):
@@ -386,9 +392,6 @@ class EditModelWidget(EditTabWidget):
         self.pathButton.setIcon(QIcon(QPixmap(FOLDER_IMAGE)))
         self.pathButton.clicked.connect(self.selectModelPath)
 
-    def _bind_signals(self):
-        super()._bind_signals()
-
     def selectModelPath(self):
         """
         选择模型路径
@@ -410,13 +413,10 @@ class EditRefImageWidget(EditTabWidget):
     scl_changed_s = pyqtSignal(list)  # noqa
 
     def __init__(self):
-        super().__init__()
-
         self.pathButton = Button(None, "单击：重新选择图片路径", bg=('transparent', BG_COLOR3, BG_COLOR2, BG_COLOR3),
                                  bd_radius=5, size=None,
                                  font=YAHEI[9], bd=1, padding=3)
-        self._init_ui()
-        self._bind_signals()
+        super().__init__()
         EditModelWidget.Instance = self
 
     def updateSectionHandler(self, item):
@@ -459,9 +459,6 @@ class EditRefImageWidget(EditTabWidget):
         self.pathButton.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
         self.pathButton.setIcon(QIcon(QPixmap(FOLDER_IMAGE)))
         self.pathButton.clicked.connect(self.selectRefImagePath)
-
-    def _bind_signals(self):
-        super()._bind_signals()
 
     def selectRefImagePath(self):
         """

@@ -112,12 +112,12 @@ class HierarchyTab(MutiDirectionTab):
         self.tab_widget.addTab(self._ladder_tab, "梯子")
         self.tab_widget.addTab(self._model_tab, "外部模型")
         self.tab_widget.addTab(self._refImage_tab, "参考图片")
-        self.hullSectionGroup_tab = HullSectionGroupESW(self.main_editor, self._hullSectionGroup_tab)
-        self.armorSectionGroup_tab = ArmorSectionGroupESW(self.main_editor, self._armorSectionGroup_tab)
-        self.bridge_tab = BridgeESW(self.main_editor, self._bridge_tab)
-        self.ladder_tab = LadderESW(self.main_editor, self._ladder_tab)
-        self.model_tab = ModelESW(self.main_editor, self._model_tab)
-        self.refImage_tab = RefImageESW(self.main_editor, self._refImage_tab)
+        self.hullSectionGroup_tab = HullSectionGroupHC(self.main_editor, self._hullSectionGroup_tab)
+        self.armorSectionGroup_tab = ArmorSectionGroupHC(self.main_editor, self._armorSectionGroup_tab)
+        self.bridge_tab = BridgeHC(self.main_editor, self._bridge_tab)
+        self.ladder_tab = LadderHC(self.main_editor, self._ladder_tab)
+        self.model_tab = ModelHC(self.main_editor, self._model_tab)
+        self.refImage_tab = RefImageHC(self.main_editor, self._refImage_tab)
         # 总布局
         self.main_layout.addWidget(self.tab_widget)
 
@@ -187,12 +187,16 @@ class EditTab(MutiDirectionTab):
         self.set_layout(QVBoxLayout())
         self.elementType_label = TextLabel(self, "没有选中部件", YAHEI[9], FG_COLOR1, Qt.AlignLeft)
         self.elementName_label = TextLabel(self, "", YAHEI[9], FG_COLOR0, Qt.AlignCenter)
+        # 初始化图纸组件的编辑窗口
+        # *添加图纸组件*编辑窗口需要在这里初始化
         self.edit_hullSectionGroup_widget = EditHullSectionGroupWidget()
         self.edit_armorSectionGroup_widget = EditArmorSectionGroupWidget()
         self.edit_bridge_widget = EditBridgeWidget()
         self.edit_ladder_widget = EditLadderWidget()
         self.edit_model_widget = EditModelWidget()
         self.edit_refImage_widget = EditRefImageWidget()
+        # 将编辑窗口和部件名称对应起来，用于切换
+        # *添加图纸组件*需要在这里添加对应关系
         self.edit_widgets = {
             self.edit_hullSectionGroup_widget: HULL_SECTION_GROUP_STR,
             self.edit_armorSectionGroup_widget: ARMOR_SECTION_GROUP_STR,
@@ -288,6 +292,11 @@ class EditTab(MutiDirectionTab):
             ew.hide()
         self.current_edit_widget = None
         self.elementType_updated.emit("无选中部件")
+
+    """
+    当编辑窗口需要更新时，调用下面的函数：
+    *添加图纸组件*需要在这里添加函数
+    """
 
     def edit_hullSectionGroup(self, hull_section_group):
         self.edit_hullSectionGroup_widget.updateSectionHandler(hull_section_group)
@@ -759,36 +768,57 @@ class MainEditorGUI(Window):
     @not_implemented
     @abstractmethod
     def save_prj(self):
+        """
+        保存工程
+        """
         pass
 
     @not_implemented
     @abstractmethod
     def save_as_prj(self):
+        """
+        另存工程
+        """
         pass
 
     @not_implemented
     @abstractmethod
     def export_to_na(self):
+        """
+        将工程导出为NavalArt图纸
+        """
         pass
 
     @not_implemented
     @abstractmethod
     def set_theme(self):
+        """
+        打开主题设置界面
+        """
         pass
 
     @not_implemented
     @abstractmethod
     def set_camera(self):
+        """
+        打开相机设置界面
+        """
         pass
 
     @not_implemented
     @abstractmethod
     def about(self):
+        """
+        打开关于界面
+        """
         pass
 
     @not_implemented
     @abstractmethod
     def tutorial(self):
+        """
+        打开教程
+        """
         pass
 
     def __init__(self, gl_widget, logger):

@@ -1,6 +1,8 @@
 """
 读取设计器工程文件
 文件格式名称为.naprj，使用json格式
+
+当需要添加新的图纸组件时，直接查询 “ *添加图纸组件* ”关键字，并按照注释添加即可
 """
 import os
 import time
@@ -133,14 +135,14 @@ class DesignerProject(QObject):
         }
         """
     TAG = "ShipProject"
-
+    # *添加图纸组件*请在此添加组件的信号
     add_hull_section_group_s = pyqtSignal(str)  # noqa  # 添加船体截面组的信号，传出截面组id
     add_armor_section_group_s = pyqtSignal(str)  # noqa  # 添加装甲截面组的信号，传出截面组id
     add_bridge_s = pyqtSignal(str)  # noqa  # 添加舰桥的信号，传出舰桥id
     add_ladder_s = pyqtSignal(str)  # noqa  # 添加梯子的信号，传出梯子id
     add_model_s = pyqtSignal(str)  # noqa  # 添加模型的信号，传出模型id
     add_ref_image_s = pyqtSignal(str)  # noqa  # 添加参考图片的信号，传出参考图片id
-
+    # *添加图纸组件*请在此添加组件的信号
     del_hull_section_group_s = pyqtSignal(str)  # noqa  # 删除船体截面组的信号，传出截面组id
     del_armor_section_group_s = pyqtSignal(str)  # noqa  # 删除装甲截面组的信号，传出截面组id
     del_bridge_s = pyqtSignal(str)  # noqa  # 删除舰桥的信号，传出舰桥id
@@ -166,6 +168,7 @@ class DesignerProject(QObject):
         self.project_name = None
         self.author = None
         self.__edit_time = None
+        # *添加图纸组件*请在此添加组件的列表，使用__snake_case命名
         self.__hull_section_group: List[HullSectionGroup] = []
         self.__armor_section_group: List[ArmorSectionGroup] = []
         self.__bridge: List[Bridge] = []
@@ -177,6 +180,7 @@ class DesignerProject(QObject):
         """
         将信号绑定到主处理器
         随后当添加或删除元素时，会发出信号，通知mainEditor控件更新
+        *添加图纸组件*请在此添加组件的信号绑定
         :return:
         """
         self.add_hull_section_group_s.connect(main_editor.add_hull_section_group_s)
@@ -191,11 +195,14 @@ class DesignerProject(QObject):
         self.del_bridge_s.connect(main_editor.del_bridge_s)
         self.del_ladder_s.connect(main_editor.del_ladder_s)
         self.del_model_s.connect(main_editor.del_model_s)
+        self.del_ref_image_s.connect(main_editor.del_ref_image_s)
+
         self.main_editor = main_editor
 
     def unbind_signal_to_handler(self, main_editor):
         """
         解绑信号，在切换工程时使用
+        *添加图纸组件*请在此添加组件的信号解绑
         :return:
         """
         self.add_hull_section_group_s.disconnect(main_editor.add_hull_section_group_s)
@@ -203,17 +210,22 @@ class DesignerProject(QObject):
         self.add_bridge_s.disconnect(main_editor.add_bridge_s)
         self.add_ladder_s.disconnect(main_editor.add_ladder_s)
         self.add_model_s.disconnect(main_editor.add_model_s)
+        self.add_ref_image_s.disconnect(main_editor.add_ref_image_s)
+
         self.del_hull_section_group_s.disconnect(main_editor.del_hull_section_group_s)
         self.del_armor_section_group_s.disconnect(main_editor.del_armor_section_group_s)
         self.del_bridge_s.disconnect(main_editor.del_bridge_s)
         self.del_ladder_s.disconnect(main_editor.del_ladder_s)
         self.del_model_s.disconnect(main_editor.del_model_s)
+        self.del_ref_image_s.disconnect(main_editor.del_ref_image_s)
+
         self.main_editor = None
 
     def init_in_main_editor(self):
         """
         在main_editor的ElementStructureWidget中初始化
         遍历组件，触发信号，更新界面
+        *添加图纸组件*请在此添加组件的遍历
         :return:
         """
         for hs_group in self.__hull_section_group:
@@ -228,6 +240,11 @@ class DesignerProject(QObject):
             self.add_model_s.emit(model_.getId())
         for ref_image_ in self.__ref_image:
             self.add_ref_image_s.emit(ref_image_.getId())
+
+    """
+    以下为添加图纸组件的方法
+    *添加图纸组件*请在此添加组件的方法
+    """
 
     def new_hullSectionGroup(self):
         """
@@ -284,6 +301,11 @@ class DesignerProject(QObject):
         file_dialog.setDirectory(find_path)
         file_dialog.fileSelected.connect(lambda p: self.add_refImage_byPath(p))
         file_dialog.exec_()
+
+    """
+    以下为添加图纸组件的方法
+    *添加图纸组件*请在此添加组件的方法
+    """
 
     def add_section(self, prjsection: Union[HullSectionGroup, ArmorSectionGroup, Bridge, Ladder, Model]):
         """
@@ -417,6 +439,7 @@ class DesignerProject(QObject):
     def del_section(self, prjsection: Union[HullSectionGroup, ArmorSectionGroup, Bridge, Ladder, Railing, Handrail]):
         """
         删除截面组，同时发出信号，通知视图更新
+        *添加图纸组件*请在此添加组件的删除方法
         :param prjsection: 截面组
         """
         if isinstance(prjsection, HullSectionGroup):
@@ -454,6 +477,7 @@ class DesignerProject(QObject):
     def to_dict(self):
         """
         将工程文件转换为字典，用于存为json
+        *添加图纸组件*请在此添加组件的to_dict方法
         """
         year, month, day, hour, minute, second = time.localtime(time.time())[:6]
         return {
@@ -523,19 +547,20 @@ class DesignerPrjReader:
         self.hullProject.project_name = data['project_name']
         self.hullProject.author = data['author']
         self.hullProject.__edit_time = data['edit_time']
-        # 读取船体截面组
+        # 读取各个组件
+        # *添加图纸组件*请在此添加组件的读取
         self.load_hull_section_group(data['hull_section_group'])
-        # 读取装甲截面组
         self.load_armor_section_group(data['armor_section_group'])
-        # 读取舰桥
         self.load_bridge(data['bridge'])
-        # 读取梯子
         self.load_ladder(data['ladder'])
-        # 读取模型
         self.load_model(data['model'])
-        # 读取参考图片
         self.load_ref_image(data['ref_image'])
         return True
+
+    """
+    以下为读取图纸组件的方法
+    *添加图纸组件*请在此添加组件的读取方法
+    """
 
     def load_rail(self, data, parent):
         if data['type'] == "railing":
