@@ -139,6 +139,8 @@ class ConfigHandler:
         """
         添加项目，保存配置
         """
+        # 如果字典里已经有了这个项目，就先删除再添加，若没有则直接添加，保证项目在字典的最后
+        self.__config["Projects"].pop(prj_name, None)
         self.__config["Projects"][prj_name] = prj_path
         self.save_config()
 

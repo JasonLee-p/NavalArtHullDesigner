@@ -122,6 +122,8 @@ class MainEditor(MainEditorGUI):
         """
         打开path路径的工程文件
         """
+        # 将path进行标准化
+        path = os.path.abspath(path)
         prj = DesignerProject(self.gl_widget, path)
         # 加载工程文件
         loader = DesignerPrjReader(self, path, prj)

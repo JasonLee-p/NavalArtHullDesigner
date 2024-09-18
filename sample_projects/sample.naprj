@@ -1,8 +1,8 @@
 {
-  "check_code": "57f21b0caa56657c707f95632c5bad2a852d2cf0",
+  "check_code": "4b061ffddb5de3ae3c708b54707e10d55be50cec",
   "project_name": "SampleProject",
   "author": "JasonLee",
-  "edit_time": "2024-9-19 2:1:27",
+  "edit_time": "2024-9-19 2:54:50",
   "hull_section_group": [
     {
       "name": "\u4e3b\u4f53",
@@ -289,8 +289,8 @@
         8.5
       ],
       "rot": [
-        90.0,
-        90.0,
+        45.0,
+        45.0,
         0
       ],
       "scl": [
