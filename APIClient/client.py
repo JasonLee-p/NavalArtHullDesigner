@@ -1,11 +1,13 @@
 """
-和服务器通信
+和服务器通信，目前处于测试阶段
 """
 import requests
 from APIClient.email_utils import *
 from main_logger import Log
 
 _TAG = "APIClient"
+
+TESTING = True
 
 
 def request_url(url, data=None):
@@ -24,13 +26,16 @@ class APIClient:
     和服务器通信
     """
     def __init__(self):
-        self.base_url = "http://"
-        self._register_url = f"{self.base_url}/user/register"
-        self._login_url = f"{self.base_url}/user/login"
-        self._logout_url = f"{self.base_url}/user/logout"
-        self._currentUser_url = f"{self.base_url}/user/user"
+        self.port_url = "http://127.0.0.1:9284" if TESTING else "http://47.113.220.157:9284"
+        self._register_url = f"{self.port_url}/register"
+        self._login_url = f"{self.port_url}/login"
+        self._logout_url = f"{self.port_url}/logout"
+        self._currentUser_url = f"{self.port_url}/user"
 
     def register_request(self, username, email, password):
+        """
+        注册
+        """
         # 检查邮箱是否合法
         if not is_valid_email(email):
             return "邮箱格式不正确"
@@ -58,28 +63,36 @@ class APIClient:
             return response["error"]
         return response["message"]
 
-    def _register_request(self, username, email, password):
-        data = {
-            'username': username,
-            'email': email,
-            'password': password
-        }
-        response = requests.post(self._register_url, json=data)
-        Log().info(_TAG, response.json())
-        return response.json()
-
-    def _login_request(self, email, password):
+    def login_request(self, email, password):
+        """
+        登录
+        """
         data = {
             'email': email,
             'password': password
         }
-        response = requests.post(self._login_url, json=data)
-        return response.json()
+        response = request_url(self._login_url, data)
+        if "error" in response:
+            return response["error"]
+        return response["message"]
 
-    def _logout_request(self):
-        response = requests.post(self._logout_url)
-        return response.json()
+    def logout_request(self):
+        """
+        退出
+        """
+        response = request_url(self._logout_url)
+        return response["message"]
 
-    def _currentUser_request(self):
+    def currentUser_request(self):
+        """
+        获取当前用户信息
+        """
         response = requests.get(self._currentUser_url)
         return response.json()
+
+
+if __name__ == '__main__':
+    client = APIClient()
+    print(client.register_request("test", "2593292614@qq.com", "password123"))
+    print(client.login_request("2593292614@qq.com", "Lzx2003123."))
+    print()

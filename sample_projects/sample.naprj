@@ -1,8 +1,8 @@
 {
-  "check_code": "54faa77bf8b0fc53dde94fd97685227f8e1fe2dd",
+  "check_code": "55263cf46241d9e2903fd3ab5dafcd6050f450db",
   "project_name": "SampleProject",
   "author": "JasonLee",
-  "edit_time": "2024-9-11 8:28:11",
+  "edit_time": "2024-9-15 23:6:35",
   "hull_section_group": [
     {
       "name": "\u4e3b\u4f53",
@@ -295,7 +295,7 @@
       ],
       "scl": [
         114.0,
-        12.4,
+        12.8,
         1
       ],
       "file_path": "E:\\JasonLee\\python_projects\\NavalArtPluginNew\\sample_projects\\Fuso.png"
