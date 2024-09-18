@@ -48,10 +48,6 @@ class RefImage(PrjComponent):
             self.setRot(rot)
             self.setScl(scl)
 
-    def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
-        super()._init_showButton(type_)
-        self._image_bt_scroll_widget.layout().addWidget(self._showButton)
-
     def changePath(self, path):
         """
         修改模型路径，然后通知gl_widget更新

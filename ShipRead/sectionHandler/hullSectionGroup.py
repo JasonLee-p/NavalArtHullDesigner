@@ -198,10 +198,6 @@ class HullSectionGroup(PrjComponent):
             self._edit_tab.edit_hullSectionGroup_widget.add_section_showButton(section)
         # 初始化
 
-    def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
-        super()._init_showButton(type_)
-        self._hsg_bt_scroll_widget.layout().addWidget(self._showButton)
-
     def set_showButton_checked(self, selected: bool):
         super().set_showButton_checked(selected)
         # 设置左侧结构树当前的tab

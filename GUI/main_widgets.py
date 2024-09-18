@@ -733,7 +733,6 @@ class MainEditorGUI(Window):
     def new_prj(self):
         pass
 
-    @not_implemented
     @abstractmethod
     def open_prj(self, path):
         """

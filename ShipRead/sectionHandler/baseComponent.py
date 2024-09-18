@@ -177,9 +177,9 @@ class PrjComponent(QObject):
     @abstractmethod
     def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
         if type_ == 'PosShow':
-            self._showButton = PosShow(self.hullProject.gl_widget, self._model_bt_scroll_widget, self)
+            self._showButton = PosShow(self.hullProject.gl_widget, self)
         elif type_ == 'PosRotShow':
-            self._showButton = PosRotShow(self.hullProject.gl_widget, self._model_bt_scroll_widget, self)
+            self._showButton = PosRotShow(self.hullProject.gl_widget, self)
         else:
             trace = traceback.extract_stack()[-2]
             Log().error(trace, self.TAG, f"未知的showButton类型: {type_}")

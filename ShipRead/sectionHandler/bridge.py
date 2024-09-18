@@ -111,10 +111,6 @@ class Bridge(PrjComponent):
         self.setPaintItem("default")
         self.setPos(self.Pos)
 
-    def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
-        super()._init_showButton(type_)
-        self._bridge_bt_scroll_widget.layout().addWidget(self._showButton)
-
     def set_showButton_checked(self, selected: bool):
         super().set_showButton_checked(selected)
         # 设置左侧结构树当前的tab

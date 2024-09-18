@@ -65,26 +65,23 @@ class HierarchyContainer(QObject):
 
     def add_item(self, item):
         """
-        在加入元素后更新界面，并且如果当前没有元素则隐藏none_show
+        在加入元素后，将元素的showbutton加入控件，更新界面，并且如果当前没有元素则隐藏none_show
         :param item: 元素（不是控件，而是实际的元素）
         :return: 是否添加成功
         """
         if not self._items:
             self.none_show.hide()
         self._items.append(item)
+        self.scroll_widget.layout().addWidget(item._showButton)
 
-    def del_item(self, item, temp=True):
+    def del_item(self, item):
         """
         删除元素后更新界面，并且如果当前没有元素则显示none_show
         :param item: 元素（不是控件，而是实际的元素）
         :return: 是否删除成功
         """
         self._items.remove(item)
-        if hasattr(item, "_showButton"):
-            if temp:
-                item._showButton.hide()
-            else:
-                item._showButton.deleteLater()
+        self.scroll_widget.layout().removeWidget(item._showButton)
         if not self._items:
             self.none_show.show()
 
@@ -95,7 +92,7 @@ class HierarchyContainer(QObject):
         :return:
         """
         for item in self._items:
-            self.del_item(item)
+            self.scroll_widget.layout().removeWidget(item._showButton)
         self._items.clear()
         # 刷新界面
         self.none_show.show()

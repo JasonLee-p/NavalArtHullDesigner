@@ -128,8 +128,10 @@ class MainEditor(MainEditorGUI):
         if not loader.successed:
             Log().warning(self.TAG, f"打开工程失败：{prj.project_name}")
             return False
+        # 只有在成功加载工程文件后才能清空界面
         self.structure_tab.clear()
         self.edit_tab.clear_editing_widget()
+        self.repaint()
         # 初始化到主编辑器界面
         prj.bind_signal_to_editor(self)
         prj.init_in_main_editor()
@@ -362,6 +364,7 @@ class MainEditor(MainEditorGUI):
         """
         if self._current_prj:
             self._current_prj.unbind_signal_to_handler(self)
+            self._current_prj.deleteLater()
         self._current_prj = prj
 
     def getCurrentPrj(self):

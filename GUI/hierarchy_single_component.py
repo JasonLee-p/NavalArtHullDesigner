@@ -21,15 +21,13 @@ class NoneShow(Button):
 class ShowButton(Button):
     TAG = "ShowButton"
 
-    def __init__(self, gl_widget, scroll_widget, item_handler, height=70):
+    def __init__(self, gl_widget, item_handler, height=70):
         """
         预览元素的控件
         :param gl_widget:
-        :param scroll_widget:
         :param item_handler:
         """
         self.gl_widget = gl_widget
-        self.parent_scroll_widget = scroll_widget
         self.item_handler = item_handler
         super().__init__(None, "点击以编辑", bd_radius=8, size=None,
                          bg=(BG_COLOR1, BG_COLOR2, BG_COLOR3, BG_COLOR3))
@@ -127,14 +125,13 @@ class ShowButton(Button):
 
 
 class PosShow(ShowButton):
-    def __init__(self, gl_widget, scroll_widget, item_handler, height=70):
+    def __init__(self, gl_widget, item_handler, height=70):
         """
         只需要预览位置，并且有名字的元素的显示按钮
         :param gl_widget:
-        :param scroll_widget:
         :param item_handler:
         """
-        super().__init__(gl_widget, scroll_widget, item_handler, height=height)
+        super().__init__(gl_widget, item_handler, height=height)
         self.pos_text = ColoredTextLabel(None, "位置：", self._font, bg=BG_COLOR0, bd=0, padding=3)
         self.posX_show = ColoredTextLabel(None, "0", self._font, bg=BG_COLOR0, bd=0, padding=3)
         self.posY_show = ColoredTextLabel(None, "0", self._font, bg=BG_COLOR0, bd=0, padding=3)
@@ -194,14 +191,13 @@ class PosShow(ShowButton):
 
 
 class PosRotShow(ShowButton):
-    def __init__(self, gl_widget, scroll_widget, item_handler, height=96):
+    def __init__(self, gl_widget, item_handler, height=96):
         """
         预览位置和旋转角度的元素的显示按钮
         :param gl_widget:
-        :param scroll_widget:
         :param item_handler:
         """
-        super().__init__(gl_widget, scroll_widget, item_handler, height=height)
+        super().__init__(gl_widget, item_handler, height=height)
         self.pos_text = ColoredTextLabel(None, "位置：", self._font, bg=BG_COLOR0, bd=0, padding=3)
         self.rot_text = ColoredTextLabel(None, "旋转：", self._font, bg=BG_COLOR0, bd=0, padding=3)
         self.posX_show = ColoredTextLabel(None, "0", self._font, bg=BG_COLOR0, bd=0, padding=3)
