@@ -3,7 +3,6 @@
 """
 import requests
 from APIClient.email_utils import *
-from main_logger import Log
 
 _TAG = "APIClient"
 
