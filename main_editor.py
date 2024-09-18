@@ -373,6 +373,10 @@ class MainEditor(MainEditorGUI):
         """
         return self._current_prj
 
+    """
+    下面是添加或删除组件的函数，这些函数将会被装饰器装饰，以便在添加或删除组件时，自动更新结构视图
+    """
+
     @update_structure('add')
     def add_hull_section_group_s(self, group_id):
         """

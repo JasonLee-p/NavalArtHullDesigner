@@ -135,6 +135,7 @@ class DesignerProject(QObject):
         }
         """
     TAG = "ShipProject"
+    # 下面这些信号会被连接到main_handler的同名槽函数，用于更新视图
     # *添加图纸组件*请在此添加组件的信号
     add_hull_section_group_s = pyqtSignal(str)  # noqa  # 添加船体截面组的信号，传出截面组id
     add_armor_section_group_s = pyqtSignal(str)  # noqa  # 添加装甲截面组的信号，传出截面组id
@@ -223,7 +224,7 @@ class DesignerProject(QObject):
 
     def init_in_main_editor(self):
         """
-        在main_editor的ElementStructureWidget中初始化
+        在main_editor的HierarchyContainer中初始化
         遍历组件，触发信号，更新界面
         *添加图纸组件*请在此添加组件的遍历
         :return:

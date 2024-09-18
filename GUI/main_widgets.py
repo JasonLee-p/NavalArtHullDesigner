@@ -106,12 +106,14 @@ class HierarchyTab(MutiDirectionTab):
     def __init_main_widget(self):
         self.layout().setContentsMargins(5, 5, 5, 0)
         self.layout().setSpacing(5)
+        # *添加图纸组件*初始化
         self.tab_widget.addTab(self._hullSectionGroup_tab, HULL_SECTION_GROUP_STR)
         self.tab_widget.addTab(self._armorSectionGroup_tab, ARMOR_SECTION_GROUP_STR)
         self.tab_widget.addTab(self._bridge_tab, "舰桥")
         self.tab_widget.addTab(self._ladder_tab, "梯子")
         self.tab_widget.addTab(self._model_tab, "外部模型")
         self.tab_widget.addTab(self._refImage_tab, "参考图片")
+        # *添加图纸组件*初始化
         self.hullSectionGroup_tab = HullSectionGroupHC(self.main_editor, self._hullSectionGroup_tab)
         self.armorSectionGroup_tab = ArmorSectionGroupHC(self.main_editor, self._armorSectionGroup_tab)
         self.bridge_tab = BridgeHC(self.main_editor, self._bridge_tab)
@@ -125,7 +127,8 @@ class HierarchyTab(MutiDirectionTab):
         self.tab_widget.setCurrentWidget(tab)
 
     """
-    下面这些函数必须使用蛇形命名法：
+    下面这些函数必须使用 snake_case，因为他们会被 main_editor 动态地通过 update_structure 装饰器调用
+    *添加图纸组件*需要在这里添加函数
     """
 
     def add_hull_section_group(self, hull_section_group):
@@ -165,6 +168,10 @@ class HierarchyTab(MutiDirectionTab):
         self.refImage_tab.del_item(refImage)
 
     def clear(self):
+        """
+        清空所有部件
+        *添加图纸组件*需要在这里添加函数
+        """
         self.hullSectionGroup_tab.clear()
         self.armorSectionGroup_tab.clear()
         self.bridge_tab.clear()
@@ -751,6 +758,7 @@ class MainEditorGUI(Window):
         file_dialog.setFileMode(QFileDialog.ExistingFiles)
         file_dialog.setNameFilter(f"{DESIGNER_PRJ_STR}文件 (*.naprj)")
         file_dialog.setViewMode(QFileDialog.Detail)
+        # 获取打开的路径，方便下次打开
         prjs = self.configHandler.get_config("Projects")
         if prjs:
             last_prj_path = prjs[list(prjs.keys())[-1]]
