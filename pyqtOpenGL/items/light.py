@@ -114,6 +114,7 @@ class LightMixin:
             self.lights.append(light)
         elif isinstance(light, list):
             self.lights.extend(light)
+            self.lights = list(set(self.lights))
 
     def setupLight(self, shader: Shader):
         """设置光源 uniform 属性

@@ -363,9 +363,6 @@ class GLGraphicsItem(QtCore.QObject):
         if not self.__initialized:
             if self.view() is None:
                 self.setView(self.__parent.view())
-                # register lights to view
-                if hasattr(self, 'lights') and self.__view is not None:
-                    self.__view.lights |= set(self.lights)
             self.initializeGL()
             self.__initialized = True
 

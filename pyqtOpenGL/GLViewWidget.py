@@ -172,8 +172,6 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             if not item.lights:
                 if hasattr(item, 'addLight') and add_light:
                     item.addLight(self.lights)
-            else:
-                self.lights |= set(item.lights)
         self.items.sort(key=lambda a: a.depthValue())
         self.update()
 
@@ -181,14 +179,19 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         for item in items:
             self.addItem(item)
 
-    def removeItem(self, item):
+    def removeItem(self, item: GLGraphicsItem, del_light=True):
         """
         Remove the item from the scene.
+        Please make sure the item is in the scene before calling this function.
         """
         self.items.remove(item)
         if item.selected():
             item.setSelected(False)
             self.selected_items.remove(item)
+        if hasattr(item, 'lights') and del_light:
+            for l_ in self.lights:
+                if l_ in item.lights:
+                    item.lights.remove(l_)
         item.setView(None)
         self.update()
 

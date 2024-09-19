@@ -151,10 +151,9 @@ class DesignerProject(QObject):
     del_model_s = pyqtSignal(str)  # noqa  # 删除模型的信号，传出模型id
     del_ref_image_s = pyqtSignal(str)  # noqa  # 删除参考图片的信号，传出参考图片id
 
-    def __init__(self, gl_widget: 'GLWidgetGUI', path: str):  # noqa
+    def __init__(self, path: str):  # noqa
         """
 
-        :param gl_widget: 用于绘制的GLWidget
         :param path: 含文件名的路径
         """
         super().__init__(None)
@@ -162,8 +161,7 @@ class DesignerProject(QObject):
         # 锁
         self.prj_file_mutex = QMutex()
         self.locker = QMutexLocker(self.prj_file_mutex)
-        # 绑定主处理器
-        self.gl_widget = gl_widget
+
         self.path = path
         self.__check_code = None
         self.project_name = None

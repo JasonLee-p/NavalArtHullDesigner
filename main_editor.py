@@ -43,6 +43,11 @@ def update_structure(action):
             component = component_class.get_by_id(component_id)
             # 调用structure_tab（GUI.main_widgets.ElementStructureTab）对应的函数
             getattr(self.structure_tab, f'{action}_{snake_component_type}')(component)
+            # 调用gl_widget（GUI.pyqtOpenGL.GLWidget）的添加或删除组件函数
+            if action == 'add':
+                self.gl_widget.addItem(component.paintItem, add_light=True)
+            else:
+                self.gl_widget.removeItem(component.paintItem, del_light=True)
 
         if not func.__doc__:
             func.__doc__ = f"""
@@ -123,7 +128,7 @@ class MainEditor(MainEditorGUI):
         """
         # 将path进行标准化
         path = os.path.abspath(path)
-        prj = DesignerProject(self.gl_widget, path)
+        prj = DesignerProject(path)
         # 加载工程文件
         loader = DesignerPrjReader(self, path, prj)
         if not loader.successed:
@@ -132,6 +137,8 @@ class MainEditor(MainEditorGUI):
         # 只有在成功加载工程文件后才能清空界面
         self.structure_tab.clear()
         self.edit_tab.clear_editing_widget()
+        self.gl_widget.clearItems()
+        # self.gl_widget.clearResources()
         self.repaint()
         # 初始化到主编辑器界面
         prj.bind_signal_to_editor(self)

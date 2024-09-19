@@ -526,10 +526,9 @@ class GLWidgetGUI(GLViewWidget):
         #     drawLine=True,
         #     material=self.GRAY_material
         # ).translate(0, 0, 0)
-
-        self.addItem(self.__axis)
-        self.addItem(self.__grid)
-        self.addItem(self.strech_arrow)
+        self.env_items = [self.__axis, self.__grid, self.strech_arrow]
+        for item in self.env_items:
+            self.addItem(item)
 
         # 信号连接
         self.__bind_axis_signal()
@@ -722,6 +721,15 @@ class GLWidgetGUI(GLViewWidget):
     def _after_selection(self):
         self.after_selection.emit()
         super()._after_selection()
+
+    def clearItems(self):
+        """
+        清空所有的物体，不包括axis和grid等环境基础物体
+        """
+        self.items = self.env_items.copy()
+        self.selected_items.clear()
+        self._clear_selected_items()
+        Log().info(self.TAG, "已清空所有非基础物体")
 
     def clearResources(self):
         """

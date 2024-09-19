@@ -140,8 +140,11 @@ class PrjComponent(QObject):
         :param paintItem: 无需手动添加lights
         :return:
         """
+        paintItem_in_glw = False
         if self.hasPaintItem():
-            self._gl_widget.removeItem(self.paintItem)
+            if self.paintItem in self._gl_widget.items:
+                self._gl_widget.removeItem(self.paintItem)
+                paintItem_in_glw = True
             self.paintItem.set_selected_s.disconnect(self.set_showButton_checked)
             self.paintItem.handler = None
             self.paintItem = None
@@ -157,16 +160,13 @@ class PrjComponent(QObject):
                 glOptions='translucent',
                 selectable=True
             ).translate(self.Pos.x(), self.Pos.y(), self.Pos.z())
-        else:
-            if hasattr(paintItem, "addLight"):
-                paintItem.addLight([PrjComponent._gl_widget.light])
-            else:
-                Log().warning(self.TAG, f"{self} paintItem没有addLight方法")
         self.paintItem = paintItem
+        # 添加到gl_widget
+        if paintItem_in_glw:
+            self._gl_widget.addItem(self.paintItem)
         # 绑定handler
         self.paintItem.set_selected_s.connect(self.set_showButton_checked)
         self.paintItem.handler = self
-        PrjComponent._gl_widget.addItem(self.paintItem)
         self.setSelected(False, set_button=True)
 
     def getId(self):
@@ -177,9 +177,9 @@ class PrjComponent(QObject):
     @abstractmethod
     def _init_showButton(self, type_: Literal['PosShow', 'PosRotShow']):
         if type_ == 'PosShow':
-            self._showButton = PosShow(self.hullProject.gl_widget, self)
+            self._showButton = PosShow(self._gl_widget, self)
         elif type_ == 'PosRotShow':
-            self._showButton = PosRotShow(self.hullProject.gl_widget, self)
+            self._showButton = PosRotShow(self._gl_widget, self)
         else:
             trace = traceback.extract_stack()[-2]
             Log().error(trace, self.TAG, f"未知的showButton类型: {type_}")
@@ -189,6 +189,7 @@ class PrjComponent(QObject):
     def getCopy(self):
         """
         """
+        Log().warning(self.TAG, f"{self} 未覆写getCopy方法")
         return PrjComponent()
 
     def addLight(self, lights: list):
@@ -325,15 +326,10 @@ class PrjComponent(QObject):
         :return:
         """
         try:
-            self._gl_widget.removeItem(self.paintItem)
-        except ValueError:
-            pass
-        try:
             self.hullProject.del_section(self)
         except ValueError:
             pass
-        # noinspection PyUnresolvedReferences
-        self.deleted_s.emit()
+        self.deleted_s.emit()  # 子类都有deleted_s信号
         self._showButton.deleteLater()
         self.deleteLater()
 
