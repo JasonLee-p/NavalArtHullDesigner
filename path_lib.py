@@ -10,6 +10,7 @@ from pathlib import Path
 DESKTOP_PATH = os.path.join(os.path.expanduser("~"), 'Desktop')
 CURRENT_PATH = os.path.dirname(os.path.abspath(sys.argv[0]))
 CONFIG_PATH = os.path.join(CURRENT_PATH, 'plugin_config.json')
+WINDOWS_USERS_PATH = 'C:\\Users'
 
 
 def increment_path(path):
@@ -20,12 +21,26 @@ def increment_path(path):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
+    if not path.exists():
+        return str(path)
+
     suffix = path.suffix
     stem = path.stem
     for n in range(0, 9999):
-        if not path.with_name(f"{stem}_{n:04d}{suffix}").exists():  #
-            break
-    return str(path.with_name(f"{stem}_{n:04d}{suffix}"))
+        new_path = path.with_name(f"{stem}_{n:04d}{suffix}")
+        if not new_path.exists():
+            return str(new_path)
+    raise FileExistsError(f"No available incremented path for {path}")
+
+
+def _iter_windows_users():
+    """
+    遍历 Windows 用户目录。
+    在非 Windows 环境或 C:\\Users 不存在时返回空列表，避免导入模块时崩溃。
+    """
+    if os.name != 'nt' or not os.path.isdir(WINDOWS_USERS_PATH):
+        return []
+    return os.listdir(WINDOWS_USERS_PATH)
 
 
 def __find_ptb_path():
@@ -33,28 +48,28 @@ def __find_ptb_path():
     PTB_path = DESKTOP_PATH
     # 从C盘开始寻找：
     # 优先在用户目录下寻找，先遍历所有账户名：
-    for user in os.listdir('C:\\Users'):
+    for user in _iter_windows_users():
         # 找到AppData/LocalLow/茕海开发组/工艺战舰Alpha
-        if os.path.isdir(os.path.join('C:\\Users', user, 'AppData', 'LocalLow', '茕海开发组', '工艺战舰Alpha')):
-            PTB_path = os.path.join('C:\\Users', user, 'AppData', 'LocalLow', '茕海开发组', '工艺战舰Alpha')
+        if os.path.isdir(os.path.join(WINDOWS_USERS_PATH, user, 'AppData', 'LocalLow', '茕海开发组', '工艺战舰Alpha')):
+            PTB_path = os.path.join(WINDOWS_USERS_PATH, user, 'AppData', 'LocalLow', '茕海开发组', '工艺战舰Alpha')
             break
-    # 如果在用户目录下没有找到，就返回None
+    # 如果在用户目录下没有找到，就返回桌面位置
     return PTB_path
 
 
 def __find_na_ship_path():
-    # 将PTB_path初始化为桌面位置
+    # 将NA_path初始化为桌面位置
     NA_path = DESKTOP_PATH
     # 从C盘开始寻找：
     # 优先在用户目录下寻找，先遍历所有账户名：
-    for user in os.listdir('C:\\Users'):
+    for user in _iter_windows_users():
         # 找到AppData/LocalLow/RZEntertainment/NavalArt/ShipSaves
         if os.path.isdir(os.path.join(
-                'C:\\Users', user, 'AppData', 'LocalLow', 'RZEntertainment', 'NavalArt', 'ShipSaves')):
+                WINDOWS_USERS_PATH, user, 'AppData', 'LocalLow', 'RZEntertainment', 'NavalArt', 'ShipSaves')):
             NA_path = os.path.join(
-                'C:\\Users', user, 'AppData', 'LocalLow', 'RZEntertainment', 'NavalArt', 'ShipSaves')
+                WINDOWS_USERS_PATH, user, 'AppData', 'LocalLow', 'RZEntertainment', 'NavalArt', 'ShipSaves')
             break
-    # 如果在用户目录下没有找到，就返回None
+    # 如果在用户目录下没有找到，就返回桌面位置
     return NA_path
 
 
@@ -63,12 +78,12 @@ def __find_na_root_path():
     NA_path = DESKTOP_PATH
     # 从C盘开始寻找：
     # 优先在用户目录下寻找，先遍历所有账户名：
-    for user in os.listdir('C:\\Users'):
-        # 找到AppData/LocalLow/RZEntertainment/NavalArt/ShipSaves
+    for user in _iter_windows_users():
+        # 找到AppData/LocalLow/RZEntertainment/NavalArt
         if os.path.isdir(os.path.join(
-                'C:\\Users', user, 'AppData', 'LocalLow', 'RZEntertainment', 'NavalArt')):
+                WINDOWS_USERS_PATH, user, 'AppData', 'LocalLow', 'RZEntertainment', 'NavalArt')):
             NA_path = os.path.join(
-                'C:\\Users', user, 'AppData', 'LocalLow', 'RZEntertainment', 'NavalArt')
+                WINDOWS_USERS_PATH, user, 'AppData', 'LocalLow', 'RZEntertainment', 'NavalArt')
             break
     # 如果在用户目录下没有找到，就返回桌面位置
     return NA_path
