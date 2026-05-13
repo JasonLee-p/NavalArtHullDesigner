@@ -25,19 +25,25 @@ def snake_to_camel(snake_str):
 
 def merge_dict(d1, d2):
     """
-    递归地合并两个字典，d2的键值对优先级高
-    :param d1:
-    :param d2:
-    :return: 布尔值，是否有合并的操作
+    递归地将d2中的缺失键补充到d1中。
+
+    用于“用户配置 + 默认配置”的合并场景：
+    - d1中已经存在的用户配置保持不变；
+    - d1中缺失的键从d2补齐；
+    - 双方都是字典时递归合并。
+
+    :param d1: 被补齐的字典，通常是用户配置
+    :param d2: 默认字典，通常是默认配置
+    :return: 布尔值，是否有补齐操作
     """
     d1_changed = False
-    for key in d2:
-        if key in d1 and isinstance(d1[key], dict) and isinstance(d2[key], dict):
-            d_changed = merge_dict(d1[key], d2[key])
-            if d_changed:
-                d1_changed = True
+    for key, value in d2.items():
+        if key in d1:
+            if isinstance(d1[key], dict) and isinstance(value, dict):
+                if merge_dict(d1[key], value):
+                    d1_changed = True
         else:
-            d1[key] = d2[key]
+            d1[key] = value
             d1_changed = True
     return d1_changed
 
