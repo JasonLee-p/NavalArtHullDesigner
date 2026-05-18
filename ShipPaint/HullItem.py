@@ -148,7 +148,7 @@ class HullVerSecItem(GLMeshItem):
         self._nodes = nodes
         self._nodes.sort(key=lambda x: x.y)
         self.mesh_data = SymetryCylinderMesh("z")
-        if self._z > 0:
+        if self._z >= 0 and self.handler._backSection is not None:
             # 从前后两个截面的点集中获取点
             front_nodes_data = np.concatenate((
                 self.getCurPoints('bot', self._nodes[0], self._nodes[1]),
@@ -162,7 +162,7 @@ class HullVerSecItem(GLMeshItem):
                 self.getCurPoints('up', back_section.nodes[-2], back_section.nodes[-1])
             ))
             self.mesh_data.initPoints(front_nodes_data, back_nodes_data, self._z, back_section.z)
-        elif self._z < 0:
+        elif self._z <= 0 and self.handler._frontSection is not None:
             front_section = self.handler._frontSection
             front_nodes_data = np.concatenate((
                 self.getCurPoints('bot', front_section.nodes[0], front_section.nodes[1]),
@@ -175,6 +175,8 @@ class HullVerSecItem(GLMeshItem):
                 self.getCurPoints('up', self._nodes[-2], self._nodes[-1])
             ))
             self.mesh_data.initPoints(front_nodes_data, back_nodes_data, front_section.z, self._z)
+        else:
+            raise ValueError("Hull section needs an adjacent section to build mesh")
         self.mesh_data.initVertexes()
         super().__init__(vertexes=self.mesh_data.vertexes,
                          normals=self.mesh_data.normals,
@@ -375,7 +377,44 @@ class HullVerSecItem(GLMeshItem):
         """
         更新网格
         """
-        ...  # TODO: Implement this function
+        self.handler.update_node_data(index, x, y)
+        mesh_data = SymetryCylinderMesh("z")
+        if self._z >= 0 and self.handler._backSection is not None:
+            back_section = self.handler._backSection
+            front_nodes_data = np.concatenate((
+                self.getCurPoints('bot', self._nodes[0], self._nodes[1]),
+                self.handler.nodes_data[1: -1],
+                self.getCurPoints('up', self._nodes[-2], self._nodes[-1])
+            ))
+            back_nodes_data = np.concatenate((
+                self.getCurPoints('bot', back_section.nodes[0], back_section.nodes[1]),
+                back_section.nodes_data[1: -1],
+                self.getCurPoints('up', back_section.nodes[-2], back_section.nodes[-1])
+            ))
+            mesh_data.initPoints(front_nodes_data, back_nodes_data, self._z, back_section.z)
+        elif self._z <= 0 and self.handler._frontSection is not None:
+            front_section = self.handler._frontSection
+            front_nodes_data = np.concatenate((
+                self.getCurPoints('bot', front_section.nodes[0], front_section.nodes[1]),
+                front_section.nodes_data[1: -1],
+                self.getCurPoints('up', front_section.nodes[-2], front_section.nodes[-1])
+            ))
+            back_nodes_data = np.concatenate((
+                self.getCurPoints('bot', self._nodes[0], self._nodes[1]),
+                self.handler.nodes_data[1: -1],
+                self.getCurPoints('up', self._nodes[-2], self._nodes[-1])
+            ))
+            mesh_data.initPoints(front_nodes_data, back_nodes_data, front_section.z, self._z)
+        else:
+            Log().warning(self.TAG, f"{self.handler} has no adjacent section to rebuild mesh")
+            return
+        mesh_data.initVertexes()
+        self.mesh_data = mesh_data
+        if self.isInitialized:
+            self.updateVertexes(self.mesh_data.vertexes)
+        else:
+            self._mesh._vertexes = self.mesh_data.vertexes
+            self._mesh._normals = self.mesh_data.normals
         self.update()
 
     def setParentSelected(self, selected):
@@ -470,15 +509,11 @@ class HullSectionGroupItem(GLGraphicsItem):
         self._back_item = self.hullSections[0]
 
 
-class ArmorSectionItem(GLMeshItem):
+class ArmorSectionItem(HullVerSecItem):
     def __init__(self, handler, z, nodes):
         """
         """
-        super().__init__()  # noqa  # TODO:
-        self.sectionGroup = None  # 船体截面组，将会在ArmorSectionGroupItem中设置
-        self.handler = handler
-        self._z = z
-        self._nodes = nodes
+        super().__init__(handler, z, nodes)
 
     def setPoint(self, pointSection, x, y):
         """
@@ -494,7 +529,7 @@ class ArmorSectionItem(GLMeshItem):
         """
         更新网格
         """
-        ...
+        super().update_mesh(index, x, y)
 
 
 class ArmorSectionGroupItem(GLGraphicsItem):

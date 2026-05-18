@@ -12,7 +12,6 @@ from typing import List, Set, Literal, Optional
 import OpenGL.GL as gl
 import numpy as np
 import numpy.core._exceptions as np_core_exc  # noqa
-from GUI import TextLabel, WIN_WID, WIN_HEI
 from OpenGL.GL import *  # noqa
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal, QPoint, QMutex
@@ -26,6 +25,14 @@ from .camera import Camera
 from .functions import mkColor
 from .items.light import PointLight
 from .transform3d import Vector3
+
+TextLabel = QtWidgets.QLabel
+_screen = QtWidgets.QApplication.primaryScreen()
+if _screen is not None:
+    _screen_size = _screen.size()
+    WIN_WID, WIN_HEI = _screen_size.width(), _screen_size.height()
+else:
+    WIN_WID, WIN_HEI = 1920, 1080
 
 __TAG = "GLViewWidget"
 

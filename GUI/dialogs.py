@@ -4,7 +4,7 @@ from typing import Callable
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFrame, QGridLayout, QSizePolicy, QMessageBox, QApplication, QWidget
 
-import const
+# import const
 from .general_widgets._basic_data import *
 from .general_widgets import BasicDialog, ButtonGroup, ImageButton, ImageTextButton, ScrollArea, TextButton, NumberEdit
 from na_design_tools import get_avg_position, offset_position, get_range_position, scale_position

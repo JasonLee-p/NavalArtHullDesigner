@@ -14,12 +14,18 @@ class ReplaceCV2:
     @classmethod
     def imread(cls, path):
         """读取图片"""
-        return np.array(PILImage.open(path))
+        with PILImage.open(path) as image:
+            image.load()
+            return np.array(image.copy())
 
     @classmethod
     def imwrite(cls, path, img):
         """保存图片"""
-        PILImage.fromarray(img).save(path)
+        image = PILImage.fromarray(img)
+        try:
+            image.save(path)
+        finally:
+            image.close()
 
     @classmethod
     def cvtColor(cls, img, code):

@@ -516,6 +516,10 @@ class ComponentNodeXY(SubPrjComponent):
         self.y_index = None  # 指示节点在截面上的索引，根据y值从小到大排序
         super().__init__()
 
+    def setPoint(self, x, y):
+        self.x = x
+        self.y = y
+
     @property
     def vector(self) -> QVector3D:
         """

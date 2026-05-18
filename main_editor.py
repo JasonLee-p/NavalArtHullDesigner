@@ -155,17 +155,7 @@ class MainEditor(MainEditorGUI):
         """
         打开工程文件选择窗口
         """
-        prjs = self.configHandler.get_config("Projects")
-        # 从配置文件读取曾经打开过的所有文件
-        if prjs != {}:
-            # 打开预览窗口，选择一个工程文件
-            ...  # TODO
-        else:  # 如果没有历史记录，打开文件夹选择窗口
-            file_dialog = QFileDialog()
-            file_dialog.setFileMode(QFileDialog.ExistingFiles)
-            file_dialog.setNameFilter("NA Hull Editor工程文件 (*.naprj)")
-            file_dialog.setViewMode(QFileDialog.Detail)
-            file_dialog.setDirectory(DESKTOP_PATH)
+        self.select_file_to_open()
 
     def load_last_project(self):
         """

@@ -6,7 +6,7 @@ main_editor的功能性子控件，例如专门显示船体截面组的控件
 """
 import traceback
 
-import const
+from utils import DECIMAL_PRECISION
 from main_logger import Log
 
 from .general_widgets import *
@@ -37,15 +37,15 @@ class EditTabWidget(QWidget):
         self.sub_elements_widget = QWidget()
         self.sub_elements_layout = QVBoxLayout()
         _font = YAHEI[9]
-        self.posX_edit = NumberEdit(None, self, (68, 24), float, rounding=const.DECIMAL_PRECISION, step=0.1, font=_font)
-        self.posY_edit = NumberEdit(None, self, (68, 24), float, rounding=const.DECIMAL_PRECISION, step=0.1, font=_font)
-        self.posZ_edit = NumberEdit(None, self, (68, 24), float, rounding=const.DECIMAL_PRECISION, step=0.1, font=_font)
+        self.posX_edit = NumberEdit(None, self, (68, 24), float, rounding=DECIMAL_PRECISION, step=0.1, font=_font)
+        self.posY_edit = NumberEdit(None, self, (68, 24), float, rounding=DECIMAL_PRECISION, step=0.1, font=_font)
+        self.posZ_edit = NumberEdit(None, self, (68, 24), float, rounding=DECIMAL_PRECISION, step=0.1, font=_font)
         self.rotX_edit = NumberEdit(None, self, (68, 24), float, (-180, 180), 2, step=0.5, font=_font)
         self.rotY_edit = NumberEdit(None, self, (68, 24), float, (-180, 180), 2, step=0.5, font=_font)
         self.rotZ_edit = NumberEdit(None, self, (68, 24), float, (-180, 180), 2, step=0.5, font=_font)
-        self.sclX_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), const.DECIMAL_PRECISION, 1, 0.1, YAHEI[9])
-        self.sclY_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), const.DECIMAL_PRECISION, 1, 0.1, YAHEI[9])
-        self.sclZ_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), const.DECIMAL_PRECISION, 1, 0.1, YAHEI[9])
+        self.sclX_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), DECIMAL_PRECISION, 1, 0.1, YAHEI[9])
+        self.sclY_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), DECIMAL_PRECISION, 1, 0.1, YAHEI[9])
+        self.sclZ_edit = NumberEdit(None, self, (68, 24), float, (0.0001, 100000), DECIMAL_PRECISION, 1, 0.1, YAHEI[9])
         self._init_ui()
         self._bind_signals()
 
@@ -270,10 +270,12 @@ class EditHullSectionGroupWidget(EditTabWidget):
             for section in self._current_item.get_sections():
                 section.showButton().hide()
                 section.showButton().setChecked(False)
-        # # 解绑原信号  # TODO
-        # if self._current_item:
-        #     self._current_item.update_front_z_s.disconnect(self.updateFrontZ)
-        #     self._current_item.update_back_z_s.disconnect(self.updateBackZ)
+            if hasattr(self._current_item, 'update_front_z_s'):
+                try:
+                    self._current_item.update_front_z_s.disconnect(self.updateFrontZ)
+                    self._current_item.update_back_z_s.disconnect(self.updateBackZ)
+                except TypeError:
+                    pass
         # 链接信号：
         if hasattr(item, 'update_front_z_s'):
             # 前后截面z值修改信号

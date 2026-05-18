@@ -56,16 +56,27 @@ class HullSection(SubPrjComponent):
         self._showButton = SubSectionShow(PrjComponent._gl_widget, PrjComponent._hsg_bt_scroll_widget, self)
 
     def load_nodes(self, node_datas, colors):
-        for node_data, color in zip(node_datas, colors):
+        colors = colors or []
+        for index, node_data in enumerate(node_datas):
             node = ComponentNodeXY()
             node.x, node.y = node_data
+            color = colors[index] if index < len(colors) else self.Col if hasattr(self, "Col") else "#888889"
             node.Col = QColor(color)
             self.nodes.append(node)
-        self.nodes.sort(key=lambda x: x.y)
+        self._refresh_nodes()
 
-    def update_node_data(self, index, x):
+    def _refresh_nodes(self):
+        self.nodes.sort(key=lambda x: x.y)
+        for index, node in enumerate(self.nodes):
+            node.y_index = index
+        self.init_node_data()
+        self.maxX = max([node.x for node in self.nodes], default=0)
+
+    def update_node_data(self, index, x, y=None):
         self.nodes[index].x = x
-        self.maxX = max(self.maxX, x)
+        if y is not None:
+            self.nodes[index].y = y
+        self._refresh_nodes()
 
     def _add_node(self, node):
         """
@@ -76,8 +87,10 @@ class HullSection(SubPrjComponent):
         for i, n in enumerate(self.nodes):
             if node.y < n.y:
                 self.nodes.insert(i, node)
+                self._refresh_nodes()
                 return
-        self.maxX = max(self.maxX, node.x)
+        self.nodes.append(node)
+        self._refresh_nodes()
 
     def _del_node(self, index):
         """
@@ -88,7 +101,7 @@ class HullSection(SubPrjComponent):
         if len(self.nodes) < 3:
             raise ValueError("Can't delete node, less than 3 nodes")
         self.nodes.pop(index)
-        self.maxX = max([node.x for node in self.nodes])
+        self._refresh_nodes()
 
     def init_node_data(self):
         """
@@ -174,12 +187,7 @@ class HullSectionGroup(PrjComponent):
         self.botCur = botCur
         # 截面组
         self.__sections: List[HullSection] = sections
-        self.__sections.sort(key=lambda x: x.z)  # 从小到大
-        self._frontSection: HullSection = self.__sections[-1]
-        self._backSection: HullSection = self.__sections[0]
-        for i in range(len(self.__sections) - 1):
-            self.__sections[i]._frontSection = self.__sections[i + 1]
-            self.__sections[i + 1]._backSection = self.__sections[i]
+        self._refresh_section_links()
         # 栏杆
         self.rail: Union[Railing, Handrail, None] = None
         for section in self.__sections:
@@ -197,6 +205,24 @@ class HullSectionGroup(PrjComponent):
             # 将截面展示的button控件加入右侧滚动区域
             self._edit_tab.edit_hullSectionGroup_widget.add_section_showButton(section)
         # 初始化
+
+    def _refresh_section_links(self):
+        self.__sections.sort(key=lambda x: x.z)
+        self._frontSection = self.__sections[-1] if self.__sections else None
+        self._backSection = self.__sections[0] if self.__sections else None
+        for section in self.__sections:
+            section._frontSection = None
+            section._backSection = None
+        for i in range(len(self.__sections) - 1):
+            self.__sections[i]._frontSection = self.__sections[i + 1]
+            self.__sections[i + 1]._backSection = self.__sections[i]
+
+    def _sync_paint_sections(self):
+        self._refresh_section_links()
+        if self.paintItem:
+            self.paintItem.hullSections = self.__sections
+            self.paintItem._front_item = self._frontSection
+            self.paintItem._back_item = self._backSection
 
     def set_showButton_checked(self, selected: bool):
         super().set_showButton_checked(selected)
@@ -226,30 +252,25 @@ class HullSectionGroup(PrjComponent):
         self._frontSection = new_hs
 
     def _add_section(self, section: HullSection):
-        # 根据z值插入
-        for i, hs in enumerate(self.__sections):
-            if section.z > hs.z:
-                # 初始化前后部分
-                if len(self.__sections) > i + 1:
-                    section._frontSection = self.__sections[i + 1]
-                if i != 0:
-                    section._backSection = self.__sections[i - 1]
-                # 初始化绘制数组
-                section.init_node_data()
-                section.init_parent(self)
-                if section.paintItem:
-                    section.init_paintItems_parent()
-                else:
-                    # section.setPaintItem(HullSectionItem(section,
-                    ...
-                self.__sections.insert(i, section)
-
-                return
-        raise ValueError(f"Can't insert {section} into {self.__sections}")
+        if section not in self.__sections:
+            self.__sections.append(section)
+        section.init_node_data()
+        section.init_parent(self)
+        self._sync_paint_sections()
+        if not section.paintItem:
+            section.setPaintItem(HullVerSecItem(section, section.z, section.nodes))
+        elif section.paintItem.parentItem() is not self.paintItem:
+            section.init_paintItems_parent()
+        self._edit_tab.edit_hullSectionGroup_widget.add_section_showButton(section)
 
     def _del_section(self, section: HullSection):
         if section in self.__sections:
             self.__sections.remove(section)
+            if section.paintItem and self.paintItem:
+                self.paintItem.removeChildItem(section.paintItem)
+            section._frontSection = None
+            section._backSection = None
+            self._sync_paint_sections()
         else:
             Log().warning(self.TAG, f"{section} not in {self.__sections}")
 

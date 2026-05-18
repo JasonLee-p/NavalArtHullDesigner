@@ -36,7 +36,7 @@ def merge_dict(d1, d2):
             d_changed = merge_dict(d1[key], d2[key])
             if d_changed:
                 d1_changed = True
-        else:
+        elif key not in d1:
             d1[key] = d2[key]
             d1_changed = True
     return d1_changed

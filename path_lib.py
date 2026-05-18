@@ -19,6 +19,8 @@ def increment_path(path):
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    if not path.exists():
+        return str(path)
 
     suffix = path.suffix
     stem = path.stem

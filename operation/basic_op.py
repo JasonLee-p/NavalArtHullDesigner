@@ -80,6 +80,8 @@ class OperationStack:
             self.stateStack = self.stateStack[1:] + [operation]
             self.main_editor.show_statu_("操作栈已满", "warning")
         else:
+            for i in range(self.current_index + 1, self.max_length):
+                self.stateStack[i] = None
             self.current_index += 1
             self.stateStack[self.current_index] = operation
             self.main_editor.show_statu_(f"{operation.name}\t{self.current_index + 1}", "process")
@@ -108,7 +110,8 @@ class OperationStack:
         """
         重做命令
         """
-        if self.current_index is not None and self.stateStack[self.current_index + 1] is not None:
+        next_index = self.current_index + 1 if self.current_index is not None else None
+        if next_index is not None and next_index < self.max_length and self.stateStack[next_index] is not None:
             self.current_index += 1
             try:
                 self.stateStack[self.current_index].redo()

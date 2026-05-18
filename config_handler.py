@@ -126,7 +126,9 @@ class ConfigHandler:
         else:
             for k, v in dict_.items():
                 if isinstance(v, dict):
-                    return self._get_key__(v, key)
+                    result = self._get_key__(v, key)
+                    if result is not None:
+                        return result
         return None
 
     def set_config(self, key: str, value, new_key=False):
@@ -164,5 +166,6 @@ class ConfigHandler:
         else:
             for k, v in dict_.items():
                 if isinstance(v, dict):
-                    return self._set_key__(v, key, value)
+                    if self._set_key__(v, key, value):
+                        return True
         return False

@@ -7,6 +7,7 @@
 import os
 import time
 import traceback
+import xml.etree.ElementTree as ET
 from hashlib import sha1
 
 import ujson
@@ -462,6 +463,99 @@ class DesignerProject(QObject):
         else:
             raise TypeError(f"未知的类型{prjsection}")
 
+    @staticmethod
+    def _fmt_na_number(value):
+        value = round(float(value), 6)
+        if value == 0:
+            value = 0
+        return f"{value:g}"
+
+    @classmethod
+    def _set_xyz_element(cls, parent, tag, values):
+        ET.SubElement(parent, tag, {
+            "x": cls._fmt_na_number(values[0]),
+            "y": cls._fmt_na_number(values[1]),
+            "z": cls._fmt_na_number(values[2])
+        })
+
+    @staticmethod
+    def _color_hex(color, fallback="#888889"):
+        if not color:
+            color = fallback
+        if isinstance(color, list):
+            color = color[0] if color else fallback
+        return str(color).lstrip("#").upper()
+
+    @staticmethod
+    def _node_color(section, index, fallback):
+        colors = section.get("col") or fallback
+        if isinstance(colors, list):
+            if not colors:
+                return fallback
+            return colors[min(index, len(colors) - 1)]
+        return colors
+
+    @classmethod
+    def _add_adjustable_hull_part(cls, ship, position, rotation, length, height, front_width, back_width,
+                                  color, armor, up_curve=0, down_curve=0, height_scale=1, height_offset=0):
+        part = ET.SubElement(ship, "part", {"id": "0"})
+        ET.SubElement(part, "data", {
+            "length": cls._fmt_na_number(length),
+            "height": cls._fmt_na_number(height),
+            "frontWidth": cls._fmt_na_number(front_width),
+            "backWidth": cls._fmt_na_number(back_width),
+            "frontSpread": "0",
+            "backSpread": "0",
+            "upCurve": cls._fmt_na_number(up_curve),
+            "downCurve": cls._fmt_na_number(down_curve),
+            "heightScale": cls._fmt_na_number(height_scale),
+            "heightOffset": cls._fmt_na_number(height_offset)
+        })
+        cls._set_xyz_element(part, "position", position)
+        cls._set_xyz_element(part, "rotation", rotation)
+        cls._set_xyz_element(part, "scale", [1, 1, 1])
+        ET.SubElement(part, "color", {"hex": cls._color_hex(color)})
+        ET.SubElement(part, "armor", {"value": str(int(armor or 5))})
+
+    @classmethod
+    def _export_section_group_to_na(cls, ship, section_group, default_color, top_curve=0, bottom_curve=1):
+        sections = sorted(section_group.get("sections", []), key=lambda item: float(item["z"]))
+        center = section_group.get("center", [0, 0, 0])
+        rotation = section_group.get("rot", [0, 0, 0])
+        group_color = section_group.get("col", default_color)
+        group_armor = section_group.get("armor") or 5
+        for back_section, front_section in zip(sections, sections[1:]):
+            back_nodes = sorted(back_section.get("nodes", []), key=lambda node: float(node[1]))
+            front_nodes = sorted(front_section.get("nodes", []), key=lambda node: float(node[1]))
+            node_count = min(len(back_nodes), len(front_nodes))
+            if node_count < 2:
+                continue
+            for idx in range(node_count - 1):
+                back_low, back_high = back_nodes[idx], back_nodes[idx + 1]
+                front_low, front_high = front_nodes[idx], front_nodes[idx + 1]
+                back_width = float(back_low[0]) + float(back_high[0])
+                front_width = float(front_low[0]) + float(front_high[0])
+                back_mid_y = (float(back_low[1]) + float(back_high[1])) / 2
+                front_mid_y = (float(front_low[1]) + float(front_high[1])) / 2
+                height = max(
+                    abs(float(back_high[1]) - float(back_low[1])),
+                    abs(float(front_high[1]) - float(front_low[1]))
+                )
+                if height == 0 or (front_width == 0 and back_width == 0):
+                    continue
+                length = abs(float(front_section["z"]) - float(back_section["z"]))
+                position = [
+                    float(center[0]),
+                    float(center[1]) + (back_mid_y + front_mid_y) / 2,
+                    float(center[2]) + (float(back_section["z"]) + float(front_section["z"])) / 2
+                ]
+                color = cls._node_color(front_section, idx, cls._node_color(back_section, idx, group_color))
+                armor = front_section.get("armor") or back_section.get("armor") or group_armor
+                cls._add_adjustable_hull_part(
+                    ship, position, rotation, length, height, front_width, back_width,
+                    color, armor, top_curve, bottom_curve
+                )
+
     def export2NA(self, path):
         """
         导出为NA文件
@@ -469,9 +563,28 @@ class DesignerProject(QObject):
         """
         self.save()
         with self.locker:
-            with open(path, 'w', encoding='utf-8') as f:  # noqa
-                # TODO:
-                ...
+            data = self.to_dict()
+            root = ET.Element("root")
+            ship = ET.SubElement(root, "ship", {
+                "author": str(data.get("author") or ""),
+                "description": str(data.get("project_name") or ""),
+                "alwaysgeneratenewthumbnail": "True",
+                "hornType": "1",
+                "hornPitch": "0.9475011",
+                "tracerCol": "E53D4FFF"
+            })
+            for section_group in data.get("hull_section_group", []):
+                self._export_section_group_to_na(
+                    ship, section_group, "#888889",
+                    section_group.get("top_cur", 0),
+                    section_group.get("bot_cur", 1)
+                )
+            for section_group in data.get("armor_section_group", []):
+                self._export_section_group_to_na(ship, section_group, section_group.get("col", "#888889"))
+            tree = ET.ElementTree(root)
+            if hasattr(ET, "indent"):
+                ET.indent(tree, space="  ")
+            tree.write(path, encoding="utf-8", xml_declaration=False)
 
     def to_dict(self):
         """

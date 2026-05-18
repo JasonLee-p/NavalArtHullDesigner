@@ -132,7 +132,7 @@ def openPrj():
     打开选择对话框，选择要打开的项目，由开始界面调用（未完成）
     """
     Log().info(Log().GLOBAL_TAG, "单击：打开项目")
-    _mainEditor = mainEditors.new()
+    _mainEditor = mainEditors.new("openPrj")
     if not _mainEditor:
         return
 

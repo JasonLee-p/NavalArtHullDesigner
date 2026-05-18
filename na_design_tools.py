@@ -5,7 +5,9 @@
 import os
 import xml.etree.ElementTree as ET
 
-import const
+from utils import MAX_VALUE, DECIMAL_PRECISION, MIN_VALUE
+
+# import const
 
 DESKTOP = os.path.join(os.path.expanduser("~"), "Desktop")
 
@@ -38,9 +40,9 @@ def get_avg_position(xml_str):
         count += 1
 
     # 计算平均值
-    avg_x = round(x_sum / count, const.DECIMAL_PRECISION)
-    avg_y = round(y_sum / count, const.DECIMAL_PRECISION)
-    avg_z = round(z_sum / count, const.DECIMAL_PRECISION)
+    avg_x = round(x_sum / count, DECIMAL_PRECISION)
+    avg_y = round(y_sum / count, DECIMAL_PRECISION)
+    avg_z = round(z_sum / count, DECIMAL_PRECISION)
 
     # 返回平均位置元组
     return avg_x, avg_y, avg_z
@@ -55,12 +57,12 @@ def get_range_position(xml_str):
     root = ET.fromstring(xml_str)
 
     # 初始化位置的最大最小值
-    min_x = const.MAX_VALUE
-    min_y = const.MAX_VALUE
-    min_z = const.MAX_VALUE
-    max_x = const.MIN_VALUE
-    max_y = const.MIN_VALUE
-    max_z = const.MIN_VALUE
+    min_x = MAX_VALUE
+    min_y = MAX_VALUE
+    min_z = MAX_VALUE
+    max_x = MIN_VALUE
+    max_y = MIN_VALUE
+    max_z = MIN_VALUE
 
     # 查找所有的<position>标签
     for position in root.findall(".//position"):
@@ -96,9 +98,9 @@ def offset_position(xml_str, offset_x, offset_y, offset_z) -> str:
     # 查找所有的<position>标签
     for position in root.findall(".//position"):
         # 获取当前的x, y, z值并偏移
-        x = round(float(position.get('x')) + offset_x, const.DECIMAL_PRECISION)
-        y = round(float(position.get('y')) + offset_y, const.DECIMAL_PRECISION)
-        z = round(float(position.get('z')) + offset_z, const.DECIMAL_PRECISION)
+        x = round(float(position.get('x')) + offset_x, DECIMAL_PRECISION)
+        y = round(float(position.get('y')) + offset_y, DECIMAL_PRECISION)
+        z = round(float(position.get('z')) + offset_z, DECIMAL_PRECISION)
 
         # 更新<position>标签的属性值
         position.set('x', f"{x}")
@@ -153,13 +155,13 @@ def scale_position(xml_str, scale_x, scale_y, scale_z) -> str:
 
         # 更新属性值
         tag.set('position',
-                f"{round(px * scale_x, const.DECIMAL_PRECISION)} "
-                f"{round(py * scale_y, const.DECIMAL_PRECISION)} "
-                f"{round(pz * scale_z, const.DECIMAL_PRECISION)}")
+                f"{round(px * scale_x, DECIMAL_PRECISION)} "
+                f"{round(py * scale_y, DECIMAL_PRECISION)} "
+                f"{round(pz * scale_z, DECIMAL_PRECISION)}")
         tag.set('scale',
-                f"{round(sx * scale_x, const.DECIMAL_PRECISION)} "
-                f"{round(sy * scale_y, const.DECIMAL_PRECISION)} "
-                f"{round(sz * scale_z, const.DECIMAL_PRECISION)}")
+                f"{round(sx * scale_x, DECIMAL_PRECISION)} "
+                f"{round(sy * scale_y, DECIMAL_PRECISION)} "
+                f"{round(sz * scale_z, DECIMAL_PRECISION)}")
 
     # 返回修改后的XML字符串
     return ET.tostring(root, encoding='unicode')

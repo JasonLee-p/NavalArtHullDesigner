@@ -3,7 +3,8 @@
 """
 import numpy as np
 
-import const
+# import const
+from utils import DECIMAL_PRECISION
 from main_logger import Log
 
 from .general_widgets import *
@@ -163,13 +164,13 @@ class PosShow(ShowButton):
         设置按钮内TextLabel显示的位置
         """
         if isinstance(pos, np.ndarray):
-            self.posX_show.setText(str(round(pos[0], const.DECIMAL_PRECISION)))
-            self.posY_show.setText(str(round(pos[1], const.DECIMAL_PRECISION)))
-            self.posZ_show.setText(str(round(pos[2], const.DECIMAL_PRECISION)))
+            self.posX_show.setText(str(round(pos[0], DECIMAL_PRECISION)))
+            self.posY_show.setText(str(round(pos[1], DECIMAL_PRECISION)))
+            self.posZ_show.setText(str(round(pos[2], DECIMAL_PRECISION)))
         elif isinstance(pos, QVector3D):
-            self.posX_show.setText(str(round(pos.x(), const.DECIMAL_PRECISION)))
-            self.posY_show.setText(str(round(pos.y(), const.DECIMAL_PRECISION)))
-            self.posZ_show.setText(str(round(pos.z(), const.DECIMAL_PRECISION)))
+            self.posX_show.setText(str(round(pos.x(), DECIMAL_PRECISION)))
+            self.posY_show.setText(str(round(pos.y(), DECIMAL_PRECISION)))
+            self.posZ_show.setText(str(round(pos.z(), DECIMAL_PRECISION)))
 
     def setPosX(self, x):
         """
@@ -240,13 +241,13 @@ class PosRotShow(ShowButton):
 
     def setPos(self, pos):
         if isinstance(pos, np.ndarray):
-            self.posX_show.setText(str(round(pos[0], const.DECIMAL_PRECISION)))
-            self.posY_show.setText(str(round(pos[1], const.DECIMAL_PRECISION)))
-            self.posZ_show.setText(str(round(pos[2], const.DECIMAL_PRECISION)))
+            self.posX_show.setText(str(round(pos[0], DECIMAL_PRECISION)))
+            self.posY_show.setText(str(round(pos[1], DECIMAL_PRECISION)))
+            self.posZ_show.setText(str(round(pos[2], DECIMAL_PRECISION)))
         elif isinstance(pos, QVector3D):
-            self.posX_show.setText(str(round(pos.x(), const.DECIMAL_PRECISION)))
-            self.posY_show.setText(str(round(pos.y(), const.DECIMAL_PRECISION)))
-            self.posZ_show.setText(str(round(pos.z(), const.DECIMAL_PRECISION)))
+            self.posX_show.setText(str(round(pos.x(), DECIMAL_PRECISION)))
+            self.posY_show.setText(str(round(pos.y(), DECIMAL_PRECISION)))
+            self.posZ_show.setText(str(round(pos.z(), DECIMAL_PRECISION)))
 
     def setPosX(self, x):
         self.posX_show.setText(str(x))
