@@ -2,6 +2,8 @@
 """
 编辑器运行逻辑
 """
+import os
+import traceback
 import webbrowser
 
 import psutil
@@ -126,11 +128,23 @@ class MainEditor(MainEditorGUI):
         """
         打开path路径的工程文件
         """
+        if not isinstance(path, (str, bytes, os.PathLike)):
+            Log().warning(self.TAG, f"打开工程失败：无效路径 {path!r}")
+            return False
         # 将path进行标准化
         path = os.path.abspath(path)
+        if not os.path.isfile(path):
+            Log().warning(self.TAG, f"打开工程失败：文件不存在 {path}")
+            QMessageBox.warning(self, "警告", f"工程文件不存在：\n{path}", QMessageBox.Ok)
+            return False
         prj = DesignerProject(path)
         # 加载工程文件
-        loader = DesignerPrjReader(self, path, prj)
+        try:
+            loader = DesignerPrjReader(self, path, prj)
+        except Exception as e:
+            Log().error(traceback.format_exc(), self.TAG, f"打开工程异常：{path}")
+            QMessageBox.warning(self, "警告", f"打开工程失败：\n{e}", QMessageBox.Ok)
+            return False
         if not loader.successed:
             Log().warning(self.TAG, f"打开工程失败：{prj.project_name}")
             return False

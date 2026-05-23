@@ -2,6 +2,7 @@
 参考图片
 """
 from pathlib import Path
+import traceback
 from utils import ReplaceCV2
 from GUI.hierarchy_widgets import *
 from PyQt5.QtGui import QVector3D
@@ -38,9 +39,15 @@ class RefImage(PrjComponent):
         self.Rot = rot
         self.Scl = scl
         self.file_path = str(Path(file_path))
+        self.load_failed = False
         super().__init__('PosShow')
         # modelRenderConfig = configHandler.get_config("ModelRenderSetting")
-        img_array = ReplaceCV2.imread(self.file_path)
+        try:
+            img_array = ReplaceCV2.imread(self.file_path)
+        except Exception:
+            self.load_failed = True
+            Log().warning(self.TAG, f"参考图片加载失败：{self.file_path}\n{traceback.format_exc()}")
+            return
         with Log().redirectOutput(self.TAG):  # 图片加载时，库内可能会有输出，这里重定向到日志
             imageItem = GLImageItem(img_array, selectable=True)
             self.setPaintItem(imageItem)
@@ -62,7 +69,7 @@ class RefImage(PrjComponent):
             self.setPos(self.Pos)
             self.setRot(self.Rot)
             self.setScl(self.Scl)
-            self.hullProject.gl_widget.paintGL_outside()
+            self._gl_widget.update()
         # 更新右侧属性栏
         self.update_path_s.emit(self.file_path)
 

@@ -452,6 +452,11 @@ class SubPrjComponent(QObject):
         else:
             raise AttributeError(f"{self.paintItem} has no addLight method")
 
+    def setVisable(self, visable: bool):
+        """
+        """
+        self.paintItem.setVisible(visable, recursive=True)
+
     def setSelected(self, selected: bool):
         """
         设置选中状态

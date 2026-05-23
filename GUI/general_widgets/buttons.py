@@ -360,7 +360,7 @@ class ImageButton(QPushButton):
         self.bg = bg
 
         img = QPixmap(QImage.fromData(QByteArray(self.img_bytes)))  # noqa
-        img.scaled(self.width, self.height, Qt.KeepAspectRatio)
+        img = img.scaled(self.width, self.height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         rounded_img = QPixmap(self.width, self.height)
         rounded_img.fill(Qt.transparent)
         painter = QPainter(rounded_img)
@@ -371,7 +371,8 @@ class ImageButton(QPushButton):
         painter.setClipPath(path)
         painter.drawPixmap(0, 0, img)
         painter.end()
-        self.setPixmap(rounded_img)
+        self.setIcon(QIcon(rounded_img))
+        self.setIconSize(QSize(self.width, self.height))
         self.setStyleSheet(
             f"background-color: {self.bg};"
             f"border-radius: {self.bd_radius}px;"

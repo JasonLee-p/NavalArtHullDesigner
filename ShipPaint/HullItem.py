@@ -239,6 +239,7 @@ class HullVerSecItem(GLMeshItem):
                 back_section.paintItem.mesh_data.setMeshZ(_z, back_section.z)
                 back_section.paintItem.updateVertexes(back_section.paintItem.mesh_data.vertexes)
         # 更新
+        self._z = _z
         self.updateVertexes(self.mesh_data.vertexes)
 
     def getTopCur(self):
@@ -552,16 +553,13 @@ class ArmorSectionGroupItem(GLGraphicsItem):
             item.addLight(light)
 
     def paint(self, model_matrix=Matrix4x4()):
-        for item in self.childItems():
-            item.paint()
+        pass
 
     def paint_pickMode(self, model_matrix=Matrix4x4()):
-        for item in self.childItems():
-            item.paint_pickMode()
+        pass
 
     def paint_selected(self, model_matrix=Matrix4x4()):
-        for item in self.childItems():
-            item.paint_selected()
+        pass
 
     def initializeGL(self):
         for item in self.childItems():

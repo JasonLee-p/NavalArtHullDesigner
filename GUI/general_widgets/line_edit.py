@@ -131,18 +131,21 @@ class NumberEdit(TextEdit):
         滚轮事件，滚动时改变值，然后触发value_changed信号
         """
         self.update_mutex.lock()
-        if event.angleDelta().y() > 0:
-            self.current_value += self.step
-        else:
-            self.current_value -= self.step
-        self.current_value = round(
-            self.current_value, self.rounding
-        ) if self.rounding else int(self.text())
-        self.setText(str(self.current_value))
-        self.value_changed.emit(self.current_value)
+        try:
+            if event.angleDelta().y() > 0:
+                self.current_value += self.step
+            else:
+                self.current_value -= self.step
+            self.current_value = round(
+                self.current_value, self.rounding
+            ) if self.rounding else int(self.text())
+            self.setText(str(self.current_value))
+            current_value = self.current_value
+        finally:
+            self.update_mutex.unlock()
+        self.value_changed.emit(current_value)
         if self.root_parent:
             self.root_parent.update()
-        self.update_mutex.unlock()
         # 不传递事件
         event.accept()
 
@@ -176,23 +179,26 @@ class NumberEdit(TextEdit):
         将属性值设置为控件显示的值，然后触发value_changed信号
         """
         self.update_mutex.lock()
-        if self.text() != "":
-            if self.text()[0] == "0" and len(self.text()) > 1 and self.text() != "0.":
-                self.setText(self.text()[1:])
-            try:
-                if self.num_range[0] <= self.num_type(self.text()) <= self.num_range[1]:
-                    self.current_value = round(self.num_type(self.text()), self.rounding) if self.rounding else int(
-                        self.text())
-            except ValueError:
-                pass
-        else:
-            self.current_value = self.num_type(0)
-        if change_ui_value:
-            self.setText(str(self.current_value))
-        self.value_changed.emit(self.current_value)
+        try:
+            if self.text() != "":
+                if self.text()[0] == "0" and len(self.text()) > 1 and self.text() != "0.":
+                    self.setText(self.text()[1:])
+                try:
+                    if self.num_range[0] <= self.num_type(self.text()) <= self.num_range[1]:
+                        self.current_value = round(self.num_type(self.text()), self.rounding) if self.rounding else int(
+                            self.text())
+                except ValueError:
+                    pass
+            else:
+                self.current_value = self.num_type(0)
+            if change_ui_value:
+                self.setText(str(self.current_value))
+            current_value = self.current_value
+        finally:
+            self.update_mutex.unlock()
+        self.value_changed.emit(current_value)
         if self.root_parent:
             self.root_parent.update()
-        self.update_mutex.unlock()
 
     def clear(self):
         """

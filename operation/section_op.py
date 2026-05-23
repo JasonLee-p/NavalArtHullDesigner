@@ -4,6 +4,13 @@
 from .basic_op import Operation
 
 
+def _request_section_update(section_handler):
+    paint_item = getattr(section_handler, "paintItem", None)
+    view = paint_item.view() if paint_item is not None else None
+    if view is not None:
+        view.update()
+
+
 class SectionDeleteOperation(Operation):
     def __init__(self, sectionHandler, parent=None):
         """
@@ -44,14 +51,14 @@ class SectionZMoveOperation(Operation):
     def execute(self):
         self.sectionHandler.setZ(self.target_posZ)
         # 通知gl_widget更新
-        self.sectionHandler.hullProject.gl_widget.paintGL_outside()
+        _request_section_update(self.sectionHandler)
 
     def undo(self):
         self.sectionHandler.setZ(self.origin_pos, undo=True)
         for edit in self.edits:
             edit.setValue(self.origin_pos)
         # 通知gl_widget更新
-        self.sectionHandler.hullProject.gl_widget.paintGL_outside()
+        _request_section_update(self.sectionHandler)
 
     def redo(self):
         for edit in self.edits:

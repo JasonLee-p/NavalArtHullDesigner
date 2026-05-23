@@ -802,6 +802,7 @@ class DesignerPrjReader:
                                         f"图片 {ref_image_['name']} 加载失败，文件路径：{img_p}\n"
                                         f"请检查该路径是否正确，或者重新绑定路径！",
                                         QMessageBox.Ok)
+                    continue
             except KeyError:
                 raise KeyError(f"图片 {ref_image_['name']} 的数据不完整")
             self.hullProject.add_refImage(ref_image_handler, True)

@@ -2,7 +2,7 @@ import OpenGL.GL as gl
 import numpy as np
 from main_logger import Log
 
-from .MeshData import Mesh
+from .MeshData import Mesh, vertex_normal_smooth
 from .light import LightMixin, light_fragment_shader
 from .shader import Shader
 from ..GLGraphicsItem import GLGraphicsItem
@@ -106,7 +106,14 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
 
         :param np.ndarray vertexes: 新的顶点数组。
         """
-        self._mesh.update_vertexes(vertexes)
+        if self.isInitialized and self.view() is not None and self.view().isCurrent():
+            self._mesh.update_vertexes(vertexes)
+            return
+        if vertexes.shape != self._mesh._vertexes.shape:
+            raise ValueError("vertexes shape must be the same as the original vertexes")
+        self._mesh._vertexes = np.array(vertexes, dtype=np.float32)
+        self._mesh._normals = vertex_normal_smooth(self._mesh._vertexes, self._mesh._indices)
+        self._mesh._vertexes_size = int(self._mesh._vertexes.size / 3)
 
     def updateVertex(self, index, vertex):
         """
@@ -115,7 +122,17 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         :param int index: 被更新的顶点索引。
         :param np.ndarray vertex: 新的顶点坐标。
         """
-        self._mesh.update_vertex(index, vertex)
+        if self.isInitialized and self.view() is not None and self.view().isCurrent():
+            self._mesh.update_vertex(index, vertex)
+            return
+        if isinstance(index, np.ndarray):
+            if len(index) != len(vertex):
+                raise ValueError("vertex_index and vertex must have the same length")
+            for i, v in zip(index, vertex):
+                self._mesh._vertexes[i] = v
+        else:
+            self._mesh._vertexes[index] = vertex
+        self._mesh._normals = vertex_normal_smooth(self._mesh._vertexes, self._mesh._indices)
 
     def paint(self, model_matrix=Matrix4x4()):
         """

@@ -898,7 +898,7 @@ class MainEditorGUI(Window):
         self.menu_map = {
             "文件": {
                 f"新建{DESIGNER_PRJ_SHORT_STR}": self.new_prj,
-                f"打开{DESIGNER_PRJ_SHORT_STR}": self.open_prj,
+                f"打开{DESIGNER_PRJ_SHORT_STR}": self.select_file_to_open,
                 f"保存{DESIGNER_PRJ_SHORT_STR}": self.save_prj,
                 f"另存{DESIGNER_PRJ_SHORT_STR}": self.save_as_prj,
                 f"导出到{NA_STR}": self.export_to_na,

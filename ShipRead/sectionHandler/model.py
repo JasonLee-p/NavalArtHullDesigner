@@ -79,7 +79,7 @@ class Model(PrjComponent):
             self.setPaintItem(modelItem)
             self.setPos(self.Pos)
             self.setRot(self.Rot)
-            self.hullProject.gl_widget.paintGL_outside()
+            self._gl_widget.update()
         # 更新右侧属性栏
         self.update_path_s.emit(self.file_path)
 

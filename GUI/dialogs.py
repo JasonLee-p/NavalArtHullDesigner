@@ -10,6 +10,7 @@ from .general_widgets import BasicDialog, ButtonGroup, ImageButton, ImageTextBut
 from na_design_tools import get_avg_position, offset_position, get_range_position, scale_position
 from path_lib import NA_SHIP_PATH
 from string_src import *
+from utils import DECIMAL_PRECISION, MAX_VALUE
 
 
 class NaDesignSelectDialog(BasicDialog):
@@ -144,11 +145,11 @@ class MoveDialog(BasicDialog):
                                                font=YAHEI[10], size=(320, 28), bd_radius=8)
         self.input_widget = QFrame(None)
         self.x_input = NumberEdit(None, None, (68, 28), float,
-                                  rounding=const.DECIMAL_PRECISION, default_value=0.0, step=0.1)
+                                  rounding=DECIMAL_PRECISION, default_value=0.0, step=0.1)
         self.y_input = NumberEdit(None, None, (68, 28), float,
-                                  rounding=const.DECIMAL_PRECISION, default_value=0.0, step=0.1)
+                                  rounding=DECIMAL_PRECISION, default_value=0.0, step=0.1)
         self.z_input = NumberEdit(None, None, (68, 28), float,
-                                  rounding=const.DECIMAL_PRECISION, default_value=0.0, step=0.1)
+                                  rounding=DECIMAL_PRECISION, default_value=0.0, step=0.1)
         self.avg_x = TextButton(None, "0.0", "图纸的平均位置X坐标",
                                 bg=BG_COLOR0, fg=FG_COLOR0,
                                 font=YAHEI[10], size=(68, 28), bd_radius=8)
@@ -231,9 +232,9 @@ class MoveDialog(BasicDialog):
             QMessageBox.warning(self, "警告", f"写入文件时出错：{_e}", QMessageBox.Ok)
             return
         # 更新平均位置
-        self.avg_x.setText(str(round(float(self.avg_x.text) + self.x_input.current_value, const.DECIMAL_PRECISION)))
-        self.avg_y.setText(str(round(float(self.avg_y.text) + self.y_input.current_value, const.DECIMAL_PRECISION)))
-        self.avg_z.setText(str(round(float(self.avg_z.text) + self.z_input.current_value, const.DECIMAL_PRECISION)))
+        self.avg_x.setText(str(round(float(self.avg_x.text) + self.x_input.current_value, DECIMAL_PRECISION)))
+        self.avg_y.setText(str(round(float(self.avg_y.text) + self.y_input.current_value, DECIMAL_PRECISION)))
+        self.avg_z.setText(str(round(float(self.avg_z.text) + self.z_input.current_value, DECIMAL_PRECISION)))
         # 通知所有的子控件刷新
         self.child_repaint()
         QMessageBox.information(self, "提示", "图纸移动成功！", QMessageBox.Ok)
@@ -288,13 +289,13 @@ class ScaleDialog(BasicDialog):
         self.link_button = ImageButton(None, BYTES_LINK, (28, 28), bd_radius=bdr, tool_tip="数值是否等比缩放",
                                        bg=(BG_COLOR0, BG_COLOR3, BG_COLOR2, BG_COLOR3))
         self.input_widget = QFrame(None)
-        num_range = (round(0.000001, const.DECIMAL_PRECISION), const.MAX_VALUE)
+        num_range = (round(0.000001, DECIMAL_PRECISION), MAX_VALUE)
         self.x_input = NumberEdit(None, None, (68, 28), float, num_range=num_range,
-                                  rounding=const.DECIMAL_PRECISION, default_value=1.0, step=0.1)
+                                  rounding=DECIMAL_PRECISION, default_value=1.0, step=0.1)
         self.y_input = NumberEdit(None, None, (68, 28), float, num_range=num_range,
-                                  rounding=const.DECIMAL_PRECISION, default_value=1.0, step=0.1)
+                                  rounding=DECIMAL_PRECISION, default_value=1.0, step=0.1)
         self.z_input = NumberEdit(None, None, (68, 28), float, num_range=num_range,
-                                  rounding=const.DECIMAL_PRECISION, default_value=1.0, step=0.1)
+                                  rounding=DECIMAL_PRECISION, default_value=1.0, step=0.1)
         self.range_x_min = TextButton(None, "0.0", "图纸的X坐标最小值",
                                       bg=BG_COLOR0, fg=FG_COLOR0,
                                       font=YAHEI[10], size=(68, 28), bd_radius=bdr)
@@ -418,12 +419,12 @@ class ScaleDialog(BasicDialog):
             QMessageBox.warning(self, "警告", f"写入文件时出错：{_e}", QMessageBox.Ok)
             return
         # 更新坐标范围
-        self.range_x_max.setText(str(round(float(self.range_x_max.text) * self.x_input.current_value, const.DECIMAL_PRECISION)))
-        self.range_y_max.setText(str(round(float(self.range_y_max.text) * self.y_input.current_value, const.DECIMAL_PRECISION)))
-        self.range_z_max.setText(str(round(float(self.range_z_max.text) * self.z_input.current_value, const.DECIMAL_PRECISION)))
-        self.range_x_min.setText(str(round(float(self.range_x_min.text) * self.x_input.current_value, const.DECIMAL_PRECISION)))
-        self.range_y_min.setText(str(round(float(self.range_y_min.text) * self.y_input.current_value, const.DECIMAL_PRECISION)))
-        self.range_z_min.setText(str(round(float(self.range_z_min.text) * self.z_input.current_value, const.DECIMAL_PRECISION)))
+        self.range_x_max.setText(str(round(float(self.range_x_max.text) * self.x_input.current_value, DECIMAL_PRECISION)))
+        self.range_y_max.setText(str(round(float(self.range_y_max.text) * self.y_input.current_value, DECIMAL_PRECISION)))
+        self.range_z_max.setText(str(round(float(self.range_z_max.text) * self.z_input.current_value, DECIMAL_PRECISION)))
+        self.range_x_min.setText(str(round(float(self.range_x_min.text) * self.x_input.current_value, DECIMAL_PRECISION)))
+        self.range_y_min.setText(str(round(float(self.range_y_min.text) * self.y_input.current_value, DECIMAL_PRECISION)))
+        self.range_z_min.setText(str(round(float(self.range_z_min.text) * self.z_input.current_value, DECIMAL_PRECISION)))
         # 通知所有的子控件刷新
         self.child_repaint()
         QMessageBox.information(self, "提示", "图纸缩放成功！", QMessageBox.Ok)

@@ -17,6 +17,8 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal, QPoint, QMutex
 from PyQt5.QtGui import QPainter, QColor, QCursor
 from PyQt5.QtWidgets import QMessageBox
+
+from GUI import TextLabel
 from main_logger import Log
 from pyqtOpenGL.items.GL2DSelectBox import GLSelectBox
 
@@ -26,7 +28,6 @@ from .functions import mkColor
 from .items.light import PointLight
 from .transform3d import Vector3
 
-TextLabel = QtWidgets.QLabel
 _screen = QtWidgets.QApplication.primaryScreen()
 if _screen is not None:
     _screen_size = _screen.size()
@@ -76,7 +77,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self.removeItem(item)
             prj.del_section(item.handler)
         self.selected_items.clear()
-        self.paintGL_outside()
+        self.update()
 
     def __init__(
             self,
@@ -461,7 +462,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         if ev.buttons() == self.select_btn:
             self.select_start.setX(int(ev.localPos().x()))
             self.select_start.setY(int(ev.localPos().y()))
-            self.paintGL_outside()
+            self.update()
 
     def mouseMoveEvent(self, ev):
         ctrl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
@@ -487,18 +488,18 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self.__mouseMove_otherside(lpos)
             if not alt_down:
                 self.camera.pan(diff.x(), diff.y())
-            self.paintGL_outside()
+            self.update()
         elif ev.buttons() == self.orbit_btn:
             self.__mouseMove_otherside(lpos)
             if not alt_down:
                 self.camera.orbit(diff.x(), diff.y())
-            self.paintGL_outside()
+            self.update()
         elif ev.buttons() == self.select_btn:
             self.select_end.setX(int(ev.localPos().x()))
             self.select_end.setY(int(ev.localPos().y()))
             if not self.select_box.visible():
                 self.select_box.setVisible(True)
-            self.paintGL_outside()
+            self.update()
 
     def mouseReleaseEvent(self, ev):
         ctl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
@@ -534,7 +535,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self._after_selection()
         elif ev.button() == QtCore.Qt.MouseButton.RightButton and alt_down:
             self._rightButtonReleased(ev)
-        self.paintGL_outside()
+        self.update()
 
     def _rightButtonReleased(self, ev):
         ...
@@ -549,21 +550,21 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
                 self.camera.zoom(delta * 0.1)
             else:
                 self.camera.zoom(delta)
-            self.paintGL_outside()
+            self.update()
         self.event_mutex.unlock()
 
     def _clear_selected_items(self):
         for it in self.selected_items:
             it.setSelected(False)
         self.selected_items.clear()
-        self.paintGL_outside()
+        self.update()
 
     def _after_selection(self):
         """
         选中物体后的处理
         :return:
         """
-        self.paintGL_outside()
+        self.update()
 
     def readQImage(self):
         """

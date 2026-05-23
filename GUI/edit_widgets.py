@@ -131,6 +131,17 @@ class EditTabWidget(QWidget):
         self.posX_edit.setValue(item.Pos.x())
         self.posY_edit.setValue(item.Pos.y())
         self.posZ_edit.setValue(item.Pos.z())
+        has_rot = hasattr(item, "Rot") and item.Rot is not None
+        for edit in (self.rotX_edit, self.rotY_edit, self.rotZ_edit):
+            edit.setEnabled(has_rot)
+        if has_rot:
+            self.rotX_edit.setValue(item.Rot[0])
+            self.rotY_edit.setValue(item.Rot[1])
+            self.rotZ_edit.setValue(item.Rot[2])
+        else:
+            self.rotX_edit.setValue(0)
+            self.rotY_edit.setValue(0)
+            self.rotZ_edit.setValue(0)
 
     def setPosX(self, x, edits):
         op = MoveToOperation(self._current_item, QVector3D(x, self._current_item.Pos.y(), self._current_item.Pos.z()),
@@ -148,14 +159,20 @@ class EditTabWidget(QWidget):
         self.operationStack.execute(op)
 
     def setRotX(self, x, edits):
+        if not hasattr(self._current_item, "Rot"):
+            return
         op = RotateOperation(self._current_item, [x, self._current_item.Rot[1], self._current_item.Rot[2]], edits)
         self.operationStack.execute(op)
 
     def setRotY(self, y, edits):
+        if not hasattr(self._current_item, "Rot"):
+            return
         op = RotateOperation(self._current_item, [self._current_item.Rot[0], y, self._current_item.Rot[2]], edits)
         self.operationStack.execute(op)
 
     def setRotZ(self, z, edits):
+        if not hasattr(self._current_item, "Rot"):
+            return
         op = RotateOperation(self._current_item, [self._current_item.Rot[0], self._current_item.Rot[1], z], edits)
         self.operationStack.execute(op)
 
@@ -294,15 +311,15 @@ class EditHullSectionGroupWidget(EditTabWidget):
     def updateSize(self):
         _frontSection = self._current_item._frontSection
         _backSection = self._current_item._backSection
-        self.sizeX_show.setText(str(round(2 * self._current_item.getMaxX(), const.DECIMAL_PRECISION)))
-        self.sizeY_show.setText(str(round(_frontSection.nodes[-1].y - _frontSection.nodes[0].y, const.DECIMAL_PRECISION)))
-        self.sizeZ_show.setText(str(round(_frontSection.z - _backSection.z, const.DECIMAL_PRECISION)))
+        self.sizeX_show.setText(str(round(2 * self._current_item.getMaxX(), DECIMAL_PRECISION)))
+        self.sizeY_show.setText(str(round(_frontSection.nodes[-1].y - _frontSection.nodes[0].y, DECIMAL_PRECISION)))
+        self.sizeZ_show.setText(str(round(_frontSection.z - _backSection.z, DECIMAL_PRECISION)))
 
     def updateFrontZ(self):
-        self.sizeZ_show.setText(str(round(self._current_item._frontSection.z - self._current_item._backSection.z, const.DECIMAL_PRECISION)))
+        self.sizeZ_show.setText(str(round(self._current_item._frontSection.z - self._current_item._backSection.z, DECIMAL_PRECISION)))
 
     def updateBackZ(self):
-        self.sizeZ_show.setText(str(round(self._current_item._frontSection.z - self._current_item._backSection.z, const.DECIMAL_PRECISION)))
+        self.sizeZ_show.setText(str(round(self._current_item._frontSection.z - self._current_item._backSection.z, DECIMAL_PRECISION)))
 
     def updateNum(self):
         self.section_num_show.setText(str(len(self._current_item.get_sections())))

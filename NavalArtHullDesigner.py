@@ -122,7 +122,7 @@ def newPrj():
     新建项目，由开始界面调用（未完成）
     """
     Log().info(Log().GLOBAL_TAG, "单击：新建项目")
-    _mainEditor = mainEditors.new()
+    _mainEditor = mainEditors.new("newPrj")
     if not _mainEditor:
         return
 
@@ -142,7 +142,7 @@ def setting():
     打开设置页面，由开始界面调用（未完成）
     """
     Log().info(Log().GLOBAL_TAG, "单击：设置")
-    _mainEditor = mainEditors.new()
+    _mainEditor = mainEditors.new("setting")
     if not _mainEditor:
         return
 
@@ -152,7 +152,7 @@ def _help():
     打开帮助页面，由开始界面调用（未完成）
     """
     Log().info(Log().GLOBAL_TAG, "单击：帮助")
-    _mainEditor = mainEditors.new()
+    _mainEditor = mainEditors.new("help")
     if not _mainEditor:
         return
 

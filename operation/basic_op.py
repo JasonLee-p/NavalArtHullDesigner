@@ -9,6 +9,13 @@ from PyQt5.QtCore import QMutex
 from utils.funcs_utils import operationMutexLock
 
 
+def _request_gl_update(gl_widget):
+    if hasattr(gl_widget, "update"):
+        gl_widget.update()
+    elif hasattr(gl_widget, "paintGL_outside"):
+        gl_widget.paintGL_outside()
+
+
 class Operation:
     """
     操作栈中的操作基类
@@ -85,7 +92,7 @@ class OperationStack:
             self.current_index += 1
             self.stateStack[self.current_index] = operation
             self.main_editor.show_statu_(f"{operation.name}\t{self.current_index + 1}", "process")
-        self.main_editor.gl_widget.paintGL_outside()
+        _request_gl_update(self.main_editor.gl_widget)
 
     @operationMutexLock
     def undo(self):
@@ -103,7 +110,7 @@ class OperationStack:
         else:
             self.main_editor.show_statu_("Ctrl+Z 没有更多的历史记录", "warning")
             ...
-        self.main_editor.gl_widget.paintGL_outside()
+        _request_gl_update(self.main_editor.gl_widget)
 
     @operationMutexLock
     def redo(self):
@@ -122,7 +129,7 @@ class OperationStack:
                 "process")
         else:
             self.main_editor.show_statu_("Ctrl+Shift+Z 没有更多的历史记录", "warning")
-        self.main_editor.gl_widget.paintGL_outside()
+        _request_gl_update(self.main_editor.gl_widget)
 
     def update_size(self, size: int):
         if size < 5 or size > 2 ** 16:
@@ -141,7 +148,7 @@ class OperationStack:
             self.stateStack = [None] * self.max_length
             self.init_stack()
             self.main_editor.show_statu_("操作栈已清空", "warning")
-            self.main_editor.gl_widget.paintGL_outside()
+            _request_gl_update(self.main_editor.gl_widget)
         else:
             # 清空撤回栈的前length个操作（操作依次前移）
             for i in range(self.current_index - length + 1):
