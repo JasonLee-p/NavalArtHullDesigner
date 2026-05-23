@@ -224,23 +224,27 @@ class HullVerSecItem(GLMeshItem):
             back_section = self.handler._backSection
             if front_section:
                 front_section.paintItem.mesh_data.setMeshZ(front_section.z, _z)
-                front_section.paintItem.updateVertexes(front_section.paintItem.mesh_data.vertexes)
+                front_section.paintItem.updateVertexes(
+                    front_section.paintItem.mesh_data.vertexes, front_section.paintItem.mesh_data.normals)
             if back_section and back_section.z < 0:
                 back_section.paintItem.mesh_data.setMeshZ(_z, back_section.z)
-                back_section.paintItem.updateVertexes(back_section.paintItem.mesh_data.vertexes)
+                back_section.paintItem.updateVertexes(
+                    back_section.paintItem.mesh_data.vertexes, back_section.paintItem.mesh_data.normals)
         elif self._z < 0:
             self.mesh_data.setMeshZ(self.handler._frontSection.z, _z)
             front_section = self.handler._frontSection
             back_section = self.handler._backSection
             if front_section and front_section.z > 0:
                 front_section.paintItem.mesh_data.setMeshZ(front_section.z, _z)
-                front_section.paintItem.updateVertexes(front_section.paintItem.mesh_data.vertexes)
+                front_section.paintItem.updateVertexes(
+                    front_section.paintItem.mesh_data.vertexes, front_section.paintItem.mesh_data.normals)
             if back_section:
                 back_section.paintItem.mesh_data.setMeshZ(_z, back_section.z)
-                back_section.paintItem.updateVertexes(back_section.paintItem.mesh_data.vertexes)
+                back_section.paintItem.updateVertexes(
+                    back_section.paintItem.mesh_data.vertexes, back_section.paintItem.mesh_data.normals)
         # 更新
         self._z = _z
-        self.updateVertexes(self.mesh_data.vertexes)
+        self.updateVertexes(self.mesh_data.vertexes, self.mesh_data.normals)
 
     def getTopCur(self):
         """
@@ -412,7 +416,7 @@ class HullVerSecItem(GLMeshItem):
         mesh_data.initVertexes()
         self.mesh_data = mesh_data
         if self.isInitialized:
-            self.updateVertexes(self.mesh_data.vertexes)
+            self.updateVertexes(self.mesh_data.vertexes, self.mesh_data.normals)
         else:
             self._mesh._vertexes = self.mesh_data.vertexes
             self._mesh._normals = self.mesh_data.normals

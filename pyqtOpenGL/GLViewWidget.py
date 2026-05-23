@@ -18,7 +18,6 @@ from PyQt5.QtCore import pyqtSignal, QPoint, QMutex
 from PyQt5.QtGui import QPainter, QColor, QCursor
 from PyQt5.QtWidgets import QMessageBox
 
-from GUI import TextLabel
 from main_logger import Log
 from pyqtOpenGL.items.GL2DSelectBox import GLSelectBox
 
@@ -36,6 +35,16 @@ else:
     WIN_WID, WIN_HEI = 1920, 1080
 
 __TAG = "GLViewWidget"
+
+
+class TextLabel(QtWidgets.QLabel):
+    def __init__(self, parent, text, font=None, color=None, align=QtCore.Qt.AlignLeft):
+        super().__init__(text, parent)
+        if font is not None:
+            self.setFont(font)
+        if color is not None:
+            self.setStyleSheet(f"color: {color}; background-color: rgba(0, 0, 0, 0);")
+        self.setAlignment(align)
 
 
 def _drawItemTree(item):

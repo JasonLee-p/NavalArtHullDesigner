@@ -257,11 +257,14 @@ class Mesh:
         # 更新缓冲区
         self.vbo.updateData([0], [self._vertexes, self._normals, self._texcoords])
 
-    def update_vertexes(self, vertexes: np.ndarray):
+    def update_vertexes(self, vertexes: np.ndarray, normals: np.ndarray = None):
         if vertexes.shape != self._vertexes.shape:
             raise ValueError("vertexes shape must be the same as the original vertexes")
         self._vertexes = np.array(vertexes, dtype=np.float32)
-        self._normals = vertex_normal_smooth(self._vertexes, self._indices)  # 更新法线
+        if normals is None:
+            self._normals = vertex_normal_smooth(self._vertexes, self._indices)
+        else:
+            self._normals = np.array(normals, dtype=np.float32)
         self.vbo.updateData([0], [self._vertexes, self._normals, self._texcoords])
 
     def update_vertex_size(self, vertexes: np.ndarray, indices: np.ndarray):
@@ -303,6 +306,8 @@ def cone(radius, height, slices=12):
 
 
 class SymetryCylinderMesh:
+    SIDE_SMOOTH_ANGLE_DEGREES = 60
+
     def __init__(self, direction: Literal['x', 'y', 'z'] = 'z'):
         """
         左右对称的柱体网格
@@ -380,8 +385,7 @@ class SymetryCylinderMesh:
         self.side_vert = np.zeros((vertexLen * 6, 3), dtype=np.float32)
         self._updateSide(FI, LI, UI)
         self.vertexes = np.concatenate((self.top_vert, self.bottom_vert, self.side_vert), axis=0)
-        self.normals = vertex_normal_faceNormal(self.vertexes)
-        # self.normals = vertex_normal_smooth(self.vertexes, np.arange(vertexLen * 3).reshape(-1, 3))
+        self._updateNormals()
 
     def updateRightPoints(self):
         self.rightTopPoints = self.topPoints.copy()
@@ -558,9 +562,7 @@ class SymetryCylinderMesh:
         self.updateSideVert(topZ, botZ, FI)
         # 更新顶点数组
         self.vertexes = np.concatenate((self.top_vert, self.bottom_vert, self.side_vert), axis=0)
-        # 更新法线
-        self.normals = vertex_normal_faceNormal(self.vertexes)
-        # self.normals = vertex_normal_smooth(self.vertexes, np.arange(self.vertexes.shape[0]).reshape(-1, 3))
+        self._updateNormals()
 
     def updateTopBotVert(self, topZ, botZ, FI):
         """
@@ -646,8 +648,14 @@ class SymetryCylinderMesh:
         # 侧面
         self._updateSide(FI, LI, UI)
         self.vertexes = np.concatenate((self.top_vert, self.bottom_vert, self.side_vert), axis=0)
-        # self.normals = vertex_normal_faceNormal(self.vertexes)
-        self.normals = vertex_normal_smooth(self.vertexes, None)
+        self._updateNormals()
+
+    def _updateNormals(self):
+        """Keep cap faces crisp while smoothing the continuous side surface."""
+        self.normals = vertex_normal_faceNormal(self.vertexes)
+        side_start = self.top_vert.shape[0] + self.bottom_vert.shape[0]
+        self.normals[side_start:] = vertex_normal_smooth_by_position(
+            self.side_vert, smooth_angle_degrees=self.SIDE_SMOOTH_ANGLE_DEGREES)
 
     def updateTopPoint(self, idx, point: tuple, updateBottom=True):
         """
@@ -1006,20 +1014,61 @@ def face_normal(v1, v2, v3):
         raise e
 
 
-def vertex_normal_smooth(vert, ind):
-    """计算每个顶点的法向量，显示会平滑一些"""
-    nv = len(vert)  # 顶点的个数
-    nf = len(ind) // 3  # 面的个数
-    norm = np.zeros((nv, 3), np.float32)  # 初始化每个顶点的法向量为零向量
-    for i in range(0, nf, 3):  # 遍历每个面
-        v1, v2, v3 = vert[ind[i:i + 3]]
-        fn = face_normal(v1, v2, v3)  # 计算面的法向量
-        norm[ind[i:i + 3]] += fn  # 将面的法向量累加到对应的顶点
-    # 归一化
-    norm_len = np.linalg.norm(norm, axis=1, keepdims=True)
+def _triangle_indices(vertex_count, indices):
+    if indices is None:
+        if vertex_count % 3 != 0:
+            raise ValueError("non-indexed triangle vertices must be a multiple of 3")
+        return np.arange(vertex_count, dtype=np.uint32).reshape(-1, 3)
+    return np.asarray(indices, dtype=np.uint32).reshape(-1, 3)
+
+
+def _normalize_normals(normals):
+    norm_len = np.linalg.norm(normals, axis=1, keepdims=True)
     norm_len[norm_len < 1e-5] = 1
-    norm = norm / norm_len
-    return norm
+    return normals / norm_len
+
+
+def vertex_normal_smooth(vert, ind):
+    """Calculate area-weighted smooth normals by shared vertex index."""
+    vert = np.asarray(vert, dtype=np.float32)
+    faces = _triangle_indices(len(vert), ind)
+    norm = np.zeros((len(vert), 3), np.float32)
+    for tri in faces:
+        v1, v2, v3 = vert[tri]
+        fn = face_normal(v1, v2, v3)
+        if np.linalg.norm(fn) < 1e-8:
+            continue
+        norm[tri] += fn
+    return _normalize_normals(norm)
+
+
+def vertex_normal_smooth_by_position(vert, ind=None, precision=5, smooth_angle_degrees=180):
+    """Calculate normals for duplicated vertices, preserving edges sharper than the angle threshold."""
+    vert = np.asarray(vert, dtype=np.float32)
+    faces = _triangle_indices(len(vert), ind)
+    face_normals = []
+    grouped_normals = {}
+    vertex_keys = [tuple(np.round(v, precision)) for v in vert]
+    for tri in faces:
+        v1, v2, v3 = vert[tri]
+        fn = face_normal(v1, v2, v3)
+        if np.linalg.norm(fn) < 1e-8:
+            continue
+        fn = _normalize_normals(fn.reshape(1, 3))[0]
+        face_normals.append((tri, fn))
+        for vertex_index in tri:
+            key = vertex_keys[int(vertex_index)]
+            grouped_normals.setdefault(key, []).append(fn)
+    norm = np.zeros((len(vert), 3), np.float32)
+    cos_limit = np.cos(np.deg2rad(smooth_angle_degrees))
+    for tri, fn in face_normals:
+        for vertex_index in tri:
+            key = vertex_keys[int(vertex_index)]
+            candidate_normals = grouped_normals.get(key, [])
+            for candidate in candidate_normals:
+                if np.dot(fn, candidate) >= cos_limit:
+                    norm[int(vertex_index)] += candidate
+    return _normalize_normals(norm)
 
 
 def vertex_normal_faceNormal(vert):

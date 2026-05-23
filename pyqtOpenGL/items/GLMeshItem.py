@@ -100,19 +100,22 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         self.selected_shader = Shader(mesh_vertex_shader, self.selected_fragment_shader)
         self._mesh.initializeGL()
 
-    def updateVertexes(self, vertexes: np.ndarray):
+    def updateVertexes(self, vertexes: np.ndarray, normals: np.ndarray = None):
         """
         更新网格的顶点数据。
 
         :param np.ndarray vertexes: 新的顶点数组。
         """
         if self.isInitialized and self.view() is not None and self.view().isCurrent():
-            self._mesh.update_vertexes(vertexes)
+            self._mesh.update_vertexes(vertexes, normals)
             return
         if vertexes.shape != self._mesh._vertexes.shape:
             raise ValueError("vertexes shape must be the same as the original vertexes")
         self._mesh._vertexes = np.array(vertexes, dtype=np.float32)
-        self._mesh._normals = vertex_normal_smooth(self._mesh._vertexes, self._mesh._indices)
+        if normals is None:
+            self._mesh._normals = vertex_normal_smooth(self._mesh._vertexes, self._mesh._indices)
+        else:
+            self._mesh._normals = np.array(normals, dtype=np.float32)
         self._mesh._vertexes_size = int(self._mesh._vertexes.size / 3)
 
     def updateVertex(self, index, vertex):
