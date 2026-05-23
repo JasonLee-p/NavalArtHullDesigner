@@ -1,8 +1,8 @@
 {
-  "check_code": "f3a6c17186b6d67e8770b1bb07f9b808abbeb8db",
+  "check_code": "757c6a3312e09d6b1a677cba2b9fbe1644f8f2c1",
   "project_name": "SampleProject",
   "author": "JasonLee",
-  "edit_time": "2024-9-19 3:14:4",
+  "edit_time": "2026-5-24 6:9:49",
   "hull_section_group": [
     {
       "name": "\u4e3b\u4f53",
@@ -13,7 +13,7 @@
       ],
       "rot": [
         0,
-        45.0,
+        0.0,
         0
       ],
       "col": "#888889",
@@ -152,7 +152,7 @@
       "name": "\u4e3b\u4f53",
       "center": [
         0.0,
-        0.0,
+        12.0,
         -20.0
       ],
       "rot": [
@@ -285,20 +285,20 @@
       "name": "Fuso",
       "pos": [
         0.0,
-        -18.0,
-        8.5
+        -4.0,
+        0.0
       ],
       "rot": [
-        45.0,
-        45.0,
+        90.0,
+        90.0,
         0
       ],
       "scl": [
-        114.0,
-        12.8,
+        65.0,
+        10.0,
         1
       ],
-      "file_path": "E:\\JasonLee\\python_projects\\NavalArtPluginNew\\sample_projects\\Fuso.png"
+      "file_path": "D:\\Projects\\ProgrammingProjects\\NavalArtHullDesigner\\sample_projects\\Fuso.png"
     }
   ]
 }
