@@ -114,7 +114,7 @@ class ButtonGroup:
                 button.setFocusPolicy(Qt.NoFocus)
                 button.setCheckable(True)
                 button.setChecked(False)
-                button.clicked.connect(lambda: self.button_clicked(button))
+                button.clicked.connect(lambda checked=False, btn=button: self.button_clicked(btn))
             buttons[default_index].setChecked(True)
             self.current = buttons[default_index]
         else:
@@ -150,11 +150,11 @@ class ButtonGroup:
         """
         button.setCheckable(True)
         button.setFocusPolicy(Qt.NoFocus)
-        button.func_ = lambda: self.button_clicked(button)
-        button.clicked.connect(button.func_)
         if button in self.buttons:
             color_print(f"[WARNING] Added Button {button} already in <{self}>.", "red")
             return False
+        button.func_ = lambda: self.button_clicked(button)
+        button.clicked.connect(button.func_)
         self.buttons.append(button)
         if setChecked:
             if self.current:
@@ -290,7 +290,7 @@ class _MutiDirectionTab(QWidget):
         # 禁用刷新
         center_w = cls.__draggable_tab.main_widget_with_multidir.center_widget
         if hasattr(center_w, 'enablePaint'):
-            center_w.enablePaint(True)
+            center_w.enablePaint(False)
 
     @classmethod
     def _end_dragging_button(cls):
@@ -585,7 +585,7 @@ class MultiDirTabMainFrame(QFrame):
         self.layout.addWidget(self.spliterR)
         self.layout.addWidget(self.right_bt_frame)
 
-        for frm in [self.left_up_bt_frame, self.left_down_bt_frame]:
+        for frm in [self.left_up_bt_frame, self.left_down_bt_frame, self.right_bt_frame]:
             frm.mouseMoveEvent = self.mouseMoveEvent
             frm.mousePressEvent = self.mousePressEvent
             frm.mouseReleaseEvent = self.mouseReleaseEvent
@@ -949,26 +949,24 @@ class Window(QWidget):
         super().mousePressEvent(event)
         # 开始拖动窗口
         if event.button() == Qt.LeftButton and self.isMaximized() is False:
-            if 5 < event.y() < self.topH:
+            if self.resizable and event.x() < 5:
+                self.resize_dir = CONST.LEFT
+                self.resize_flag = True
+            elif self.resizable and event.x() > self.width() - 5:
+                self.resize_dir = CONST.RIGHT
+                self.resize_flag = True
+            elif self.resizable and event.y() < 5:
+                self.resize_dir = CONST.UP
+                self.resize_flag = True
+            elif self.resizable and event.y() > self.height() - 5:
+                self.resize_dir = CONST.DOWN
+                self.resize_flag = True
+            elif 5 < event.y() < self.topH:
                 self.move_flag = True
                 self.m_Position = event.globalPos() - self.pos()
-            elif self.resizable:
-                if event.y() < 5:
-                    self.resize_dir = CONST.LEFT
-                    self.resize_flag = True
-                elif event.x() > self.height() - 5:
-                    self.resize_dir = CONST.DOWN
-                    self.resize_flag = True
-                elif event.x() > self.width() - 5:
-                    self.resize_dir = CONST.RIGHT
-                    self.resize_flag = True
-                elif event.y() < 5:
-                    self.resize_dir = CONST.UP
-                    self.resize_flag = True
-                if self.resize_flag:
-                    self.resize_flag = True
-                    self.m_Position = event.globalPos() - self.pos()
-                    event.accept()
+            if self.resize_flag:
+                self.m_Position = event.globalPos()
+                event.accept()
 
     def mouseReleaseEvent(self, _):
         super().mouseReleaseEvent(_)
@@ -990,11 +988,11 @@ class Window(QWidget):
             elif self.resizable:
                 if event.x() < 5:
                     self.setCursor(Qt.SizeHorCursor)
-                elif event.x() > self.height() - 5:
-                    self.setCursor(Qt.SizeVerCursor)
                 elif event.x() > self.width() - 5:
                     self.setCursor(Qt.SizeHorCursor)
-                elif event.x() < 5:
+                elif event.y() < 5:
+                    self.setCursor(Qt.SizeVerCursor)
+                elif event.y() > self.height() - 5:
                     self.setCursor(Qt.SizeVerCursor)
                 else:
                     self.setCursor(Qt.ArrowCursor)
@@ -1005,10 +1003,10 @@ class Window(QWidget):
                     elif self.resize_dir == CONST.RIGHT:
                         self.setGeometry(self.x(), self.y(), event.globalPos().x() - self.x(), self.height())
                     elif self.resize_dir == CONST.UP:
-                        self.setGeometry(self.x(), event.globalPos().x(), self.width(),
-                                         self.height() + self.y() - event.globalPos().x())
+                        self.setGeometry(self.x(), event.globalPos().y(), self.width(),
+                                         self.height() + self.y() - event.globalPos().y())
                     elif self.resize_dir == CONST.DOWN:
-                        self.setGeometry(self.x(), self.y(), self.width(), event.globalPos().x() - self.y())
+                        self.setGeometry(self.x(), self.y(), self.width(), event.globalPos().y() - self.y())
                     QCoreApplication.processEvents()  # noqa  # 使窗口立即重绘
                     event.accept()
 

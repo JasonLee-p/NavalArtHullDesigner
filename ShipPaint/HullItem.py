@@ -8,6 +8,7 @@ import numpy as np
 import OpenGL.GL as gl
 from main_logger import Log
 from pyqtOpenGL import Matrix4x4, GLGraphicsItem, GLMeshItem, Quaternion
+from pyqtOpenGL.items.GLScatterPlotItem import GLScatterPlotItem
 from pyqtOpenGL.items.MeshData import SymetryCylinderMesh, EditItemMaterial
 
 # 从正下方开始，逆时针排列（向z-方向看）
@@ -137,6 +138,8 @@ def _get_index(half_index):
 
 
 class HullVerSecItem(GLMeshItem):
+    NODE_HIT_RADIUS = 12
+    NODE_MARKER_SIZE = 0.18
 
     # noinspection PyProtectedMember
     def __init__(self, handler, z, nodes: Union[list, tuple]):
@@ -187,6 +190,92 @@ class HullVerSecItem(GLMeshItem):
                          glUsage=gl.GL_DYNAMIC_DRAW)
         # 用于判断整个截面组是否被选中
         self.parentSelected = True
+        self._dragging_node = None
+        self._drag_start_screen_x = 0.0
+        self._drag_origin_x = 0.0
+        self._drag_screen_per_x = 1.0
+        self.node_marker_item = GLScatterPlotItem(
+            pos=self._node_marker_positions(),
+            size=self.NODE_MARKER_SIZE,
+            color=(0.15, 0.95, 1.0),
+            glOptions='ontop',
+            parentItem=self,
+        )
+        self.node_marker_item.setVisible(False)
+
+    def _node_marker_positions(self):
+        return np.array([[node.x, node.y, self._z] for node in self._nodes], dtype=np.float32)
+
+    def _update_node_markers(self):
+        self.node_marker_item.setData(pos=self._node_marker_positions())
+        self.node_marker_item.setVisible(self.selected())
+
+    def setSelected(self, s, children=True):
+        result = super().setSelected(s, children)
+        self._update_node_markers()
+        return result
+
+    def setSelectable(self, s, children=True):
+        super().setSelectable(s, children)
+        if hasattr(self, "node_marker_item"):
+            self.node_marker_item.setSelectable(False)
+
+    def _effective_view(self):
+        view = self.view()
+        if view is None and self.parentItem() is not None:
+            view = self.parentItem().view()
+        return view
+
+    def _node_screen_positions(self):
+        view = self._effective_view()
+        if view is None:
+            return []
+        model = self.viewTransform()
+        return [view.project_point(node_pos, model) for node_pos in self._node_marker_positions()]
+
+    def begin_node_drag(self, screen_pos):
+        view = self._effective_view()
+        if not self.selected() or view is None:
+            return False
+        screen_xy = np.array([screen_pos.x(), screen_pos.y()], dtype=np.float32)
+        best_index = None
+        best_distance = self.NODE_HIT_RADIUS
+        for index, node_screen_pos in enumerate(self._node_screen_positions()):
+            if node_screen_pos is None:
+                continue
+            distance = np.linalg.norm(node_screen_pos[:2] - screen_xy)
+            if distance <= best_distance:
+                best_index = index
+                best_distance = distance
+        if best_index is None:
+            return False
+        node = self._nodes[best_index]
+        node_pos = np.array([node.x, node.y, self._z], dtype=np.float32)
+        reference_pos = np.array([node.x + 1.0, node.y, self._z], dtype=np.float32)
+        model = self.viewTransform()
+        start_screen = view.project_point(node_pos, model)
+        reference_screen = view.project_point(reference_pos, model)
+        if start_screen is None or reference_screen is None:
+            return False
+        screen_per_x = reference_screen[0] - start_screen[0]
+        if abs(screen_per_x) < 1e-5:
+            return False
+        self._dragging_node = node
+        self._drag_start_screen_x = screen_pos.x()
+        self._drag_origin_x = node.x
+        self._drag_screen_per_x = screen_per_x
+        return True
+
+    def drag_node_to(self, screen_pos):
+        if self._dragging_node is None:
+            return
+        dx = screen_pos.x() - self._drag_start_screen_x
+        x = max(0.0, self._drag_origin_x + dx / self._drag_screen_per_x)
+        self.setPoint(self._dragging_node, x, self._dragging_node.y)
+        self._update_node_markers()
+
+    def end_node_drag(self):
+        self._dragging_node = None
 
     def getCurPoints(self, direction: Literal['up', 'bot'], p0: np.ndarray, p1: np.ndarray):
         """
@@ -383,6 +472,15 @@ class HullVerSecItem(GLMeshItem):
         更新网格
         """
         self.handler.update_node_data(index, x, y)
+        self._rebuild_mesh()
+        for neighbor in (self.handler._frontSection, self.handler._backSection):
+            if neighbor is not None and neighbor.paintItem is not None:
+                neighbor.paintItem._rebuild_mesh()
+
+    def _rebuild_mesh(self):
+        """
+        Rebuild this section's mesh from the current handler node data.
+        """
         mesh_data = SymetryCylinderMesh("z")
         if self._z >= 0 and self.handler._backSection is not None:
             back_section = self.handler._backSection
@@ -420,6 +518,7 @@ class HullVerSecItem(GLMeshItem):
         else:
             self._mesh._vertexes = self.mesh_data.vertexes
             self._mesh._normals = self.mesh_data.normals
+        self._update_node_markers()
         self.update()
 
     def setParentSelected(self, selected):

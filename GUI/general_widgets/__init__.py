@@ -8,3 +8,4 @@ from .buttons import *
 from .line_edit import *
 from .functional_widgets import *
 from .layouts import *
+from .theme_manager import *

@@ -25,7 +25,7 @@ from .GLGraphicsItem import GLGraphicsItem, PickColorManager
 from .camera import Camera
 from .functions import mkColor
 from .items.light import PointLight
-from .transform3d import Vector3
+from .transform3d import Matrix4x4, Vector3
 
 _screen = QtWidgets.QApplication.primaryScreen()
 if _screen is not None:
@@ -112,6 +112,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self.setStatusTip("3D View")
         self.camera = Camera(cam_position, cam_tar, fov=fov, left_hand=left_hand, sensitivity=cam_sensitivity)
         self.mouse_last_pos = None  # used for mouse move event
+        self._node_drag_item = None
         self.shift_movePos = 0  # 限制移动方向，0为无，1为x轴，2为y轴
         self.pan_btn = pan_btn
         self.orbit_btn = orbit_btn
@@ -167,6 +168,26 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
 
     def get_view_matrix(self):
         return self.camera.get_view_matrix()
+
+    def project_point(self, pos, model_matrix=None):
+        if isinstance(pos, (list, tuple)):
+            pos = np.array(pos, dtype=np.float32)
+        elif hasattr(pos, "x") and hasattr(pos, "y") and hasattr(pos, "z"):
+            pos = np.array([pos.x(), pos.y(), pos.z()], dtype=np.float32)
+        if not isinstance(pos, np.ndarray):
+            raise TypeError(f"unsupported point type {type(pos)}")
+        if model_matrix is None:
+            model_matrix = Matrix4x4()
+        mvp = (self.get_proj_view_matrix() * model_matrix).matrix44
+        clip = mvp @ np.array([pos[0], pos[1], pos[2], 1.0], dtype=np.float32)
+        if abs(clip[3]) < 1e-8:
+            return None
+        ndc = clip[:3] / clip[3]
+        return np.array([
+            (ndc[0] + 1) * 0.5 * self.width(),
+            (1 - ndc[1]) * 0.5 * self.height(),
+            ndc[2],
+        ], dtype=np.float32)
 
     def deviceWidth(self):
         dpr = self.devicePixelRatioF()
@@ -469,6 +490,11 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         lpos = ev.position() if hasattr(ev, 'position') else ev.localPos()
         self.mouse_last_pos = lpos
         if ev.buttons() == self.select_btn:
+            for item in list(self.selected_items):
+                if hasattr(item, "begin_node_drag") and item.begin_node_drag(lpos):
+                    self._node_drag_item = item
+                    self.select_box.setVisible(False)
+                    return
             self.select_start.setX(int(ev.localPos().x()))
             self.select_start.setY(int(ev.localPos().y()))
             self.update()
@@ -481,6 +507,11 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         lpos = ev.position() if hasattr(ev, 'position') else ev.localPos()
         diff = lpos - self.mouse_last_pos
         self.mouse_last_pos = lpos
+
+        if self._node_drag_item is not None:
+            self._node_drag_item.drag_node_to(lpos)
+            self.update()
+            return
 
         if ctrl_down:
             # 视角微调
@@ -511,6 +542,11 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self.update()
 
     def mouseReleaseEvent(self, ev):
+        if self._node_drag_item is not None:
+            self._node_drag_item.end_node_drag()
+            self._node_drag_item = None
+            self.update()
+            return
         ctl_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
         alt_down = (ev.modifiers() & QtCore.Qt.KeyboardModifier.AltModifier)
         self.select_end.setX(int(ev.localPos().x()))

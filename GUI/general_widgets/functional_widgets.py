@@ -106,7 +106,7 @@ class HSLColorPicker(QWidget):
     def mousePressEvent(self, event):
         # 鼠标在控件外的时候，取色
         if event.button() == Qt.LeftButton:
-            if not self.rect().contains(event.__pos()):
+            if not self.rect().contains(event.pos()):
                 # 获取鼠标位置的颜色
                 _pos = event.globalPos()
                 _color = QColor.fromRgb(
@@ -382,12 +382,7 @@ class BasicDialog(QDialog):
 
     def mousePressEvent(self, event):
         # 鼠标按下时，记录当前位置，若在标题栏内且非最大化，则允许拖动
-        if event.button() == Qt.LeftButton and event.y() <= self.topH and not self.isMaximized():
-            self.m_flag = True
-            self.m_Position = event.globalPos() - self.pos()
-            event.accept()
-        elif event.button() == Qt.LeftButton and self.resizable:
-            self.resize_flag = True
+        if event.button() == Qt.LeftButton and self.resizable:
             self.m_Position = event.globalPos()
             _pos = QPoint(event.x(), event.y())
             # 判断鼠标所在的位置是否为边缘
@@ -402,12 +397,26 @@ class BasicDialog(QDialog):
             # 判断鼠标所在的位置是否为角落
             if _pos.x() < self.resize_area and _pos.y() < self.resize_area:
                 self.resize_dir = 'lt'
-            elif self.resize_area > _pos.y() > self.height() - self.resize_area:
+            elif _pos.x() < self.resize_area and _pos.y() > self.height() - self.resize_area:
                 self.resize_dir = 'lb'
-            elif self.width() - self.resize_area < _pos.x() < self.resize_area:
+            elif _pos.x() > self.width() - self.resize_area and _pos.y() < self.resize_area:
                 self.resize_dir = 'rt'
             elif _pos.x() > self.width() - self.resize_area and _pos.y() > self.height() - self.resize_area:
                 self.resize_dir = 'rb'
+            elif _pos.y() < self.resize_area:
+                self.resize_dir = 't'
+            elif _pos.x() < self.resize_area:
+                self.resize_dir = 'l'
+            elif _pos.x() > self.width() - self.resize_area:
+                self.resize_dir = 'r'
+            elif _pos.y() > self.height() - self.resize_area:
+                self.resize_dir = 'b'
+            if self.resize_dir:
+                self.resize_flag = True
+                event.accept()
+        elif event.button() == Qt.LeftButton and event.y() <= self.topH and not self.isMaximized():
+            self.m_flag = True
+            self.m_Position = event.globalPos() - self.pos()
             event.accept()
         # 刷新
         self.update()
@@ -437,7 +446,15 @@ class BasicDialog(QDialog):
         if self.resizable:
             # 检查是否需要改变鼠标样式
             _pos = QPoint(event.x(), event.y())
-            if _pos.x() < self.resize_area:
+            if _pos.x() < self.resize_area and _pos.y() < self.resize_area:
+                self.setCursor(Qt.SizeFDiagCursor)
+            elif _pos.x() < self.resize_area and _pos.y() > self.height() - self.resize_area:
+                self.setCursor(Qt.SizeBDiagCursor)
+            elif _pos.x() > self.width() - self.resize_area and _pos.y() < self.resize_area:
+                self.setCursor(Qt.SizeBDiagCursor)
+            elif _pos.x() > self.width() - self.resize_area and _pos.y() > self.height() - self.resize_area:
+                self.setCursor(Qt.SizeFDiagCursor)
+            elif _pos.x() < self.resize_area:
                 self.setCursor(Qt.SizeHorCursor)
             elif _pos.x() > self.width() - self.resize_area:
                 self.setCursor(Qt.SizeHorCursor)
@@ -445,25 +462,16 @@ class BasicDialog(QDialog):
                 self.setCursor(Qt.SizeVerCursor)
             elif _pos.y() > self.height() - self.resize_area:
                 self.setCursor(Qt.SizeVerCursor)
-            elif _pos.x() < self.resize_area and _pos.y() < self.resize_area:
-                self.setCursor(Qt.SizeFDiagCursor)
-            elif self.resize_area > _pos.y() > self.height() - self.resize_area:
-                self.setCursor(Qt.SizeBDiagCursor)
-            elif self.width() - self.resize_area < _pos.x() < self.resize_area:
-                self.setCursor(Qt.SizeBDiagCursor)
-            elif _pos.x() > self.width() - self.resize_area and _pos.y() > self.height() - self.resize_area:
-                self.setCursor(Qt.SizeFDiagCursor)
             else:
                 self.setCursor(Qt.ArrowCursor)
             # 检查是否需要拉伸窗口
             if self.resize_flag:
-                _pos = event.__pos()
                 _dx = event.globalPos().x() - self.m_Position.x()
                 _dy = event.globalPos().y() - self.m_Position.y()
                 if self.resize_dir == 'lt':
                     self.setGeometry(self.x() + _dx, self.y() + _dy, self.width() - _dx, self.height() - _dy)
                 elif self.resize_dir == 'lb':
-                    self.setGeometry(self.x() + _dx, self.y(), self.width() - _dx, _dy)
+                    self.setGeometry(self.x() + _dx, self.y(), self.width() - _dx, self.height() + _dy)
                 elif self.resize_dir == 'rt':
                     self.setGeometry(self.x(), self.y() + _dy, self.width() + _dx, self.height() - _dy)
                 elif self.resize_dir == 'rb':

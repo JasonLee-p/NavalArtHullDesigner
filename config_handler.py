@@ -14,6 +14,82 @@ class ConfigHandler:
     读取配置文件信息，保存配置信息
     """
     TAG = "CONFIG"
+    THEME_SCHEMA_VERSION = 1
+
+    DEFAULT_THEME_PRESETS = {
+        "Night": {
+            "ui": {
+                "bg0": "#222324",
+                "bg1": "#333434",
+                "bg2": "#555657",
+                "bg3": "#666789",
+                "fg0": "#f0f0f0",
+                "fg1": "#ffaaaa",
+                "muted": "#707070",
+                "danger": "#F76677",
+                "success": "#6DDF6D",
+                "accent": "#6D9DDF",
+                "danger_strong": "#C00010",
+                "link_hover": "#00FFFF",
+                "brand_panel_bg": "#889998",
+                "color_picker_red_hint": "#FFCCCC",
+                "color_picker_green_hint": "#CCFFCC",
+                "color_picker_blue_hint": "#CCCCFF"
+            },
+            "render": {
+                "background": [0.1, 0.1, 0.1, 1.0],
+                "key_light_ambient": [0.6, 0.6, 0.6],
+                "key_light_diffuse": [0.7, 0.7, 0.7],
+                "key_light_specular": [0.95, 0.95, 0.95],
+                "grid_line": [0.3, 0.8, 1.0, 1.0],
+                "selected_overlay": [0.1, 0.9, 1.0, 0.3],
+                "mesh_line": [0.0, 0.0, 0.0, 0.2],
+                "stretch_arrow": [1.0, 1.0, 0.0],
+                "node_marker": [0.15, 0.95, 1.0]
+            }
+        },
+        "Day": {
+            "ui": {
+                "bg0": "#fffff0",
+                "bg1": "#f5f5dc",
+                "bg2": "#ddddc6",
+                "bg3": "#d2c08c",
+                "fg0": "#101010",
+                "fg1": "#b22222",
+                "muted": "#bcb9b0",
+                "danger": "#F76677",
+                "success": "#6DDF6D",
+                "accent": "#6D9DDF",
+                "danger_strong": "#C00010",
+                "link_hover": "#00FFFF",
+                "brand_panel_bg": "#889998",
+                "color_picker_red_hint": "#FFCCCC",
+                "color_picker_green_hint": "#CCFFCC",
+                "color_picker_blue_hint": "#CCCCFF"
+            },
+            "render": {
+                "background": [0.9, 0.95, 1.0, 1.0],
+                "key_light_ambient": [0.6, 0.6, 0.6],
+                "key_light_diffuse": [0.7, 0.7, 0.7],
+                "key_light_specular": [0.95, 0.95, 0.95],
+                "grid_line": [0.3, 0.8, 1.0, 1.0],
+                "selected_overlay": [0.1, 0.9, 1.0, 0.3],
+                "mesh_line": [0.0, 0.0, 0.0, 0.2],
+                "stretch_arrow": [1.0, 1.0, 0.0],
+                "node_marker": [0.15, 0.95, 1.0]
+            }
+        }
+    }
+
+    LEGACY_UI_KEY_MAP = {
+        "BG_COLOR0": "bg0",
+        "BG_COLOR1": "bg1",
+        "BG_COLOR2": "bg2",
+        "BG_COLOR3": "bg3",
+        "FG_COLOR0": "fg0",
+        "FG_COLOR1": "fg1",
+        "GRAY": "muted",
+    }
 
     DEFAULT_CONFIG = {  # 默认配置
         "Config": {
@@ -35,6 +111,7 @@ class ConfigHandler:
         },
         "Theme": {
             "ThemeName": "Night",
+            "ThemeSchemaVersion": THEME_SCHEMA_VERSION,
             "GUITHeme": {
                 "BG_COLOR0": "#222324",
                 "BG_COLOR1": "#333434",
@@ -60,7 +137,9 @@ class ConfigHandler:
                 "海面": [(0.3, 0.6, 0.7, 0.7)],
                 "海底": [(0.09, 0.08, 0.05, 1)],
                 "光源": [(1.0, 1.0, 1.0, 1.0)]
-            }
+            },
+            "ThemePresets": DEFAULT_THEME_PRESETS,
+            "CustomThemes": {}
         },
         "Projects": {
             # "KMS Hindenburg": "C:\/Users\/dlzx\/AppData\/LocalLow\/RZEntertainment\/NavalArt\/HullProjects\/KMS Hindenburg.naprj"
@@ -145,6 +224,93 @@ class ConfigHandler:
             if not succeed:
                 raise KeyError(f"Config key '{key}' not found.")
         return value
+
+    @classmethod
+    def _merge_theme_definition(cls, theme_definition: dict) -> dict:
+        """
+        Merge a partial theme definition with Night defaults.
+        """
+        merged = ujson.loads(ujson.dumps(cls.DEFAULT_THEME_PRESETS["Night"]))
+        if not isinstance(theme_definition, dict):
+            return merged
+        for section in ("ui", "render"):
+            if isinstance(theme_definition.get(section), dict):
+                merged[section].update(theme_definition[section])
+        return merged
+
+    @classmethod
+    def _theme_from_legacy_config(cls, theme_config: dict) -> dict:
+        """
+        Convert legacy GUITHeme values to the functional theme key names.
+        """
+        if not isinstance(theme_config, dict):
+            return cls._merge_theme_definition({})
+        theme = cls._merge_theme_definition({})
+        legacy_ui = theme_config.get("GUITHeme", {})
+        if isinstance(legacy_ui, dict):
+            for old_key, new_key in cls.LEGACY_UI_KEY_MAP.items():
+                if old_key in legacy_ui:
+                    theme["ui"][new_key] = legacy_ui[old_key]
+        return theme
+
+    def get_theme_definition(self, theme_name: str = None) -> dict:
+        """
+        Return a merged theme definition by name.
+        Presets and custom themes share one namespace; custom themes win on name collision.
+        """
+        theme_config = self.__config.setdefault("Theme", {})
+        theme_name = theme_name or theme_config.get("ThemeName", "Night")
+        presets = theme_config.get("ThemePresets", {})
+        custom_themes = theme_config.get("CustomThemes", {})
+        if isinstance(custom_themes, dict) and theme_name in custom_themes:
+            return self._merge_theme_definition(custom_themes[theme_name])
+        if isinstance(presets, dict) and theme_name in presets:
+            return self._merge_theme_definition(presets[theme_name])
+        return self._theme_from_legacy_config(theme_config)
+
+    def save_custom_theme(self, theme_name: str, theme_definition: dict, activate: bool = True):
+        """
+        Save a custom theme into the config file.
+        The definition may be partial; missing fields are filled from Night defaults when read.
+        """
+        if not isinstance(theme_name, str) or not theme_name.strip():
+            raise ValueError("theme_name must be a non-empty string.")
+        theme_name = theme_name.strip()
+        theme_config = self.__config.setdefault("Theme", {})
+        theme_config["ThemeSchemaVersion"] = self.THEME_SCHEMA_VERSION
+        theme_config.setdefault("ThemePresets", self.DEFAULT_THEME_PRESETS)
+        custom_themes = theme_config.setdefault("CustomThemes", {})
+        custom_themes[theme_name] = self._merge_theme_definition(theme_definition)
+        if activate:
+            theme_config["ThemeName"] = theme_name
+        self.save_config()
+        return custom_themes[theme_name]
+
+    def set_active_theme(self, theme_name: str):
+        """
+        Set the active theme by preset or custom theme name and save the config file.
+        """
+        theme_config = self.__config.setdefault("Theme", {})
+        presets = theme_config.get("ThemePresets", {})
+        custom_themes = theme_config.get("CustomThemes", {})
+        if theme_name not in presets and theme_name not in custom_themes:
+            raise KeyError(f"Theme '{theme_name}' not found.")
+        theme_config["ThemeName"] = theme_name
+        self.save_config()
+        return self.get_theme_definition(theme_name)
+
+    def delete_custom_theme(self, theme_name: str):
+        """
+        Delete a custom theme and fall back to Night if it was active.
+        """
+        theme_config = self.__config.setdefault("Theme", {})
+        custom_themes = theme_config.setdefault("CustomThemes", {})
+        if theme_name not in custom_themes:
+            raise KeyError(f"Custom theme '{theme_name}' not found.")
+        del custom_themes[theme_name]
+        if theme_config.get("ThemeName") == theme_name:
+            theme_config["ThemeName"] = "Night"
+        self.save_config()
 
     def add_prj(self, prj_name, prj_path):
         """
