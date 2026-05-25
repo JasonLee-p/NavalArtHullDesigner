@@ -11,11 +11,14 @@ class CollapsiblePanel(QWidget):
     """
     Vertical section panel that can be expanded independently.
     """
+    CONTENT_INDENT = 16
 
     def __init__(self, title: str, content_widget: QWidget, expanded: bool = False):
         super().__init__(None)
         self.title = title
         self.content_widget = content_widget
+        self.content_wrapper = QWidget()
+        self.content_layout = QVBoxLayout()
         self.header_button = Button(None, "",
                                     bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3),
                                     fg=FG_COLOR0, bd_radius=(8, 8, 8, 8),
@@ -30,8 +33,13 @@ class CollapsiblePanel(QWidget):
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(5)
+        self.content_wrapper.setLayout(self.content_layout)
+        self.content_layout.setContentsMargins(self.CONTENT_INDENT, 0, 0, 0)
+        self.content_layout.setSpacing(0)
+        self.content_layout.addWidget(self.content_widget)
+        self.content_wrapper.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum)
         self.layout().addWidget(self.header_button)
-        self.layout().addWidget(self.content_widget)
+        self.layout().addWidget(self.content_wrapper)
 
         self.header_button.clicked.connect(self.set_expanded)
         self._set_header_text_alignment()
@@ -46,7 +54,7 @@ class CollapsiblePanel(QWidget):
 
     def set_expanded(self, expanded: bool):
         self.header_button.setChecked(expanded)
-        self.content_widget.setVisible(expanded)
+        self.content_wrapper.setVisible(expanded)
         self.header_button.setText(f"{'v' if expanded else '>'}  {self.title}")
 
 
