@@ -35,6 +35,7 @@ class Shader:
             self.uniform_data: dict = dict()
         else:
             self.uniform_data: dict = uniform_data
+        self._uniform_locations: dict[str, int] = {}
         self._in_use = False
 
     def set_uniform(self, name, data, type_: str):
@@ -71,25 +72,29 @@ class Shader:
 
     def __set_uniform(self, name, value, type_: str, cnt=1):
         # print("  set uniform", name, value, type)
+        location = self._uniform_locations.get(name)
+        if location is None:
+            location = gl.glGetUniformLocation(self.ID, name)
+            self._uniform_locations[name] = location
+        if location < 0:
+            return
         if type_ in ["bool", "int"]:
-            gl.glUniform1iv(gl.glGetUniformLocation(self.ID, name), cnt, np.array(value, dtype=np.int32))
+            gl.glUniform1iv(location, cnt, np.array(value, dtype=np.int32))
         elif type_ == "sampler2D":
-            gl.glUniform1i(gl.glGetUniformLocation(self.ID, name), np.array(value.unit, dtype=np.int32))
-            # gl.glUniform1iv(gl.glGetUniformLocation(self.ID, name), cnt, np.array(value.unit, dtype=np.int32))
+            gl.glUniform1i(location, np.array(value.unit, dtype=np.int32))
+            # gl.glUniform1iv(location, cnt, np.array(value.unit, dtype=np.int32))
         elif type_ == "float":
-            gl.glUniform1fv(gl.glGetUniformLocation(self.ID, name), cnt, np.array(value, dtype=np.float32))
+            gl.glUniform1fv(location, cnt, np.array(value, dtype=np.float32))
         elif type_ == "vec2":
-            gl.glUniform2fv(gl.glGetUniformLocation(self.ID, name), cnt, np.array(value, dtype=np.float32))
+            gl.glUniform2fv(location, cnt, np.array(value, dtype=np.float32))
         elif type_ == "vec3":
-            gl.glUniform3fv(gl.glGetUniformLocation(self.ID, name), cnt, np.array(value, dtype=np.float32))
+            gl.glUniform3fv(location, cnt, np.array(value, dtype=np.float32))
         elif type_ == "vec4":
-            gl.glUniform4fv(gl.glGetUniformLocation(self.ID, name), cnt, np.array(value, dtype=np.float32))
+            gl.glUniform4fv(location, cnt, np.array(value, dtype=np.float32))
         elif type_ == "mat3":
-            gl.glUniformMatrix3fv(gl.glGetUniformLocation(self.ID, name), cnt, gl.GL_FALSE,
-                                  np.array(value, dtype=np.float32))
+            gl.glUniformMatrix3fv(location, cnt, gl.GL_FALSE, np.array(value, dtype=np.float32))
         elif type_ == "mat4":
-            gl.glUniformMatrix4fv(gl.glGetUniformLocation(self.ID, name), cnt, gl.GL_FALSE,
-                                  np.array(value, dtype=np.float32))
+            gl.glUniformMatrix4fv(location, cnt, gl.GL_FALSE, np.array(value, dtype=np.float32))
 
     def delete(self):
         gl.glDeleteProgram(self.ID)

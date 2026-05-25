@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List
 
 import OpenGL.GL as gl
+import numpy as np
 from PyQt5.QtCore import pyqtSignal
 
 from .GLMeshItem import mesh_vertex_shader
@@ -24,12 +25,13 @@ class GLModelItem(GLGraphicsItem, LightMixin):
             lights=None,
             material=None,
             drawLine=False,
-            glOptions='translucent',
+            glOptions='opaque',
             parentItem=None,
             selectable=False,
             lineColor=(0.0, 0.0, 0.0, 0.2),
             lineWidth=0.6,
-            selectedColor=(0.1, 0.9, 1.0, 0.3)
+            selectedColor=(0.1, 0.9, 1.0, 0.3),
+            mergeByMaterial=False,
     ):
         super().__init__(parentItem=parentItem, selectable=selectable, selectedColor=selectedColor)
         if lights is None:
@@ -38,9 +40,10 @@ class GLModelItem(GLGraphicsItem, LightMixin):
         self._directory = Path(path).parent
         self.setGLOptions(glOptions)
         # model
-        self.meshes: List[Mesh] = Mesh.load_model(path, material=material)
+        self.meshes: List[Mesh] = Mesh.load_model(path, material=material, merge_by_material=mergeByMaterial)
         if not self.meshes:
             self.load_failed = True
+        self._bounding_radius = self._compute_bounding_radius()
         self._order = list(range(len(self.meshes)))
         self.__drawLine = drawLine
         self.__lineWidth = lineWidth
@@ -53,6 +56,17 @@ class GLModelItem(GLGraphicsItem, LightMixin):
 
     def setDrawLine(self, drawLine: bool):
         self.__drawLine = drawLine
+
+    def _compute_bounding_radius(self):
+        radius = 0.0
+        for mesh in self.meshes:
+            vertexes = mesh._vertexes.reshape(-1, 3)
+            if vertexes.size:
+                radius = max(radius, float(np.linalg.norm(vertexes, axis=1).max()))
+        return radius
+
+    def boundingRadius(self):
+        return self._bounding_radius
 
     def setMaterial_data(self, ambient, diffuse, specular, shininess, opacity=1.0):
         for m in self.meshes:

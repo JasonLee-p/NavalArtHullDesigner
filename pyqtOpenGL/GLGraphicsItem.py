@@ -342,6 +342,39 @@ class GLGraphicsItem(QtCore.QObject):
         view, as it may be obscured or outside the current view area."""
         return self.__visible
 
+    def boundingRadius(self):
+        return None
+
+    def _isCulled(self, model_matrix: Matrix4x4):
+        radius = self.boundingRadius()
+        if radius is None or radius <= 0 or self.view() is None:
+            return False
+        try:
+            mvp = (self.proj_view_matrix() * model_matrix).matrix44
+            center_clip = mvp @ np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float32)
+            if abs(center_clip[3]) < 1e-8:
+                return False
+            center = center_clip[:3] / center_clip[3]
+            margins = [0.08]
+            for point in (
+                    (radius, 0.0, 0.0, 1.0),
+                    (0.0, radius, 0.0, 1.0),
+                    (0.0, 0.0, radius, 1.0),
+            ):
+                edge_clip = mvp @ np.array(point, dtype=np.float32)
+                if abs(edge_clip[3]) < 1e-8:
+                    continue
+                edge = edge_clip[:3] / edge_clip[3]
+                margins.append(float(np.max(np.abs(edge - center))))
+            margin = min(2.0, max(margins))
+            return (
+                    center[0] < -1.0 - margin or center[0] > 1.0 + margin or
+                    center[1] < -1.0 - margin or center[1] > 1.0 + margin or
+                    center[2] < -1.0 - margin or center[2] > 1.0 + margin
+            )
+        except Exception:
+            return False
+
     def setupGLState(self):
         """
         This method is responsible for preparing the GL state options needed to render
@@ -373,9 +406,12 @@ class GLGraphicsItem(QtCore.QObject):
     def drawItemTree(self, model_matrix=Matrix4x4()):
         model_matrix = model_matrix * self.__transform * self.__scale_transform
         self.initialize()
+        culled = self.visible() and self._isCulled(model_matrix)
 
-        if self.visible():
+        if self.visible() and not culled:
             self.paint(model_matrix)
+        if culled:
+            return
 
         for child in self.__children:
             child.drawItemTree(model_matrix)
@@ -385,8 +421,9 @@ class GLGraphicsItem(QtCore.QObject):
             return
         model_matrix = model_matrix * self.__transform * self.__scale_transform
         self.initialize()
+        culled = self.visible() and self._isCulled(model_matrix)
 
-        if self.visible():
+        if self.visible() and not culled:
             self.paint_pickMode(model_matrix)
             for child in self.__children:
                 child.drawItemTree_pickMode(model_matrix)

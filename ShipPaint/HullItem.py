@@ -2,6 +2,7 @@
 定义了船体的绘制类
 """
 from typing import Union, Literal
+from time import perf_counter
 
 import numpy as np
 # from main_logger import Log
@@ -186,7 +187,7 @@ class HullVerSecItem(GLMeshItem):
                          indices=np.array([i for i in range(len(self.mesh_data.vertexes))], dtype=np.uint32),
                          material=EditItemMaterial(),
                          # drawLine=True,
-                         glOptions='translucent',
+                         glOptions='opaque',
                          glUsage=gl.GL_DYNAMIC_DRAW)
         # 用于判断整个截面组是否被选中
         self.parentSelected = True
@@ -503,6 +504,7 @@ class HullVerSecItem(GLMeshItem):
         """
         Rebuild this section's mesh from the current handler node data.
         """
+        start_time = perf_counter()
         mesh_data = SymetryCylinderMesh("z")
         if self._z >= 0 and self.handler._backSection is not None:
             back_section = self.handler._backSection
@@ -542,6 +544,9 @@ class HullVerSecItem(GLMeshItem):
             self._mesh._normals = self.mesh_data.normals
         self._update_node_markers()
         self.update()
+        view = self.view()
+        if view is not None and hasattr(view, "_record_render_stat"):
+            view._record_render_stat("hull_rebuild_mesh_ms", (perf_counter() - start_time) * 1000.0)
 
     def setParentSelected(self, selected):
         """

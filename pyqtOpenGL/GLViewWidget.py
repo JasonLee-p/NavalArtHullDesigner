@@ -6,7 +6,7 @@ import sys
 import time
 import traceback
 import warnings
-from math import radians, tan
+from math import ceil, radians, sqrt, tan
 from typing import List, Set, Literal, Optional
 
 import OpenGL.GL as gl
@@ -62,6 +62,7 @@ def _drawItemTree(item):
 class GLViewWidget(QtWidgets.QOpenGLWidget):
     TAG = "GLViewWidget"
     gl_initialized = pyqtSignal()
+    MAX_PICK_PIXELS = 250_000
 
     # 剪贴板
     clipboard = []
@@ -133,6 +134,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self.bg_color = bg_color
         self.items: List[GLGraphicsItem] = []
         self.lights: Set[PointLight] = set()
+        self.render_stats = {}
 
         # 显示帧率
         self.fps_label = TextLabel(self, "")
@@ -332,9 +334,13 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
     def pickItems(self, x_, y_, w_, h_):
+        start_time = time.perf_counter()
         ratio = 2  # 为了提高渲染和拾取速度，暂将渲染视口缩小2倍
         dpr = self.devicePixelRatioF()
         x_, y_, w_, h_ = round(x_ * dpr), round(y_ * dpr), round(w_ * dpr), round(h_ * dpr)
+        pick_area = abs(w_ * h_)
+        if pick_area > self.MAX_PICK_PIXELS:
+            ratio = max(ratio, int(ceil(sqrt(pick_area / self.MAX_PICK_PIXELS))))
         x_, y_, w_, h_ = self._normalizeRect(x_, y_, w_, h_, ratio)
         glBindFramebuffer(GL_FRAMEBUFFER, self.__framebuffer)
         glViewport(0, 0, self.deviceWidth() // ratio, self.deviceHeight() // ratio)
@@ -380,6 +386,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             if item:
                 selected_items.append(item)
             id_set.append(id_)
+        self._record_render_stat("pickItems_ms", (time.perf_counter() - start_time) * 1000.0)
         return selected_items
 
     def renderToImage(self, path):
@@ -436,7 +443,23 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             self.fps_label.setText(f"FPS: {1 / dt:.1f}")
         self.__last_time = time.time()
 
+    def _record_render_stat(self, name: str, value: float):
+        stat = self.render_stats.get(name)
+        if stat is None:
+            self.render_stats[name] = {
+                "last": value,
+                "avg": value,
+                "max": value,
+                "count": 1,
+            }
+            return
+        stat["last"] = value
+        stat["avg"] = stat["avg"] * 0.9 + value * 0.1
+        stat["max"] = max(stat["max"], value)
+        stat["count"] += 1
+
     def drawItems(self, pickMode=False, update=True):
+        start_time = time.perf_counter()
         if pickMode:  # 拾取模式
             for it in self.items:
                 # try:
@@ -455,6 +478,10 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             # # draw lights
             # for light in self.lights:
             #     light.paint(self.get_proj_view_matrix())
+        self._record_render_stat(
+            "drawItems_pick_ms" if pickMode else "drawItems_ms",
+            (time.perf_counter() - start_time) * 1000.0
+        )
 
     def get_selected_item(self):
         """

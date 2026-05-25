@@ -45,7 +45,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
             drawLine=False,
             calc_normals=True,
             mesh: Mesh = None,
-            glOptions='translucent',
+            glOptions='opaque',
             glUsage=gl.GL_STATIC_DRAW,
             parentItem=None,
             selectable=False,
@@ -91,6 +91,17 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         self.__lineWidth = lineWidth
         self.__lineColor = lineColor
         self._pending_vertex_update = False
+        self._refresh_bounding_radius()
+
+    def _refresh_bounding_radius(self):
+        vertexes = self._mesh._vertexes.reshape(-1, 3)
+        if vertexes.size == 0:
+            self._bounding_radius = 0.0
+        else:
+            self._bounding_radius = float(np.linalg.norm(vertexes, axis=1).max())
+
+    def boundingRadius(self):
+        return self._bounding_radius
 
     def initializeGL(self):
         """
@@ -110,6 +121,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         if self.isInitialized and self.view() is not None and self.view().isCurrent():
             self._mesh.update_vertexes(vertexes, normals)
             self._pending_vertex_update = False
+            self._refresh_bounding_radius()
             return
         if vertexes.shape != self._mesh._vertexes.shape:
             raise ValueError("vertexes shape must be the same as the original vertexes")
@@ -120,6 +132,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
             self._mesh._normals = np.array(normals, dtype=np.float32)
         self._mesh._vertexes_size = int(self._mesh._vertexes.size / 3)
         self._pending_vertex_update = self.isInitialized
+        self._refresh_bounding_radius()
 
     def updateVertex(self, index, vertex):
         """
@@ -131,6 +144,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         if self.isInitialized and self.view() is not None and self.view().isCurrent():
             self._mesh.update_vertex(index, vertex)
             self._pending_vertex_update = False
+            self._refresh_bounding_radius()
             return
         if isinstance(index, np.ndarray):
             if len(index) != len(vertex):
@@ -141,6 +155,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
             self._mesh._vertexes[index] = vertex
         self._mesh._normals = vertex_normal_smooth(self._mesh._vertexes, self._mesh._indices)
         self._pending_vertex_update = self.isInitialized
+        self._refresh_bounding_radius()
 
     def _flush_pending_vertex_update(self):
         if not self._pending_vertex_update:

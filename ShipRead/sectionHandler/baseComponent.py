@@ -157,7 +157,7 @@ class PrjComponent(QObject):
                 lights=[PrjComponent._gl_widget.light],
                 # 随机颜色
                 material=EditItemMaterial(color=np.random.randint(128, 255, 3).tolist()),
-                glOptions='translucent',
+                glOptions='opaque',
                 selectable=True
             ).translate(self.Pos.x(), self.Pos.y(), self.Pos.z())
         self.paintItem = paintItem
@@ -433,7 +433,7 @@ class SubPrjComponent(QObject):
                 normals=PrjComponent.CUBE_NORM,
                 lights=[SubPrjComponent._gl_widget.light],
                 material=EditItemMaterial(color=(128, 128, 128)),
-                glOptions='translucent',
+                glOptions='opaque',
                 selectable=True
             )
         else:

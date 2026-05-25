@@ -44,10 +44,11 @@ class Model(PrjComponent):
         with Log().redirectOutput(self.TAG):  # 模型加载时，库内会有输出，这里重定向到日志
             modelItem = GLModelItem(self.file_path, lights=[],
                                     selectable=True,
-                                    glOptions="translucent",
+                                    glOptions="opaque",
                                     drawLine=modelRenderConfig["ModelDrawLine"],
                                     lineWidth=modelRenderConfig["ModelLineWith"],
-                                    lineColor=modelRenderConfig["ModelLineColor"])
+                                    lineColor=modelRenderConfig["ModelLineColor"],
+                                    mergeByMaterial=True)
             # 如果加载失败，不继续
             if hasattr(modelItem, "load_failed") and modelItem.load_failed:
                 self.load_failed = True
@@ -68,10 +69,11 @@ class Model(PrjComponent):
         with Log().redirectOutput(self.TAG):
             modelItem = GLModelItem(self.file_path, lights=[],
                                     selectable=True,
-                                    glOptions="translucent",
+                                    glOptions="opaque",
                                     drawLine=modelRenderConfig["ModelDrawLine"],
                                     lineWidth=modelRenderConfig["ModelLineWith"],
-                                    lineColor=modelRenderConfig["ModelLineColor"])
+                                    lineColor=modelRenderConfig["ModelLineColor"],
+                                    mergeByMaterial=True)
             if hasattr(modelItem, "load_failed") and modelItem.load_failed:
                 self.load_failed = True
                 self._showButton.setChecked(False)

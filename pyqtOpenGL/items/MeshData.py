@@ -191,7 +191,7 @@ class Mesh:
         return self._material
 
     @classmethod
-    def load_model(cls, path: Union[str, Path], material=None) -> List["Mesh"]:
+    def load_model(cls, path: Union[str, Path], material=None, merge_by_material: bool = False) -> List["Mesh"]:
         meshes = list()
         directory = Path(path).parent
         face_num = 0
@@ -211,6 +211,7 @@ class Mesh:
         # scene = _assimp.load(str(path))
 
         is_dae = Path(path).suffix == ".dae"
+        mesh_groups = {}
         for m in scene.meshes:
 
             # 若模型是 dae 文件, 且其中 <up_axis>Z_UP</up_axis>, 则需要将原始坐标绕 x 轴旋转 90 度
@@ -222,21 +223,63 @@ class Mesh:
                 norms[:, 2] = -norms[:, 2]
                 norms[:, [1, 2]] = norms[:, [2, 1]]
 
-            meshes.append(
-                cls(
-                    verts,
-                    m.indices,
-                    m.texcoords[0] if len(m.texcoords) > 0 else None,
-                    norms,
-                    scene.materials[m.material_index] if not material else material,
-                    directory=directory,
-                )
-            )
-            face_num += len(m.indices)
+            try:
+                indices = np.array(m.indices, dtype=np.uint32).reshape(-1, 3)
+            except ValueError:
+                indices = np.array([face for face in m.indices if len(face) == 3], dtype=np.uint32)
+            texcoords = None
+            if len(m.texcoords) > 0:
+                texcoords = np.array(m.texcoords[0], dtype=np.float32)[..., :2].reshape(-1, 2)
+            face_num += len(indices)
 
-        print(f"Took {round(time() - start_time, 3)}s to load {path} (faces: {face_num})")
+            material_index = getattr(m, "material_index", 0)
+            if material is not None:
+                material_data = material
+            elif material_index < len(scene.materials):
+                material_data = scene.materials[material_index]
+            else:
+                material_data = None
+            if not merge_by_material:
+                meshes.append(cls(verts, indices, texcoords, norms, material_data, directory=directory))
+                continue
+
+            group_key = "__override__" if material is not None else material_index
+            group = mesh_groups.setdefault(group_key, {"material": material_data, "parts": []})
+            group["parts"].append((verts, indices, texcoords, norms))
+
+        if merge_by_material:
+            for group in mesh_groups.values():
+                vertexes = []
+                indices = []
+                texcoords = []
+                normals = []
+                offset = 0
+                has_texcoords = any(part[2] is not None for part in group["parts"])
+                for verts, inds, tex, norms in group["parts"]:
+                    vertexes.append(verts)
+                    indices.append(inds + offset)
+                    if has_texcoords:
+                        texcoords.append(tex if tex is not None else np.zeros((len(verts), 2), dtype=np.float32))
+                    normals.append(norms)
+                    offset += len(verts)
+                meshes.append(
+                    cls(
+                        np.concatenate(vertexes, axis=0),
+                        np.concatenate(indices, axis=0),
+                        np.concatenate(texcoords, axis=0) if has_texcoords else None,
+                        np.concatenate(normals, axis=0),
+                        group["material"],
+                        directory=directory,
+                    )
+                )
+
+        print(f"Took {round(time() - start_time, 3)}s to load {path} (faces: {face_num}, meshes: {len(meshes)})")
         del scene
         return meshes
+
+    @classmethod
+    def load_model_unmerged(cls, path: Union[str, Path], material=None) -> List["Mesh"]:
+        return cls.load_model(path, material=material, merge_by_material=False)
 
     def update_vertex(self, vertex_index, vertex: np.ndarray):
         """
@@ -280,9 +323,12 @@ class Mesh:
         self.vbo.updateData([0, 1], [self._vertexes, self._normals, self._texcoords])
 
     def __del__(self):
-        self.vao.delete()
-        self.vbo.delete()
-        self.ebo.delete()
+        if hasattr(self, "vao"):
+            self.vao.delete()
+        if hasattr(self, "vbo"):
+            self.vbo.delete()
+        if hasattr(self, "ebo"):
+            self.ebo.delete()
 
 
 def cone(radius, height, slices=12):
