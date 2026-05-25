@@ -64,3 +64,40 @@ class SectionZMoveOperation(Operation):
         for edit in self.edits:
             edit.setValue(self.target_posZ)
         self.execute()
+
+
+class SectionNodeXMoveOperation(Operation):
+    def __init__(self, sectionHandler, node, target_x, origin_x=None):
+        """
+        船体截面节点横向移动操作。
+        :param sectionHandler: 节点所属截面
+        :param node: 被移动的节点对象
+        :param target_x: 目标横向坐标
+        :param origin_x: 起始横向坐标；拖拽时节点已实时移动，因此需要显式传入
+        """
+        super().__init__()
+        self.sectionHandler = sectionHandler
+        self.node = node
+        self.node_index = node.y_index
+        self.origin_x = node.x if origin_x is None else origin_x
+        self.target_x = target_x
+        self.name = f"移动 {sectionHandler.name} 节点横向位置到 {round(target_x, 4)}"
+
+    def _node(self):
+        if self.node in self.sectionHandler.nodes:
+            return self.node
+        return self.sectionHandler.nodes[self.node_index]
+
+    def _set_node_x(self, x):
+        node = self._node()
+        self.sectionHandler.paintItem.setPoint(node, x, node.y)
+        _request_section_update(self.sectionHandler)
+
+    def execute(self):
+        self._set_node_x(self.target_x)
+
+    def undo(self):
+        self._set_node_x(self.origin_x)
+
+    def redo(self):
+        self.execute()

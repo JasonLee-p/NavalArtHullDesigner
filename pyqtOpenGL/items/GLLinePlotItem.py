@@ -23,6 +23,7 @@ class GLLinePlotItem(GLGraphicsItem):
             opacity=1.,
             antialias=True,
             glOptions='translucent',
+            mode='line_strip',
             parentItem=None
     ):
         super().__init__(parentItem=parentItem)
@@ -31,6 +32,7 @@ class GLLinePlotItem(GLGraphicsItem):
         self._lineWidth = lineWidth
         self._antialias = antialias
         self._opacity = opacity
+        self._mode = mode
 
         self._vert_update_flag = False
         self._color_update_flag = False
@@ -39,19 +41,28 @@ class GLLinePlotItem(GLGraphicsItem):
         self._num = 0
         self.setData(pos, color)
 
+    def _normalized_color(self, color):
+        if color is None:
+            color = (1, 1, 1)
+        color = np.asarray(color, dtype=np.float32)
+        if color.size == 3:
+            return np.tile(color.reshape(1, 3), (self._num, 1))
+        return color.reshape(-1, 3)
+
     def setData(self, pos=None, color=None, opacity=None):
 
         if pos is not None:
-            self._verts = np.array(pos, dtype=np.float32).reshape(-1, 3)
+            self._verts = np.ascontiguousarray(pos, dtype=np.float32).reshape(-1, 3)
             self._num = self._verts.shape[0]
             self._vert_update_flag = True
+            if color is None and self._color is not None and len(self._color) != self._num:
+                base_color = self._color[0] if len(self._color) else (1, 1, 1)
+                self._color = self._normalized_color(base_color)
+                self._color_update_flag = True
 
         if color is not None:
-            self._color = np.array(color, dtype=np.float32)
+            self._color = self._normalized_color(color)
             self._color_update_flag = True
-
-        if self._color is not None and self._color.size == 3 and self._num > 1:
-            self._color = np.tile(self._color, (self._num, 1))
 
         if opacity is not None:
             self._opacity = opacity
@@ -60,17 +71,21 @@ class GLLinePlotItem(GLGraphicsItem):
     def initializeGL(self):
         self.shader = Shader(vertex_shader, fragment_shader)
         self.vao = VAO()
-        self.vbo = VBO([None, None], [3, 3], usage=gl.GL_DYNAMIC_DRAW)
+        if self._verts is None:
+            self._verts = np.empty((0, 3), dtype=np.float32)
+        if self._color is None or len(self._color) != self._num:
+            self._color = self._normalized_color((1, 1, 1))
+        self.vbo = VBO([self._verts, self._color], [3, 3], usage=gl.GL_DYNAMIC_DRAW)
+        self.vbo.setAttrPointer([0, 1], attr_id=[0, 1])
+        self._vert_update_flag = False
+        self._color_update_flag = False
 
     def updateGL(self):
         if not self._vert_update_flag and not self._color_update_flag:
             return
 
         self.vao.bind()
-        if self._vert_update_flag:
-            self.vbo.updateData([0], [self._verts])
-        if self._color_update_flag:
-            self.vbo.updateData([1], [self._color])
+        self.vbo.updateData([0, 1], [self._verts, self._color])
         self.vbo.setAttrPointer([0, 1], attr_id=[0, 1])
 
         self._vert_update_flag = False
@@ -93,7 +108,7 @@ class GLLinePlotItem(GLGraphicsItem):
             self.shader.set_uniform("opacity", self._opacity, "float")
             self.vao.bind()
             gl.glDrawArrays(
-                gl.GL_LINE_STRIP,
+                gl.GL_LINES if self._mode == 'lines' else gl.GL_LINE_STRIP,
                 0,
                 self._num
             )

@@ -876,6 +876,7 @@ class MainEditorGUI(Window):
     TAG = "MainEditorGUI"
     active_window = None
     all = []
+    OUTLINE_TAB_INITIAL_WIDTH = 320
 
     @not_implemented
     @abstractmethod
@@ -999,6 +1000,7 @@ class MainEditorGUI(Window):
         self.__init_tab_widgets()
         super().__init__(None, title=APP_FULL_NAME_STR, ico_bites=BYTES_ICO, size=(1000, 618), resizable=True,
                          show_maximize=True, bd_radius=0)
+        QTimer.singleShot(0, lambda: self.setLeftTabWidth(self.OUTLINE_TAB_INITIAL_WIDTH))
         # noinspection PyUnresolvedReferences
         self.setWindowTitle(APP_FULL_NAME_STR)
         # 顶部控件

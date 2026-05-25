@@ -416,6 +416,19 @@ class GLGraphicsItem(QtCore.QObject):
         for child in self.__children:
             child.drawItemTree(model_matrix)
 
+    def drawItemTree_overlay(self, model_matrix=Matrix4x4()):
+        model_matrix = model_matrix * self.__transform * self.__scale_transform
+        self.initialize()
+        culled = self.visible() and self._isCulled(model_matrix)
+
+        if self.visible() and not culled:
+            self.paint_overlay(model_matrix)
+        if culled:
+            return
+
+        for child in self.__children:
+            child.drawItemTree_overlay(model_matrix)
+
     def drawItemTree_pickMode(self, model_matrix=Matrix4x4()):
         if not self.__selectable:
             return
@@ -539,6 +552,9 @@ class GLGraphicsItem(QtCore.QObject):
         # raise NotImplementedError()
 
     def paint_selected(self, model_matrix=Matrix4x4()):
+        pass
+
+    def paint_overlay(self, model_matrix=Matrix4x4()):
         pass
 
     def paint_pickMode(self, model_matrix=Matrix4x4()):

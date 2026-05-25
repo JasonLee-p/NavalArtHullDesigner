@@ -8,8 +8,10 @@ import numpy as np
 # from main_logger import Log
 import OpenGL.GL as gl
 from main_logger import Log
+from operation.section_op import SectionNodeXMoveOperation
 from pyqtOpenGL import Matrix4x4, GLGraphicsItem, GLMeshItem, Quaternion
 from pyqtOpenGL.items.GLScatterPlotItem import GLScatterPlotItem
+from pyqtOpenGL.items.GLLinePlotItem import GLLinePlotItem
 from pyqtOpenGL.items.MeshData import SymetryCylinderMesh, EditItemMaterial
 
 # 从正下方开始，逆时针排列（向z-方向看）
@@ -139,8 +141,10 @@ def _get_index(half_index):
 
 
 class HullVerSecItem(GLMeshItem):
-    NODE_HIT_RADIUS = 12
-    NODE_MARKER_SIZE = 11
+    NODE_HIT_RADIUS = 18
+    NODE_MARKER_SIZE = 17
+    NODE_MARKER_COLOR = (1.0, 0.05, 0.85)
+    SELECTED_CAP_COLOR = (1.0, 0.45, 0.0, 0.42)
 
     # noinspection PyProtectedMember
     def __init__(self, handler, z, nodes: Union[list, tuple]):
@@ -190,21 +194,33 @@ class HullVerSecItem(GLMeshItem):
                          glOptions='opaque',
                          glUsage=gl.GL_DYNAMIC_DRAW)
         # 用于判断整个截面组是否被选中
-        self.parentSelected = True
+        self.parentSelected = False
         self._dragging_node = None
         self._dragging_node_side = 1.0
         self._drag_start_screen_x = 0.0
         self._drag_origin_x = 0.0
         self._drag_screen_per_x = 1.0
+        self._drag_operation_started = False
         self.node_marker_item = GLScatterPlotItem(
             pos=self._node_marker_positions(),
             size=self.NODE_MARKER_SIZE,
-            color=(0.15, 0.95, 1.0),
+            color=self.NODE_MARKER_COLOR,
             glOptions='ontop',
             parentItem=self,
         )
         self.node_marker_item.setVisible(False)
         self.node_marker_item.setSelectable(False)
+        self.selected_key_line_item = GLLinePlotItem(
+            pos=self._selected_key_line_positions(),
+            lineWidth=1.8,
+            color=(0.1, 0.9, 1.0),
+            opacity=0.95,
+            glOptions='ontop',
+            mode='lines',
+            parentItem=self,
+        )
+        self.selected_key_line_item.setVisible(False)
+        self.selected_key_line_item.setSelectable(False)
 
     def _node_marker_entries(self):
         entries = []
@@ -217,19 +233,146 @@ class HullVerSecItem(GLMeshItem):
     def _node_marker_positions(self):
         return np.array([entry[2] for entry in self._node_marker_entries()], dtype=np.float32)
 
-    def _update_node_markers(self):
-        self.node_marker_item.setData(pos=self._node_marker_positions())
-        self.node_marker_item.setVisible(self.selected())
+    @staticmethod
+    def _section_key_loop(section):
+        nodes = sorted(section.nodes, key=lambda item: item.y)
+        left_points = [[node.x, node.y, section.z] for node in nodes]
+        right_points = [[-node.x, node.y, section.z] for node in reversed(nodes)]
+        return np.array(left_points + right_points, dtype=np.float32)
+
+    def _segment_key_loops(self):
+        if self._z >= 0 and self.handler._backSection is not None:
+            return (
+                self._section_key_loop(self.handler),
+                self._section_key_loop(self.handler._backSection),
+            )
+        if self._z <= 0 and self.handler._frontSection is not None:
+            return (
+                self._section_key_loop(self.handler._frontSection),
+                self._section_key_loop(self.handler),
+            )
+        return None, None
+
+    @staticmethod
+    def _append_loop_edges(line_points, loop):
+        if loop is None or len(loop) < 2:
+            return
+        for index in range(len(loop)):
+            line_points.extend((loop[index], loop[(index + 1) % len(loop)]))
+
+    def _selected_key_line_positions(self):
+        line_points = []
+        front_loop, back_loop = self._segment_key_loops()
+        self._append_loop_edges(line_points, front_loop)
+        self._append_loop_edges(line_points, back_loop)
+        if front_loop is not None and back_loop is not None:
+            for index in range(min(len(front_loop), len(back_loop))):
+                line_points.extend((front_loop[index], back_loop[index]))
+        if not line_points:
+            return np.empty((0, 3), dtype=np.float32)
+        return np.array(line_points, dtype=np.float32)
+
+    def _update_selected_key_lines(self):
+        self.selected_key_line_item.setData(
+            pos=self._selected_key_line_positions(),
+            color=(0.1, 0.9, 1.0),
+            opacity=0.95,
+        )
+        if self.selected_key_line_item.visible():
+            self.selected_key_line_item.setVisible(False, recursive=False)
+
+    def _update_node_markers(self, positions=None):
+        if positions is None:
+            positions = self._node_marker_positions()
+        self.node_marker_item.setData(pos=positions, color=self.NODE_MARKER_COLOR, size=self.NODE_MARKER_SIZE)
+        if self.node_marker_item.visible():
+            self.node_marker_item.setVisible(False, recursive=False)
+
+    def paint_selected(self, model_matrix=Matrix4x4()):
+        self._flush_pending_vertex_update()
+        self.setupGLState()
+        self.setupLight(self.shader)
+        with self.shader:
+            self.shader.set_uniform("view", self.view_matrix().glData, "mat4")
+            self.shader.set_uniform("proj", self.proj_matrix().glData, "mat4")
+            self.shader.set_uniform("model", model_matrix.glData, "mat4")
+            self.shader.set_uniform("paintLine", False, "bool")
+            self.shader.set_uniform("highlight", False, "bool")
+            self.shader.set_uniform("ViewPos", self.view_pos(), "vec3")
+            self._mesh.paint(self.shader)
+
+    def paint_overlay(self, model_matrix=Matrix4x4()):
+        if self.selected():
+            self._paint_selected_surface_overlay(model_matrix)
+            self._paint_node_marker_overlay(model_matrix)
+        if self.selected() or self.parentSelected:
+            self._paint_selected_key_line_overlay(model_matrix)
+
+    def _setup_overlay_state(self):
+        gl.glEnable(gl.GL_BLEND)
+        gl.glDisable(gl.GL_CULL_FACE)
+        gl.glDisable(gl.GL_ALPHA_TEST)
+        gl.glDepthFunc(gl.GL_ALWAYS)
+        gl.glDepthMask(gl.GL_FALSE)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
+    def _restore_overlay_state(self):
+        gl.glDepthFunc(gl.GL_LEQUAL)
+        gl.glDepthMask(gl.GL_TRUE)
+
+    def _paint_selected_surface_overlay(self, model_matrix):
+        self._flush_pending_vertex_update()
+        cap_start, cap_count = self._selected_cap_range()
+        if cap_count == 0:
+            return
+        self._setup_overlay_state()
+        self.setupLight(self.shader)
+        with self.shader:
+            self.shader.set_uniform("view", self.view_matrix().glData, "mat4")
+            self.shader.set_uniform("proj", self.proj_matrix().glData, "mat4")
+            self.shader.set_uniform("model", model_matrix.glData, "mat4")
+            self.shader.set_uniform("paintLine", True, "bool")
+            self.shader.set_uniform("lineColor", self.SELECTED_CAP_COLOR, "vec4")
+            self.shader.set_uniform("ViewPos", self.view_pos(), "vec3")
+            self._mesh._material.set_uniform(self.shader, "material")
+            self._mesh.vao.bind()
+            gl.glDrawArrays(gl.GL_TRIANGLES, cap_start, cap_count)
+            self.shader.set_uniform("paintLine", False, "bool")
+        self._restore_overlay_state()
+
+    def _selected_cap_range(self):
+        top_count = 0 if self.mesh_data.top_vert is None else len(self.mesh_data.top_vert)
+        bottom_count = 0 if self.mesh_data.bottom_vert is None else len(self.mesh_data.bottom_vert)
+        if top_count == 0 and bottom_count == 0:
+            return 0, 0
+        if abs(self.mesh_data.topPos - self._z) <= abs(self.mesh_data.bottomPos - self._z):
+            return 0, top_count
+        return top_count, bottom_count
+
+    def _paint_selected_key_line_overlay(self, model_matrix):
+        if self.selected_key_line_item._num == 0:
+            return
+        self.selected_key_line_item.initialize()
+        self.selected_key_line_item.paint(model_matrix)
+
+    def _paint_node_marker_overlay(self, model_matrix):
+        if self.node_marker_item._npoints == 0:
+            return
+        self.node_marker_item.initialize()
+        self.node_marker_item.paint(model_matrix)
 
     def setSelected(self, s, children=True):
         result = super().setSelected(s, children)
         self._update_node_markers()
+        self._update_selected_key_lines()
         return result
 
     def setSelectable(self, s, children=True):
         super().setSelectable(s, children)
         if hasattr(self, "node_marker_item"):
             self.node_marker_item.setSelectable(False)
+        if hasattr(self, "selected_key_line_item"):
+            self.selected_key_line_item.setSelectable(False)
 
     def _effective_view(self):
         view = self.view()
@@ -276,6 +419,7 @@ class HullVerSecItem(GLMeshItem):
         self._drag_start_screen_x = screen_pos.x()
         self._drag_origin_x = node.x
         self._drag_screen_per_x = screen_per_x
+        self._drag_operation_started = True
         return True
 
     def drag_node_to(self, screen_pos):
@@ -287,10 +431,33 @@ class HullVerSecItem(GLMeshItem):
         self._update_node_markers()
 
     def end_node_drag(self):
+        if self._dragging_node is not None and self._drag_operation_started:
+            target_x = self._dragging_node.x
+            if abs(target_x - self._drag_origin_x) > 1e-6:
+                operation_stack = self._operation_stack()
+                operation = SectionNodeXMoveOperation(
+                    self.handler,
+                    self._dragging_node,
+                    target_x,
+                    origin_x=self._drag_origin_x,
+                )
+                if operation_stack is not None:
+                    operation_stack.execute(operation)
+                else:
+                    Log().warning("HullVerSecItem", "节点横向拖拽未进入操作栈：未找到 operationStack")
         self._dragging_node = None
         self._dragging_node_side = 1.0
+        self._drag_operation_started = False
+
+    def _operation_stack(self):
+        view = self._effective_view()
+        main_editor = getattr(view, "main_editor", None) if view is not None else None
+        return getattr(main_editor, "operationStack", None)
 
     def paint_pickMode(self, model_matrix=Matrix4x4()):
+        front_section = self.handler._frontSection
+        if self._z < 0 and front_section is not None and front_section.z > 0:
+            return
         self._flush_pending_vertex_update()
         self.setupGLState()
         with self.pick_shader:
@@ -543,6 +710,7 @@ class HullVerSecItem(GLMeshItem):
             self._mesh._vertexes = self.mesh_data.vertexes
             self._mesh._normals = self.mesh_data.normals
         self._update_node_markers()
+        self._update_selected_key_lines()
         self.update()
         view = self.view()
         if view is not None and hasattr(view, "_record_render_stat"):
@@ -553,6 +721,8 @@ class HullVerSecItem(GLMeshItem):
         当父项被选中时
         """
         self.parentSelected = selected
+        if hasattr(self, "selected_key_line_item"):
+            self._update_selected_key_lines()
 
 
 class HullHorSecItem(GLMeshItem):

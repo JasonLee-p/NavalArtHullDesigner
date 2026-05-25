@@ -6,3 +6,4 @@
 from .basic_op import OperationStack
 from .modelMatrix_op import MoveOperation, MoveToOperation, RotateOperation, ScaleOperation
 from .path_op import *
+from .section_op import SectionDeleteOperation, SectionNodeXMoveOperation, SectionZMoveOperation

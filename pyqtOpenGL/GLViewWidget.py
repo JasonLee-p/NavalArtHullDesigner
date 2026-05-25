@@ -475,6 +475,8 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
             for it in self.items:
                 # _drawItemTree(it)
                 it.drawItemTree()
+            for it in self.items:
+                it.drawItemTree_overlay()
             # # draw lights
             # for light in self.lights:
             #     light.paint(self.get_proj_view_matrix())
