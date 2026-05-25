@@ -82,7 +82,12 @@ class GLScatterPlotItem(GLGraphicsItem):
         if self.antialias:
             gl.glEnable(gl.GL_LINE_SMOOTH)
             gl.glHint(gl.GL_LINE_SMOOTH_HINT, gl.GL_NICEST)
-        gl.glEnable(gl.GL_VERTEX_PROGRAM_POINT_SIZE)
+        if hasattr(gl, "GL_VERTEX_PROGRAM_POINT_SIZE"):
+            gl.glEnable(gl.GL_VERTEX_PROGRAM_POINT_SIZE)
+        if hasattr(gl, "GL_PROGRAM_POINT_SIZE"):
+            gl.glEnable(gl.GL_PROGRAM_POINT_SIZE)
+        if hasattr(gl, "GL_POINT_SPRITE"):
+            gl.glEnable(gl.GL_POINT_SPRITE)
         gl.glEnable(gl.GL_POINT_SMOOTH)
         gl.glHint(gl.GL_POINT_SMOOTH_HINT, gl.GL_NICEST)
 
@@ -107,10 +112,8 @@ layout (location = 1) in vec3 iColor;
 out vec3 oColor;
 
 void main() {
-    // 根据 camPos 和 iPos 计算出距离
     gl_Position = view * model * vec4(iPos, 1.0);
-    float distance = gl_Position.z / 1.;
-    gl_PointSize = 100 * size / distance;
+    gl_PointSize = size;
     oColor = iColor;
 
 }
@@ -122,6 +125,11 @@ out vec4 FragColor;
 in vec3 oColor;
 
 void main() {
-    FragColor = vec4(oColor, 1.0);
+    vec2 coord = gl_PointCoord * 2.0 - 1.0;
+    float distance = dot(coord, coord);
+    if (distance > 1.0)
+        discard;
+    float alpha = 1.0 - smoothstep(0.72, 1.0, distance);
+    FragColor = vec4(oColor, alpha);
 }
 """

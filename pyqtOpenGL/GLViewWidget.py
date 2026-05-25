@@ -125,6 +125,9 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self.select_box = GLSelectBox()
         self.select_box.setView(self)
         self.selected_items = []  # 用于管理物体的选中状态
+        self.__framebuffer = None
+        self.__texture = None
+        self.__depthbuffer = None
 
         # 被绘制的物体
         self.bg_color = bg_color
@@ -292,36 +295,56 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         Update the viewport and projection matrix.
         """
         glViewport(0, 0, w, h)
+        if self.__framebuffer is not None:
+            self._resizeFramebuffer(max(1, self.deviceWidth()), max(1, self.deviceHeight()))
 
     def _createFramebuffer(self, width, height):
         """
         创建帧缓冲区, 用于拾取
         Create a framebuffer for picking
         """
+        width = max(1, width)
+        height = max(1, height)
         self.__framebuffer = glGenFramebuffers(1)
         glBindFramebuffer(GL_FRAMEBUFFER, self.__framebuffer)
         self.__texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.__texture)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, None)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, self.__texture, 0)
+        self.__depthbuffer = glGenRenderbuffers(1)
+        glBindRenderbuffer(GL_RENDERBUFFER, self.__depthbuffer)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height)
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, self.__depthbuffer)
+        if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
+            Log().error(self.TAG, "Picking framebuffer is incomplete")
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
     def _resizeFramebuffer(self, width, height):
+        width = max(1, width)
+        height = max(1, height)
         glBindFramebuffer(GL_FRAMEBUFFER, self.__framebuffer)
         glBindTexture(GL_TEXTURE_2D, self.__texture)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, None)
+        glBindRenderbuffer(GL_RENDERBUFFER, self.__depthbuffer)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
     def pickItems(self, x_, y_, w_, h_):
-        ratio = 2  # 为了提高渲染和拾取速度，暂将渲染视口缩小4倍
+        ratio = 2  # 为了提高渲染和拾取速度，暂将渲染视口缩小2倍
+        dpr = self.devicePixelRatioF()
+        x_, y_, w_, h_ = round(x_ * dpr), round(y_ * dpr), round(w_ * dpr), round(h_ * dpr)
         x_, y_, w_, h_ = self._normalizeRect(x_, y_, w_, h_, ratio)
         glBindFramebuffer(GL_FRAMEBUFFER, self.__framebuffer)
         glViewport(0, 0, self.deviceWidth() // ratio, self.deviceHeight() // ratio)
         glClearColor(0, 0, 0, 0)
         glDisable(GL_MULTISAMPLE)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
         glEnable(GL_DEPTH_TEST)
+        glDepthMask(GL_TRUE)
         glDepthFunc(GL_LESS)
+        glDisable(GL_BLEND)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
         # 设置拾取区域
         glScissor(x_, self.deviceHeight() // ratio - y_ - h_, w_, h_)
         glEnable(GL_SCISSOR_TEST)
@@ -332,6 +355,7 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
         glClearColor(*self.bg_color)
         glEnable(GL_MULTISAMPLE)
+        glDepthMask(GL_TRUE)
         glViewport(0, 0, self.deviceWidth(), self.deviceHeight())
         # 获取拾取到的物体
         pick_data = np.frombuffer(pixels, dtype=np.float32)

@@ -2,13 +2,15 @@
 """
 船体编辑器中使用的主要窗口控件的定义。
 包括：
-选项卡类：用户信息、项目信息、元素结构视图、元素编辑视图、设置；
+选项卡类：AI Agent对话、项目信息、元素结构视图、元素编辑视图、设置；
 用于可视化和与船体模型交互的GLWidgetGUI；
 用于协调这些组件的MainEditorGUI。
 """
 import gc
 import os
 from typing import Optional, TYPE_CHECKING, Union
+
+from PyQt5.QtWidgets import QTextEdit
 
 from GUI.dialogs import MoveDialog, ScaleDialog
 from GUI.hierarchy_widgets import *
@@ -25,20 +27,110 @@ if TYPE_CHECKING:
     from ShipRead.designer_project import DesignerProject
 
 
-class UserInfoTab(MutiDirectionTab):
-    TAG = "UserInfoTab"
+class AIAgentTab(MutiDirectionTab):
+    TAG = "AIAgentTab"
 
     def __init__(self, parent):
-        super().__init__(parent, CONST.DOWN, "用户", "", USER_IMAGE)
+        super().__init__(parent, CONST.DOWN, "AI Agent", "AI Agent 对话面板", USER_IMAGE)
         self.set_layout(QVBoxLayout())
+        self.chat_view = QTextEdit()
+        self.status_label = TextLabel(None, "未连接到 AI Agent", YAHEI[9], GRAY, Qt.AlignLeft | Qt.AlignVCenter)
+        self.input_edit = TextEdit("", None, font=YAHEI[9], bg=BG_COLOR1, padding=5)
+        self.send_button = Button(None, "发送消息", bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3),
+                                  bd_radius=(8, 8, 8, 8), size=None, font=YAHEI[9], padding=(6, 10, 6, 10))
+        self.clear_button = Button(None, "清空对话", bg=("transparent", BG_COLOR2, BG_COLOR1, BG_COLOR2),
+                                   bd_radius=(8, 8, 8, 8), size=None, font=YAHEI[9], padding=(6, 10, 6, 10))
+        self.input_bar = QWidget()
+        self.input_layout = QHBoxLayout()
         self.__init_main_widget()
+        self.__bind_signals()
 
     def init_top_widget(self):
         pass
 
     def __init_main_widget(self):
-        self.layout().setContentsMargins(5, 5, 5, 0)
+        self.layout().setContentsMargins(8, 8, 8, 8)
         self.layout().setSpacing(5)
+        self.layout().setAlignment(Qt.AlignTop)
+
+        self.chat_view.setReadOnly(True)
+        self.chat_view.setPlaceholderText("在这里查看 AI Agent 对话记录")
+        self.chat_view.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.chat_view.setStyleSheet(f"""
+            QTextEdit{{
+                background-color: {BG_COLOR0};
+                color: {FG_COLOR0};
+                border: 1px solid {BG_COLOR2};
+                border-radius: 8px;
+                padding: 8px;
+            }}
+            QScrollBar:vertical {{
+                background-color: {BG_COLOR0};
+                border-radius: 4px;
+                width: 8px;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: {BG_COLOR2};
+                border-radius: 4px;
+                min-height: 20px;
+            }}
+            QScrollBar::handle:vertical:hover {{
+                background-color: {BG_COLOR3};
+            }}
+            QScrollBar::add-line:vertical,
+            QScrollBar::sub-line:vertical {{
+                height: 0px;
+            }}
+            QScrollBar::add-page:vertical,
+            QScrollBar::sub-page:vertical {{
+                background: none;
+            }}
+        """)
+
+        self.input_edit.setPlaceholderText("输入给 AI Agent 的消息")
+        self.input_edit.setMinimumWidth(240)
+        self.input_edit.setFixedHeight(32)
+        self.send_button.setText("发送")
+        self.clear_button.setText("清空")
+        self.send_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.clear_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.send_button.setFixedHeight(32)
+        self.clear_button.setFixedHeight(32)
+
+        self.input_bar.setLayout(self.input_layout)
+        self.input_layout.setContentsMargins(0, 0, 0, 0)
+        self.input_layout.setSpacing(6)
+        self.input_layout.addWidget(self.input_edit, stretch=1)
+        self.input_layout.addWidget(self.send_button)
+        self.input_layout.addWidget(self.clear_button)
+
+        self.main_layout.addWidget(self.chat_view, stretch=1)
+        self.main_layout.addWidget(self.status_label)
+        self.main_layout.addWidget(self.input_bar)
+
+    def __bind_signals(self):
+        self.send_button.clicked.connect(self.send_message)
+        self.clear_button.clicked.connect(self.clear_messages)
+        self.input_edit.returnPressed.connect(self.send_message)
+
+    def append_message(self, role: str, message: str):
+        safe_message = message.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        role_color = FG_COLOR1 if role == "User" else FG_COLOR0
+        self.chat_view.append(
+            f'<p style="margin:6px 0;"><b style="color:{role_color};">{role}</b><br>{safe_message}</p>'
+        )
+        self.chat_view.verticalScrollBar().setValue(self.chat_view.verticalScrollBar().maximum())
+
+    def send_message(self):
+        message = self.input_edit.text().strip()
+        if not message:
+            return
+        self.input_edit.clear()
+        self.append_message("User", message)
+        self.append_message("AI Agent", "AI Agent 接口尚未接入。")
+
+    def clear_messages(self):
+        self.chat_view.clear()
 
 
 class PrjInfoTab(MutiDirectionTab):
@@ -98,7 +190,10 @@ class HierarchyTab(MutiDirectionTab):
         super().__init__(parent, CONST.LEFT, HIERARCHY_STR, f"{DESIGNER_PRJ_STR}所有的部件都在这里", STRUCTURE_IMAGE)
         self.set_layout(QVBoxLayout())
         # 控件
-        self.tab_widget = TabWidget(None, QTabWidget.West)
+        self.accordion_widget = QWidget()
+        self.accordion_layout = QVBoxLayout()
+        self.accordion_scroll_area = ScrollArea(None, self.accordion_widget, Qt.Vertical, bg=BG_COLOR0, bar_bg=BG_COLOR0)
+        self._panel_map = {}
         self._hullSectionGroup_tab = QWidget()
         self._armorSectionGroup_tab = QWidget()
         self._bridge_tab = QWidget()
@@ -114,25 +209,38 @@ class HierarchyTab(MutiDirectionTab):
     def __init_main_widget(self):
         self.layout().setContentsMargins(5, 5, 5, 0)
         self.layout().setSpacing(5)
+        self.accordion_widget.setLayout(self.accordion_layout)
+        self.accordion_widget.setStyleSheet(f"background-color: {BG_COLOR0};")
+        self.accordion_layout.setContentsMargins(6, 6, 6, 6)
+        self.accordion_layout.setSpacing(8)
+        self.accordion_layout.setAlignment(Qt.AlignTop)
         # *添加图纸组件*初始化
-        self.tab_widget.addTab(self._hullSectionGroup_tab, HULL_SECTION_GROUP_STR)
-        self.tab_widget.addTab(self._armorSectionGroup_tab, ARMOR_SECTION_GROUP_STR)
-        self.tab_widget.addTab(self._bridge_tab, "舰桥")
-        self.tab_widget.addTab(self._ladder_tab, "梯子")
-        self.tab_widget.addTab(self._model_tab, "外部模型")
-        self.tab_widget.addTab(self._refImage_tab, "参考图片")
-        # *添加图纸组件*初始化
-        self.hullSectionGroup_tab = HullSectionGroupHC(self.main_editor, self._hullSectionGroup_tab)
-        self.armorSectionGroup_tab = ArmorSectionGroupHC(self.main_editor, self._armorSectionGroup_tab)
-        self.bridge_tab = BridgeHC(self.main_editor, self._bridge_tab)
-        self.ladder_tab = LadderHC(self.main_editor, self._ladder_tab)
-        self.model_tab = ModelHC(self.main_editor, self._model_tab)
-        self.refImage_tab = RefImageHC(self.main_editor, self._refImage_tab)
+        self.hullSectionGroup_tab = HullSectionGroupHC(self.main_editor, self._hullSectionGroup_tab, show_title=False)
+        self.armorSectionGroup_tab = ArmorSectionGroupHC(self.main_editor, self._armorSectionGroup_tab, show_title=False)
+        self.bridge_tab = BridgeHC(self.main_editor, self._bridge_tab, show_title=False)
+        self.ladder_tab = LadderHC(self.main_editor, self._ladder_tab, show_title=False)
+        self.model_tab = ModelHC(self.main_editor, self._model_tab, show_title=False)
+        self.refImage_tab = RefImageHC(self.main_editor, self._refImage_tab, show_title=False)
+        self._add_hierarchy_panel(HULL_SECTION_GROUP_STR, self._hullSectionGroup_tab, expanded=True)
+        self._add_hierarchy_panel(ARMOR_SECTION_GROUP_STR, self._armorSectionGroup_tab, expanded=True)
+        self._add_hierarchy_panel("舰桥", self._bridge_tab)
+        self._add_hierarchy_panel("梯子", self._ladder_tab)
+        self._add_hierarchy_panel("外部模型", self._model_tab)
+        self._add_hierarchy_panel("参考图片", self._refImage_tab)
         # 总布局
-        self.main_layout.addWidget(self.tab_widget)
+        self.main_layout.addWidget(self.accordion_scroll_area)
+
+    def _add_hierarchy_panel(self, title: str, content_widget: QWidget, expanded: bool = False):
+        panel = CollapsiblePanel(title, content_widget, expanded)
+        self.accordion_layout.addWidget(panel)
+        self._panel_map[content_widget] = panel
+        return panel
 
     def setCurrentTab(self, tab: QWidget):
-        self.tab_widget.setCurrentWidget(tab)
+        panel = self._panel_map.get(tab)
+        if panel is not None:
+            panel.set_expanded(True)
+            self.accordion_scroll_area.ensureWidgetVisible(panel)
 
     """
     下面这些函数必须使用 snake_case，因为他们会被 main_editor 动态地通过 update_structure 装饰器调用
@@ -881,7 +989,7 @@ class MainEditorGUI(Window):
         else:
             self.camera = None
         # 标签页
-        self.user_tab = UserInfoTab(self.main_widget)
+        self.ai_agent_tab = AIAgentTab(self.main_widget)
         self.structure_tab = HierarchyTab(self.main_widget, self)
         self.info_tab = PrjInfoTab(self.main_widget)
         self.edit_tab = EditTab(self.main_widget)
@@ -1043,7 +1151,7 @@ class MainEditorGUI(Window):
         self.main_widget.add_tab(self.edit_tab)
         self.main_widget.add_tab(self.setting_tab)
         self.main_widget.add_tab(self.tools_tab)
-        self.main_widget.add_tab(self.user_tab)
+        self.main_widget.add_tab(self.ai_agent_tab)
 
     def init_top_widget(self):
         self.top_widget.setFixedHeight(self.topH)

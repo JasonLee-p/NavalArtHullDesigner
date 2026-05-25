@@ -139,7 +139,7 @@ def _get_index(half_index):
 
 class HullVerSecItem(GLMeshItem):
     NODE_HIT_RADIUS = 12
-    NODE_MARKER_SIZE = 0.18
+    NODE_MARKER_SIZE = 11
 
     # noinspection PyProtectedMember
     def __init__(self, handler, z, nodes: Union[list, tuple]):
@@ -191,6 +191,7 @@ class HullVerSecItem(GLMeshItem):
         # 用于判断整个截面组是否被选中
         self.parentSelected = True
         self._dragging_node = None
+        self._dragging_node_side = 1.0
         self._drag_start_screen_x = 0.0
         self._drag_origin_x = 0.0
         self._drag_screen_per_x = 1.0
@@ -202,9 +203,18 @@ class HullVerSecItem(GLMeshItem):
             parentItem=self,
         )
         self.node_marker_item.setVisible(False)
+        self.node_marker_item.setSelectable(False)
+
+    def _node_marker_entries(self):
+        entries = []
+        for node in self._nodes:
+            entries.append((node, 1.0, np.array([node.x, node.y, self._z], dtype=np.float32)))
+            if abs(node.x) > 1e-6:
+                entries.append((node, -1.0, np.array([-node.x, node.y, self._z], dtype=np.float32)))
+        return entries
 
     def _node_marker_positions(self):
-        return np.array([[node.x, node.y, self._z] for node in self._nodes], dtype=np.float32)
+        return np.array([entry[2] for entry in self._node_marker_entries()], dtype=np.float32)
 
     def _update_node_markers(self):
         self.node_marker_item.setData(pos=self._node_marker_positions())
@@ -238,20 +248,20 @@ class HullVerSecItem(GLMeshItem):
         if not self.selected() or view is None:
             return False
         screen_xy = np.array([screen_pos.x(), screen_pos.y()], dtype=np.float32)
-        best_index = None
+        best_entry = None
         best_distance = self.NODE_HIT_RADIUS
-        for index, node_screen_pos in enumerate(self._node_screen_positions()):
+        entries = self._node_marker_entries()
+        for entry, node_screen_pos in zip(entries, self._node_screen_positions()):
             if node_screen_pos is None:
                 continue
             distance = np.linalg.norm(node_screen_pos[:2] - screen_xy)
             if distance <= best_distance:
-                best_index = index
+                best_entry = entry
                 best_distance = distance
-        if best_index is None:
+        if best_entry is None:
             return False
-        node = self._nodes[best_index]
-        node_pos = np.array([node.x, node.y, self._z], dtype=np.float32)
-        reference_pos = np.array([node.x + 1.0, node.y, self._z], dtype=np.float32)
+        node, side, node_pos = best_entry
+        reference_pos = np.array([side * (node.x + 1.0), node.y, self._z], dtype=np.float32)
         model = self.viewTransform()
         start_screen = view.project_point(node_pos, model)
         reference_screen = view.project_point(reference_pos, model)
@@ -261,6 +271,7 @@ class HullVerSecItem(GLMeshItem):
         if abs(screen_per_x) < 1e-5:
             return False
         self._dragging_node = node
+        self._dragging_node_side = side
         self._drag_start_screen_x = screen_pos.x()
         self._drag_origin_x = node.x
         self._drag_screen_per_x = screen_per_x
@@ -276,6 +287,17 @@ class HullVerSecItem(GLMeshItem):
 
     def end_node_drag(self):
         self._dragging_node = None
+        self._dragging_node_side = 1.0
+
+    def paint_pickMode(self, model_matrix=Matrix4x4()):
+        self._flush_pending_vertex_update()
+        self.setupGLState()
+        with self.pick_shader:
+            self.pick_shader.set_uniform("view", self.view_matrix().glData, "mat4")
+            self.pick_shader.set_uniform("proj", self.proj_matrix().glData, "mat4")
+            self.pick_shader.set_uniform("model", model_matrix.glData, "mat4")
+            self.pick_shader.set_uniform("pickColor", self.pickColor(parent=False), "float")
+            self._mesh.paint(self.pick_shader)
 
     def getCurPoints(self, direction: Literal['up', 'bot'], p0: np.ndarray, p1: np.ndarray):
         """

@@ -90,6 +90,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         self.__drawLine = drawLine
         self.__lineWidth = lineWidth
         self.__lineColor = lineColor
+        self._pending_vertex_update = False
 
     def initializeGL(self):
         """
@@ -108,6 +109,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         """
         if self.isInitialized and self.view() is not None and self.view().isCurrent():
             self._mesh.update_vertexes(vertexes, normals)
+            self._pending_vertex_update = False
             return
         if vertexes.shape != self._mesh._vertexes.shape:
             raise ValueError("vertexes shape must be the same as the original vertexes")
@@ -117,6 +119,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         else:
             self._mesh._normals = np.array(normals, dtype=np.float32)
         self._mesh._vertexes_size = int(self._mesh._vertexes.size / 3)
+        self._pending_vertex_update = self.isInitialized
 
     def updateVertex(self, index, vertex):
         """
@@ -127,6 +130,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         """
         if self.isInitialized and self.view() is not None and self.view().isCurrent():
             self._mesh.update_vertex(index, vertex)
+            self._pending_vertex_update = False
             return
         if isinstance(index, np.ndarray):
             if len(index) != len(vertex):
@@ -136,6 +140,15 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
         else:
             self._mesh._vertexes[index] = vertex
         self._mesh._normals = vertex_normal_smooth(self._mesh._vertexes, self._mesh._indices)
+        self._pending_vertex_update = self.isInitialized
+
+    def _flush_pending_vertex_update(self):
+        if not self._pending_vertex_update:
+            return
+        if not self.isInitialized or self.view() is None or not self.view().isCurrent():
+            return
+        self._mesh.update_vertexes(self._mesh._vertexes, self._mesh._normals)
+        self._pending_vertex_update = False
 
     def paint(self, model_matrix=Matrix4x4()):
         """
@@ -143,6 +156,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
 
         :param Matrix4x4 model_matrix: 模型矩阵。
         """
+        self._flush_pending_vertex_update()
         if not self.selected():
             self.setupGLState()
             self.setupLight(self.shader)
@@ -177,6 +191,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
 
         :param Matrix4x4 model_matrix: 模型矩阵。
         """
+        self._flush_pending_vertex_update()
         self.setupGLState()
         self.setupLight(self.shader)
         with self.shader:
@@ -206,6 +221,7 @@ class GLMeshItem(GLGraphicsItem, LightMixin):
 
         :param Matrix4x4 model_matrix: 模型矩阵。
         """
+        self._flush_pending_vertex_update()
         self.setupGLState()
         with self.pick_shader:
             self.pick_shader.set_uniform("view", self.view_matrix().glData, "mat4")
