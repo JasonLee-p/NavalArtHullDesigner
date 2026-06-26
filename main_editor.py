@@ -463,6 +463,8 @@ class MainEditor(MainEditorGUI):
             else:
                 # TODO: 多选的情况
                 return
+        if isinstance(item, (HullSection, ArmorSection)):
+            item = item._parent
         # 单选的情况
         self.setRightTabWidth(336)
         self.main_widget.right_tab_frame.change_tab(self.edit_tab)

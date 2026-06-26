@@ -221,17 +221,27 @@ class HierarchyTab(MutiDirectionTab):
         self.ladder_tab = LadderHC(self.main_editor, self._ladder_tab, show_title=False)
         self.model_tab = ModelHC(self.main_editor, self._model_tab, show_title=False)
         self.refImage_tab = RefImageHC(self.main_editor, self._refImage_tab, show_title=False)
-        self._add_hierarchy_panel(HULL_SECTION_GROUP_STR, self._hullSectionGroup_tab, expanded=True)
-        self._add_hierarchy_panel(ARMOR_SECTION_GROUP_STR, self._armorSectionGroup_tab, expanded=True)
-        self._add_hierarchy_panel("舰桥", self._bridge_tab)
-        self._add_hierarchy_panel("梯子", self._ladder_tab)
-        self._add_hierarchy_panel("外部模型", self._model_tab)
-        self._add_hierarchy_panel("参考图片", self._refImage_tab)
+        self._add_hierarchy_panel(
+            HULL_SECTION_GROUP_STR, self._hullSectionGroup_tab, self.hullSectionGroup_tab.get_header_action(),
+            expanded=True)
+        self._add_hierarchy_panel(
+            ARMOR_SECTION_GROUP_STR, self._armorSectionGroup_tab, self.armorSectionGroup_tab.get_header_action(),
+            expanded=True)
+        self._add_hierarchy_panel("舰桥", self._bridge_tab, self.bridge_tab.get_header_action())
+        self._add_hierarchy_panel("梯子", self._ladder_tab, self.ladder_tab.get_header_action())
+        self._add_hierarchy_panel("外部模型", self._model_tab, self.model_tab.get_header_action())
+        self._add_hierarchy_panel("参考图片", self._refImage_tab, self.refImage_tab.get_header_action())
         # 总布局
         self.main_layout.addWidget(self.accordion_scroll_area)
 
-    def _add_hierarchy_panel(self, title: str, content_widget: QWidget, expanded: bool = False):
-        panel = CollapsiblePanel(title, content_widget, expanded)
+    def _add_hierarchy_panel(
+            self,
+            title: str,
+            content_widget: QWidget,
+            header_action: QWidget = None,
+            expanded: bool = False
+    ):
+        panel = CollapsiblePanel(title, content_widget, expanded, header_action=header_action)
         self.accordion_layout.addWidget(panel)
         self._panel_map[content_widget] = panel
         return panel
@@ -786,6 +796,7 @@ class GLWidgetGUI(GLViewWidget):
         :return:
         """
         if selected and item not in self.selected_items:
+            self._clear_conflicting_selection(item)
             self.selected_items.append(item)
             if hasattr(item, "handler"):
                 item.handler.setSelected(True)
@@ -799,15 +810,112 @@ class GLWidgetGUI(GLViewWidget):
                 item.setSelected(False)
         self._after_selection()
 
+    def _clear_conflicting_selection(self, item):
+        """
+        同一截面组内，截面与截面组不应同时保留真实选中态。
+        """
+        handler = getattr(item, "handler", None)
+        if handler is None:
+            return
+        parent = getattr(handler, "_parent", None)
+        if parent is not None and hasattr(parent, "paintItem"):
+            parent_item = parent.paintItem
+            if parent_item in self.selected_items:
+                self.selected_items.remove(parent_item)
+                parent_item.setSelected(False)
+            return
+
+        for selected_item in list(self.selected_items):
+            selected_handler = getattr(selected_item, "handler", None)
+            if getattr(selected_handler, "_parent", None) is handler:
+                self.selected_items.remove(selected_item)
+                selected_item.setSelected(False)
+
+    def _normalize_selected_items(self):
+        """
+        如果选中了某个截面，则移除同组截面组的真实选中态，
+        组的高亮改由上下文同步逻辑负责。
+        """
+        section_parent_items = set()
+        for item in self.selected_items:
+            handler = getattr(item, "handler", None)
+            parent = getattr(handler, "_parent", None)
+            if parent is not None and hasattr(parent, "paintItem"):
+                section_parent_items.add(parent.paintItem)
+
+        if not section_parent_items:
+            return
+
+        normalized_items = []
+        for item in self.selected_items:
+            if item in section_parent_items:
+                item.setSelected(False)
+                continue
+            if item not in normalized_items:
+                normalized_items.append(item)
+        self.selected_items = normalized_items
+
+    @staticmethod
+    def _editor_handler_from_item(item):
+        handler = getattr(item, "handler", None)
+        if handler is None:
+            return None
+        parent = getattr(handler, "_parent", None)
+        if parent is not None and hasattr(parent, "paintItem"):
+            return parent
+        return handler
+
+    def _sync_section_group_context_ui(self):
+        """
+        同步截面组选中上下文：
+        选择截面时，只让所属截面组在大纲和编辑器上下文中保持选中。
+        """
+        structure_tab = getattr(getattr(self, "main_editor", None), "structure_tab", None)
+        if structure_tab is None:
+            return
+        if not hasattr(structure_tab, "hullSectionGroup_tab") or not hasattr(structure_tab, "armorSectionGroup_tab"):
+            return
+
+        active_groups = []
+        for item in self.selected_items:
+            handler = self._editor_handler_from_item(item)
+            if handler is None or handler in active_groups:
+                continue
+            active_groups.append(handler)
+
+        active_group_ids = {id(group) for group in active_groups}
+        for container in (structure_tab.hullSectionGroup_tab, structure_tab.armorSectionGroup_tab):
+            for group in container._items:
+                group._showButton.setChecked(id(group) in active_group_ids)
+
+        if not active_groups:
+            return
+
+        from ShipRead.sectionHandler.hullSectionGroup import HullSectionGroup
+        from ShipRead.sectionHandler.armorSectionGroup import ArmorSectionGroup
+
+        first_group = active_groups[0]
+        if isinstance(first_group, HullSectionGroup):
+            structure_tab.setCurrentTab(structure_tab.hullSectionGroup_tab.widget)
+        elif isinstance(first_group, ArmorSectionGroup):
+            structure_tab.setCurrentTab(structure_tab.armorSectionGroup_tab.widget)
+
     def selected_items_handler(self):
         """
         返回当前被选择绘图对象所对应的工程对象
         :return:
         """
         items = []
+        seen = set()
         for item in self.selected_items:
-            if hasattr(item, 'handler'):
-                items.append(item.handler)
+            handler = self._editor_handler_from_item(item)
+            if handler is None:
+                continue
+            handler_id = id(handler)
+            if handler_id in seen:
+                continue
+            seen.add(handler_id)
+            items.append(handler)
         return items
 
     def keyPressEvent(self, event) -> None:
@@ -826,9 +934,12 @@ class GLWidgetGUI(GLViewWidget):
     def _clear_selected_items(self):
         self.clear_selected_items.emit()
         super()._clear_selected_items()
+        self._sync_section_group_context_ui()
         # Log().info(self.TAG, "已清空选中部件")
 
     def _after_selection(self):
+        self._normalize_selected_items()
+        self._sync_section_group_context_ui()
         self.after_selection.emit()
         super()._after_selection()
 

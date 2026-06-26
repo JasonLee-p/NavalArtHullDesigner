@@ -13,17 +13,26 @@ class CollapsiblePanel(QWidget):
     """
     CONTENT_INDENT = 16
 
-    def __init__(self, title: str, content_widget: QWidget, expanded: bool = False):
+    def __init__(
+            self,
+            title: str,
+            content_widget: QWidget,
+            expanded: bool = False,
+            header_action: QWidget = None
+    ):
         super().__init__(None)
         self.title = title
         self.content_widget = content_widget
         self.content_wrapper = QWidget()
         self.content_layout = QVBoxLayout()
+        self.header_widget = QWidget()
+        self.header_layout = QHBoxLayout()
         self.header_button = Button(None, "",
                                     bg=(BG_COLOR1, BG_COLOR3, BG_COLOR2, BG_COLOR3),
                                     fg=FG_COLOR0, bd_radius=(8, 8, 8, 8),
                                     align=Qt.AlignLeft | Qt.AlignVCenter, size=None,
                                     font=YAHEI[9], padding=(8, 8, 8, 8))
+        self.header_action = header_action
 
         self.header_button.setCheckable(True)
         self.header_button.setCursor(Qt.PointingHandCursor)
@@ -33,12 +42,18 @@ class CollapsiblePanel(QWidget):
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(5)
+        self.header_widget.setLayout(self.header_layout)
+        self.header_layout.setContentsMargins(0, 0, 0, 0)
+        self.header_layout.setSpacing(6)
+        self.header_layout.addWidget(self.header_button, stretch=1)
+        if self.header_action is not None:
+            self.header_layout.addWidget(self.header_action, alignment=Qt.AlignRight | Qt.AlignVCenter)
         self.content_wrapper.setLayout(self.content_layout)
         self.content_layout.setContentsMargins(self.CONTENT_INDENT, 0, 0, 0)
         self.content_layout.setSpacing(0)
         self.content_layout.addWidget(self.content_widget)
         self.content_wrapper.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum)
-        self.layout().addWidget(self.header_button)
+        self.layout().addWidget(self.header_widget)
         self.layout().addWidget(self.content_wrapper)
 
         self.header_button.clicked.connect(self.set_expanded)
@@ -63,6 +78,7 @@ class HierarchyContainer(QObject):
     元素结构窗口中元素容器的基类
     """
     main_editor = None  # 对主编辑器的引用
+    CATEGORY_CONTENT_INDENT = 14
 
     def __init__(self, main_editor, tab_widget, title='', show_title=True):
         """
@@ -87,22 +103,34 @@ class HierarchyContainer(QObject):
         self._bind_signals()
 
     def _init_ui(self):
-        self.add_button.setFixedHeight(26)
-        self.add_button.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
         self.add_button.setCursor(Qt.PointingHandCursor)
         self.add_button.setIcon(QIcon(QPixmap(ADD_IMAGE)))
+        self.add_button.setIconSize(QSize(14, 14))
+        if self.show_title:
+            self.add_button.setFixedHeight(26)
+            self.add_button.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
+        else:
+            self.add_button.setText("")
+            self.add_button.setToolTip("添加部件")
+            self.add_button.setFixedSize(28, 28)
+            self.add_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+            self.add_button.bd_radius = [8] * 4
+            self.add_button.padding = [0] * 4
+            self.add_button.set_style()
         self.widget.setLayout(QVBoxLayout())
         self.widget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum)
         self.widget.layout().setAlignment(Qt.AlignTop)
-        self.widget.layout().setContentsMargins(0, 0, 0, 0)
+        # Give category contents a clear indent so item buttons read as children of the panel header.
+        left_margin = self.CATEGORY_CONTENT_INDENT if not self.show_title else 0
+        self.widget.layout().setContentsMargins(left_margin, 0, 0, 0)
         self.widget.layout().setSpacing(5)
         self.widget.layout().setSizeConstraint(QLayout.SetMinAndMaxSize)
         if self.show_title:
             self.widget.layout().addWidget(TextLabel(None, self.title, align=Qt.AlignLeft | Qt.AlignTop))
             self.widget.layout().addWidget(self.scroll_area)
+            self.widget.layout().addWidget(self.add_button)
         else:
             self.widget.layout().addWidget(self.scroll_widget)
-        self.widget.layout().addWidget(self.add_button)
         self.scroll_widget.setLayout(QVBoxLayout())
         self.scroll_widget.layout().setAlignment(Qt.AlignTop)
         self.scroll_widget.layout().setContentsMargins(0, 0, 0, 0)
@@ -115,6 +143,11 @@ class HierarchyContainer(QObject):
 
     def _bind_signals(self):
         self.add_button.clicked.connect(self.create_item)
+
+    def get_header_action(self):
+        if self.show_title:
+            return None
+        return self.add_button
 
     def create_item(self) -> bool:
         """

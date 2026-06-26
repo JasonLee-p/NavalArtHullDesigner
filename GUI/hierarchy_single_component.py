@@ -76,7 +76,7 @@ class ShowButton(Button):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.gl_widget.set_item_selected(self.item_handler.paintItem, not self.isChecked())
+            self.gl_widget.set_item_selected(self.item_handler.paintItem, not self.item_handler.selected())
         elif event.button() == Qt.RightButton:
             # 显示右键菜单
             self.show_menu(event)

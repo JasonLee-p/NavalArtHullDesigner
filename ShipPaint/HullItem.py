@@ -848,6 +848,12 @@ class ArmorSectionGroupItem(GLGraphicsItem):
         self._front_item: ArmorSectionGroupItem = self.armorSections[-1]
         self._back_item: ArmorSectionGroupItem = self.armorSections[0]
 
+    def setSelected(self, s, children=False) -> bool:
+        for item in self.childItems():
+            if hasattr(item, 'setParentSelected'):
+                item.setParentSelected(s)
+        return super().setSelected(s, children)
+
     def addLight(self, light):
         for item in self.childItems():
             item.addLight(light)

@@ -422,6 +422,10 @@ class SubPrjComponent(QObject):
         :return:
         """
         if self.paintItem is not None:
+            try:
+                self.paintItem.set_selected_s.disconnect(self.set_showButton_checked)
+            except TypeError:
+                pass
             self._parent.paintItem.removeChildItem(self.paintItem)
             self.paintItem.handler = None
             self.paintItem = None
@@ -440,6 +444,7 @@ class SubPrjComponent(QObject):
             paintItem.addLight([SubPrjComponent._gl_widget.light])
         self.paintItem = paintItem
         # 绑定handler
+        self.paintItem.set_selected_s.connect(self.set_showButton_checked)
         self.paintItem.handler = self
         self.init_paintItems_parent()
         self.setSelected(False)

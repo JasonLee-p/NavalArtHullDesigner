@@ -77,7 +77,7 @@ class SubElementShow(Button):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             # 设置选中状态
-            self.gl_widget.set_item_selected(self.item_handler.paintItem, not self.isChecked())
+            self.gl_widget.set_item_selected(self.item_handler.paintItem, not self.item_handler.selected())
             # 不需要调用父类的mousePressEvent，因为gl_widget已经处理了
             # super().mousePressEvent(event)
             Log().info(self.TAG, f"点击了{self.item_handler.name}")

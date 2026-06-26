@@ -82,10 +82,30 @@ class GLViewWidget(QtWidgets.QOpenGLWidget):
         self.delete_selected()
 
     def delete_selected(self):
-        prj = self.selected_items[0].handler.prj
-        for item in self.selected_items:
-            self.removeItem(item)
-            prj.del_section(item.handler)
+        if not self.selected_items:
+            return
+
+        items_to_delete = list(self.selected_items)
+        self.selected_items.clear()
+        for item in items_to_delete:
+            handler = getattr(item, "handler", None)
+            if handler is None:
+                continue
+
+            parent = getattr(handler, "_parent", None)
+            if parent is not None:
+                if hasattr(parent, "_del_section"):
+                    parent._del_section(handler)
+                    continue
+                if hasattr(parent, "del_section"):
+                    parent.del_section(handler)
+                    continue
+
+            if item in self.items:
+                self.removeItem(item)
+            prj = getattr(handler, "hullProject", None)
+            if prj is not None:
+                prj.del_section(handler)
         self.selected_items.clear()
         self.update()
 
